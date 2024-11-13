@@ -1,28 +1,53 @@
-# Yes
+# Yes::Aggregate
 
-TODO: Delete this and the text below, and describe your gem
+The `Yes::Aggregate` class provides a DSL for defining event-sourced aggregates.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/yes`. To experiment with that code, run `bin/console` for an interactive prompt.
+The DSL provides the following methods for usage inside the `Yes::Aggregate` class:
 
-## Installation
+- `attribute`: automatically generates the necessary commands, events, and handlers for managing your aggregate's state.
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+## Basic Usage
 
-Install the gem and add to the application's Gemfile by executing:
+To define attributes on your aggregate, use the `attribute` method with a name and type:
 
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+class UserAggregate < Yes::Aggregate
+  attribute :name, :string
+  attribute :email, :email
+  attribute :age, :integer
+end
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+## Available Types
 
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+The attribute system supports various types, for example:
+- `:string` - For text values
+- `:email` - For email addresses
+- `:uuid` - For UUID values
+- `:integer` - For numeric values
+
+For the full list of types see [lib/yes/type_lookup.rb](lib/yes/type_lookup.rb)
+
+## Generated Components
+
+For each attribute, the system automatically generates:
+- A command for updating the attribute
+- An event for recording attribute changes
+- A handler for processing the command
+- State management for the attribute value (later)
+
+## Example with Multiple Attributes
+
+```ruby
+class ProductAggregate < Yes::Aggregate
+  attribute :name, :string
+  attribute :product_page, :url
+  attribute :description, :string
+end
 ```
 
-## Usage
+This will create a fully event-sourced product entity with all necessary components for managing these attributes through commands and events.
 
-TODO: Write usage instructions here
 
 ## Development
 
