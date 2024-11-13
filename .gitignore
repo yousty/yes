@@ -10,6 +10,8 @@
 # rspec failure tracking
 .rspec_status
 
-rubocop-https*
+.rubocop-https*
+.idea
+
 Gemfile.lock
 .rspec_status
