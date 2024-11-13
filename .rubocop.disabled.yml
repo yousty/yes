@@ -1,0 +1,10 @@
+# These are all the cops that are disabled in the default configuration.
+
+Style/Copyright:
+  Enabled: false
+
+Naming/VariableNumber:
+  Exclude:
+    - 'app/contexts/apprenticeship_presentation/location/events/address_changed.rb'
+    - 'app/contexts/apprenticeship_presentation/location/commands/change_address/command.rb'
+    - 'spec/commands/change_address/handler_spec.rb'

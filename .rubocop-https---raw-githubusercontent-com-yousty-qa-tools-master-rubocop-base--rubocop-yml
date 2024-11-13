@@ -1,0 +1,58 @@
+require:
+  - rubocop-performance
+  - rubocop-rails
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3.6
+
+Metrics/ClassLength:
+  Description: 'Avoid classes longer than 100 lines of code.'
+  Enabled: true
+  VersionAdded: '0.25'
+  VersionChanged: '0.87'
+  CountComments: false  # count full line comments?
+  Max: 150
+  CountAsOne: []
+
+Layout/LineLength:
+  Max: 120
+  AllowHeredoc: true
+  AllowURI: true
+  URISchemes:
+    - http
+    - https
+  IgnoreCopDirectives: false
+  Exclude:
+    - 'db/**/*.rb'
+    - 'components/*/db/**/*.rb'
+    - 'spec/features/*.rb'
+    - 'components/*/spec/features/*.rb'
+    - 'spec/controllers/*.rb'
+    - 'components/*/spec/controllers/*.rb'
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/BlockLength:
+  Exclude:
+    - '**/spec/**/*'
+    - '**/factories/**/*'
+    - '**/config/routes.rb'
+    - '**/tasks/eventstore.rake'
+
+Metrics/ModuleLength:
+  Exclude:
+    - '**/spec/**/*'
+    - '**/factories/**/*'
+    - '**/config/routes.rb'
+
+Layout/DotPosition:
+   EnforcedStyle: trailing
+
+Lint/DuplicateBranch:
+  Enabled: true
+  IgnoreLiteralBranches: true
+
+Style/EndlessMethod:
+  EnforcedStyle: disallow

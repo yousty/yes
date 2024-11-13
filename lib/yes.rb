@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+require 'bundler/setup'
+require 'rails/all'
+require 'yousty/eventsourcing'
+
+require_relative 'yes/configuration'
+require_relative 'yes/version'
+require_relative 'yes/type_lookup'
+require_relative 'yes/aggregate/dsl/class_name_convention'
+require_relative 'yes/aggregate/dsl/constant_resolver'
+require_relative 'yes/aggregate/dsl/class_generators/command_class_generator'
+require_relative 'yes/aggregate/dsl/class_generators/event_class_generator'
+require_relative 'yes/aggregate/dsl/class_generators/handler_class_generator'
+require_relative 'yes/aggregate/dsl/attribute'
+require_relative 'yes/aggregate'
+
+module Yes
+  class Error < StandardError; end
+
+  # Base command class for all commands in the system
+  class Command < Yousty::Eventsourcing::Command; end
+
+  # Base event class for all events in the system
+  class Event < Yousty::Eventsourcing::Event; end
+
+  # Base command handler class for all command handlers in the system
+  class CommandHandler < Yousty::Eventsourcing::Stateless::CommandHandler; end
+end
