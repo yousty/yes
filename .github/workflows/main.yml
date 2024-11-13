@@ -23,11 +23,8 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run tests
-        run: |
-          echo "GEM_FURY_TOKEN Secret:"
-          echo ${{ secrets.GEM_FURY_TOKEN }}
-          bundle install
-          bundle exec rspec
         env:
           BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
+      - name: Run tests
+        run: bundle exec rspec
+
