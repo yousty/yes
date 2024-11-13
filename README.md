@@ -18,6 +18,8 @@ class UserAggregate < Yes::Aggregate
 end
 ```
 
+This will create a fully event-sourced user entity with all necessary components for managing these attributes through commands and events.
+
 ## Available Types
 
 The attribute system supports various types, for example:
@@ -35,18 +37,6 @@ For each attribute, the system automatically generates:
 - An event for recording attribute changes
 - A handler for processing the command
 - State management for the attribute value (later)
-
-## Example with Multiple Attributes
-
-```ruby
-class ProductAggregate < Yes::Aggregate
-  attribute :name, :string
-  attribute :product_page, :url
-  attribute :description, :string
-end
-```
-
-This will create a fully event-sourced product entity with all necessary components for managing these attributes through commands and events.
 
 
 ## Development
