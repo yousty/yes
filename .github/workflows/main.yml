@@ -23,5 +23,9 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
-        run: bundle exec rake
+      - name: Run tests
+        run: |
+          bundle install
+          bundle exec rspec
+        env:
+          BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
