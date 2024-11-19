@@ -14,5 +14,5 @@ gem 'rspec', '~> 3.0'
 gem 'rubocop', '~> 1.21'
 
 source 'https://gem.fury.io/yousty-ag/' do
-  gem 'yousty-eventsourcing', '~> 12', path: '../yousty-eventsourcing'
+  gem 'yousty-eventsourcing', '~> 12'
 end
