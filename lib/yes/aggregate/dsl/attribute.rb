@@ -14,18 +14,25 @@ module Yes
         #
         # @param name [Symbol] The name of the attribute
         # @param type [Symbol] The type of the attribute (e.g., :string, :integer)
+        # @param aggregate_class [Class] The aggregate class to define the attribute on
         # @param options [Hash] Additional options for the attribute
+        # @option options [String] :context The context name for the attribute
+        # @option options [String] :aggregate The aggregate name
         # @return [void]
-        def self.define(name, type, **options)
-          new(name, type, options).define
+        def self.define(name, type, aggregate_class, **options)
+          new(name, type, aggregate_class, options).define
         end
 
         # @param name [Symbol] The name of the attribute
         # @param type [Symbol] The type of the attribute
+        # @param aggregate_class [Class] The aggregate class to define the attribute on
         # @param options [Hash] Additional options for the attribute
-        def initialize(name, type, options)
+        # @option options [String] :context The context name for the attribute
+        # @option options [String] :aggregate The aggregate name
+        def initialize(name, type, aggregate_class, options)
           @name = name
           @type = type
+          @aggregate_class = aggregate_class
           @options = options
           @command_name = :"change_#{name}"
           @event_name = :"#{name}_changed"
@@ -48,12 +55,13 @@ module Yes
             find_or_generate_event_class,
             find_or_generate_handler_class
           )
+          define_change_command_method(name, aggregate_class)
         end
 
         private
 
         attr_reader :name, :type, :options, :command_name, :event_name, :context_name, :aggregate_name,
-                    :class_name_convention, :constant_resolver
+                    :class_name_convention, :constant_resolver, :aggregate_class
 
         # Attempts to find an existing command class or generates a new one
         #
@@ -123,9 +131,26 @@ module Yes
         # @param handler_class [Class] The handler class to register
         # @return [void]
         def register_generated_classes(command_class, event_class, handler_class)
-          Yes.configuration.register_aggregate_class(aggregate_name, command_name, :command, command_class)
-          Yes.configuration.register_aggregate_class(aggregate_name, event_name, :event, event_class)
-          Yes.configuration.register_aggregate_class(aggregate_name, command_name, :handler, handler_class)
+          Yes.configuration.register_aggregate_class(context_name, aggregate_name, command_name, :command,
+                                                     command_class)
+          Yes.configuration.register_aggregate_class(context_name, aggregate_name, event_name, :event, event_class)
+          Yes.configuration.register_aggregate_class(context_name, aggregate_name, command_name, :handler,
+                                                     handler_class)
+        end
+
+        # Defines a change command method on the aggregate class
+        #
+        # @param name [Symbol] The name of the attribute
+        # @param aggregate_class [Class] The aggregate class to define the method on
+        # @return [void]
+        def define_change_command_method(name, aggregate_class)
+          command_method = "change_#{name}"
+
+          aggregate_class.define_method(command_method) do |**payload|
+            command = build_command(name, payload)
+            handler_class = fetch_handler_class(name)
+            handler_class.new(command).call
+          end
         end
       end
     end

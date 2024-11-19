@@ -1,0 +1,25 @@
+version: "3.5"
+
+services:
+  redis:
+    image: redis:7
+    ports:
+      - 6479:6379
+  postgres:
+    image: postgres:16
+    ports:
+      - 5532:5432
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    command: [ "postgres", "-c", "log_statement=all" ]
+    volumes:
+      - "./db/postgresql/data:/var/lib/postgresql/data"
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:0.38.1
+    command: [ "server", "--config=/var/cerbos-config/.cerbos-config.yaml" ]
+    volumes:
+      - ./dummy_app/cerbos/config:/var/cerbos-config
+      - ./dummy_app/cerbos/policies:/var/policies
+    ports:
+      - 3593:3593 # grpc
+      - 3592:3592 # http
