@@ -36,14 +36,41 @@ For each attribute, the system automatically generates:
 - A command for updating the attribute
 - An event for recording attribute changes
 - A handler for processing the command
-- State management for the attribute value (later)
+- State management for the attribute value
 
+## `change_<attribute>` Method
+
+For each attribute defined on an aggregate, an instance method `change_<attribute>` is automatically added. This method allows you to change the attribute's value by:
+
+1. Instantiating a command with the new value.
+2. Calling the command handler to process the command.
+3. Publishing the corresponding event if the command is successfully handled.
+
+### Example
+
+Given an aggregate with a `name` attribute:
+
+```ruby
+class UserAggregate < Yes::Aggregate
+  attribute :name, :string
+end
+```
+
+You can change the `name` attribute using the `change_name` method:
+
+```ruby
+user_aggregate = UserAggregate.new
+event = user_aggregate.change_name(name: "New Name")
+# event is an instance of PgEventstore::Event if the change is successful
+```
+
+This will create a command to change the `name`, process it through the handler, and publish an event reflecting the change. The method returns a `PgEventstore::Event` instance upon success.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `bundle exec rspec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies.
 
-Run the pg eventstore using docker:
+Then run the pg eventstore using docker:
 
 ```shell
 docker compose up
