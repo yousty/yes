@@ -25,6 +25,9 @@ jobs:
           bundler-cache: true
         env:
           BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
+      - name: Run Test Dependencies (Postgres, Redis)
+        run: docker compose up --detach
       - name: Run tests
-        run: bundle exec rspec
-
+        run: |
+          ./bin/setup_db
+          bundle exec rspec
