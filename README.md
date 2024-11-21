@@ -40,7 +40,7 @@ For each attribute, the system automatically generates:
 
 ## `can_change_<attribute>?` Method
 
-For each attribute, a `can_change_<attribute>?` method is also automatically generated. This method allows you to validate whether a change would be successful without actually making the change. It returns `true` if the change would be valid, and `false` otherwise. If the change would be invalid, an error message is stored in the corresponding `<attribute>_change_error` accessor.
+For each attribute, a `can_change_<attribute>?` method is automatically added. This method allows you to validate whether a change would be successful without actually making the change. It returns `true` if the change would be valid, and `false` otherwise. If the change would be invalid, an error message is stored in the corresponding `<attribute>_change_error` accessor.
 
 ### Example
 
