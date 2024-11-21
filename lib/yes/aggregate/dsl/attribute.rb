@@ -56,6 +56,7 @@ module Yes
             find_or_generate_handler_class
           )
           define_change_command_method(name, aggregate_class)
+          define_can_change_command_method(name, aggregate_class)
         end
 
         private
@@ -142,14 +143,44 @@ module Yes
         #
         # @param name [Symbol] The name of the attribute
         # @param aggregate_class [Class] The aggregate class to define the method on
-        # @return [void]
+        # @return [Yousty::Eventsourcing::Command::Event, false] The event if the change is successful, false otherwise
         def define_change_command_method(name, aggregate_class)
           command_method = "change_#{name}"
 
           aggregate_class.define_method(command_method) do |**payload|
+            return false unless send(:"can_change_#{name}?", **payload)
+
             command = build_command(name, payload)
             handler_class = fetch_handler_class(name)
-            handler_class.new(command).call
+            handler = handler_class.new(command, revision_check: false)
+            # only run base class call method which publishes events
+            Yes::CommandHandler.instance_method(:call).bind_call(handler)
+          end
+        end
+
+        # Defines a method that checks if an attribute can be changed
+        #
+        # @param name [Symbol] The name of the attribute
+        # @param aggregate_class [Class] The aggregate class to define the method on
+        # @return [true, false] true if the change is valid, false otherwise
+        def define_can_change_command_method(name, aggregate_class)
+          can_change_method = "can_change_#{name}?"
+          error_method = "#{name}_change_error"
+
+          # Define the error accessor method
+          aggregate_class.attr_accessor error_method
+
+          aggregate_class.define_method(can_change_method) do |**payload|
+            command = build_command(name, payload)
+            handler_class = fetch_handler_class(name)
+
+            handler_class.new(command, publish_events: false).call
+            send(:"#{error_method}=", nil)
+            true
+          rescue CommandHandler::InvalidTransition, CommandHandler::NoChangeTransition,
+                 Yousty::Eventsourcing::Command::Invalid => e
+            send(:"#{error_method}=", e.message)
+            false
           end
         end
       end

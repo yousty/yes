@@ -14,12 +14,3 @@ services:
     command: [ "postgres", "-c", "log_statement=all" ]
     volumes:
       - "./db/postgresql/data:/var/lib/postgresql/data"
-  cerbos:
-    image: ghcr.io/cerbos/cerbos:0.38.1
-    command: [ "server", "--config=/var/cerbos-config/.cerbos-config.yaml" ]
-    volumes:
-      - ./dummy_app/cerbos/config:/var/cerbos-config
-      - ./dummy_app/cerbos/policies:/var/policies
-    ports:
-      - 3593:3593 # grpc
-      - 3592:3592 # http

@@ -38,6 +38,26 @@ For each attribute, the system automatically generates:
 - A handler for processing the command
 - State management for the attribute value
 
+## `can_change_<attribute>?` Method
+
+For each attribute, a `can_change_<attribute>?` method is also automatically generated. This method allows you to validate whether a change would be successful without actually making the change. It returns `true` if the change would be valid, and `false` otherwise. If the change would be invalid, an error message is stored in the corresponding `<attribute>_change_error` accessor.
+
+### Example
+
+```ruby
+class UserAggregate < Yes::Aggregate
+  attribute :email, :email
+end
+
+user = UserAggregate.new
+
+# Invalid change
+user.can_change_email?(email: "invalid-email")  # => false
+
+# Valid change
+user.can_change_email?(email: "user@example.com")  # => true
+```
+
 ## `change_<attribute>` Method
 
 For each attribute defined on an aggregate, an instance method `change_<attribute>` is automatically added. This method allows you to change the attribute's value by:
@@ -60,11 +80,15 @@ You can change the `name` attribute using the `change_name` method:
 
 ```ruby
 user_aggregate = UserAggregate.new
-event = user_aggregate.change_name(name: "New Name")
-# event is an instance of PgEventstore::Event if the change is successful
+user_aggregate.change_name(name: "New Name") # => PgEventstore::Event
 ```
 
-This will create a command to change the `name`, process it through the handler, and publish an event reflecting the change. The method returns a `PgEventstore::Event` instance upon success.
+In case the change is invalid, the change method will return `false` and the `<attribute>_change_error` accessor will be set to the error message.
+
+```ruby
+user_aggregate.change_name(name: "New Name")  # => false
+user_aggregate.name_change_error  # => "Name is invalid"
+```
 
 ## Development
 

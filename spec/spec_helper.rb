@@ -2,6 +2,11 @@
 
 require 'yes'
 
+PgEventstore.configure do |config|
+  config.pg_uri = ENV.fetch('PG_EVENTSTORE_URI') { 'postgresql://postgres:postgres@localhost:5532/eventstore' }
+  config.connection_pool_size = 20
+end
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = '.rspec_status'

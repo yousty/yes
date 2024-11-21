@@ -54,12 +54,54 @@ RSpec.describe Yes::Aggregate::DSL::Attribute do
 
           allow(handler_class).to receive(:new).and_return(handler_instance)
           allow(handler_instance).to receive(:call)
+          allow(handler_instance).to receive(:revision_check)
         end
 
         it 'instantiates and calls the handler with the command' do
           subject
 
-          expect(handler_instance).to have_received(:call)
+          # one for can... check, one for actual handler call
+          expect(handler_instance).to have_received(:call).exactly(2).times
+        end
+      end
+    end
+
+    context 'can_change...? command method' do
+      let(:command_payload) { { test_field: 'test value' } }
+      let(:handler_class) { TestContext::TestAggregate::Commands::ChangeTestField::Handler }
+      let(:test_aggregate_id) { SecureRandom.uuid }
+
+      it 'defines a can_change...? method for the attribute' do
+        subject
+        expect(aggregate_class.new).to respond_to(:can_change_test_field?)
+      end
+
+      describe '#can_change_test_field?' do
+        subject { aggregate_instance.can_change_test_field?(**command_payload) }
+        let(:aggregate_instance) { aggregate_class.new }
+
+        before do
+          described_class.define(attribute_name, attribute_type, aggregate_class, **options)
+        end
+
+        it 'returns true when the command is valid' do
+          expect(subject).to be true
+        end
+
+        context 'when command validation fails' do
+          before do
+            # provoke a no change transition error
+            aggregate_instance.change_test_field(**command_payload)
+          end
+
+          it 'returns false' do
+            expect(subject).to be false
+          end
+
+          it 'sets the error on the aggregate' do
+            subject
+            expect(aggregate_instance.test_field_change_error).to eq('Test field is not changing')
+          end
         end
       end
     end
