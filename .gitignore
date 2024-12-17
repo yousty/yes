@@ -15,3 +15,11 @@
 
 Gemfile.lock
 .rspec_status
+
+# Dummy app
+/dummy/db/*.sqlite3
+/dummy/db/*.sqlite3-*
+/dummy/log/*.log
+/dummy/tmp/
+/dummy/.sass-cache
+/dummy/storage/

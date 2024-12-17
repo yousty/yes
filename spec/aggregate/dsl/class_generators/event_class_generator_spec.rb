@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe Yes::Aggregate::DSL::ClassGenerators::EventClassGenerator do
+  subject(:generated_class) { generator.generate }
+
   let(:generator) do
     described_class.new(
       context_name: 'Blog',
@@ -11,9 +13,11 @@ RSpec.describe Yes::Aggregate::DSL::ClassGenerators::EventClassGenerator do
     )
   end
 
-  describe '#generate' do
-    let(:generated_class) { generator.generate }
+  after do
+    Object.send(:remove_const, :Blog) if Object.const_defined?(:Blog)
+  end
 
+  describe '#generate' do
     it 'generates an event class' do
       expect(generated_class.superclass).to eq(Yes::Event)
     end

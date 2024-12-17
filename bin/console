@@ -2,6 +2,8 @@
 # frozen_string_literal: true
 
 require 'bundler/setup'
+require 'rails'
+require 'rails/generators'
 require 'yes'
 
 PgEventstore.configure do |config|
@@ -9,5 +11,18 @@ PgEventstore.configure do |config|
   config.connection_pool_size = 20
 end
 
+# Set up Rails configuration
+ENV['RAILS_ENV'] = 'development'
+dummy_app_path = File.expand_path('../dummy', __dir__)
+
+# Configure Rails application before requiring environment
+require File.expand_path('../dummy/config/application', __dir__)
+Rails.application.config.root = Pathname.new(dummy_app_path)
+Rails.application.config.paths['config/database'] = [File.join(dummy_app_path, 'config/database.yml')]
+
+# Now load the environment
+require File.expand_path('../dummy/config/environment.rb', __dir__)
+
 require 'irb'
 IRB.start(__FILE__)
+

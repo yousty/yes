@@ -11,14 +11,20 @@ The DSL provides the following methods for usage inside the `Yes::Aggregate` cla
 To define attributes on your aggregate, use the `attribute` method with a name and type:
 
 ```ruby
-class UserAggregate < Yes::Aggregate
-  attribute :name, :string
-  attribute :email, :email
-  attribute :age, :integer
+module Users
+  class User
+    class Aggregate < Yes::Aggregate
+      attribute :name, :string
+      attribute :email, :email
+      attribute :age, :integer
+    end
+  end
 end
 ```
 
 This will create a fully event-sourced user entity with all necessary components for managing these attributes through commands and events.
+
+Note that when defining an aggregate you need to use the following namespacing / class naming rule: `<Context>::<AggregateName>::Aggregate`.
 
 ## Available Types
 
@@ -45,11 +51,15 @@ For each attribute, a `can_change_<attribute>?` method is automatically added. T
 ### Example
 
 ```ruby
-class UserAggregate < Yes::Aggregate
-  attribute :email, :email
+module Users
+  class User
+    class Aggregate < Yes::Aggregate
+      attribute :email, :email
+    end
+  end
 end
 
-user = UserAggregate.new
+user = Users::User::Aggregate.new
 
 # Invalid change
 user.can_change_email?(email: "invalid-email")  # => false
@@ -71,15 +81,19 @@ For each attribute defined on an aggregate, an instance method `change_<attribut
 Given an aggregate with a `name` attribute:
 
 ```ruby
-class UserAggregate < Yes::Aggregate
-  attribute :name, :string
+module Users
+  class User
+    class Aggregate < Yes::Aggregate
+      attribute :name, :string
+    end
+  end
 end
 ```
 
 You can change the `name` attribute using the `change_name` method:
 
 ```ruby
-user_aggregate = UserAggregate.new
+user_aggregate = Users::User::Aggregate.new
 user_aggregate.change_name(name: "New Name") # => PgEventstore::Event
 ```
 
@@ -89,6 +103,50 @@ In case the change is invalid, the change method will return `false` and the `<a
 user_aggregate.change_name(name: "New Name")  # => false
 user_aggregate.name_change_error  # => "Name is invalid"
 ```
+
+## Read Models
+
+For each aggregate there is a corresponding read model (ActiveRecord model) generated that stores its current state. By default, the read model's name is derived from the aggregate's name. For example, `Users::User::Aggregate` will have a read model named `User`.
+
+### Customizing Read Models
+
+You can customize the read model name and visibility using the `read_model` method in your aggregate:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Aggregate
+      # Use a custom read model name and make the read model private (not accessible via read API)
+      read_model 'custom_user', public: false
+
+      attribute :email, :email
+      attribute :name, :string
+    end
+  end
+end
+```
+
+### Attribute Accessors
+
+For each attribute defined in the aggregate, a corresponding accessor method is automatically created. This accessor reads the attribute's value from the read model:
+
+```ruby
+user = Users::User::Aggregate.new
+user.email # reads email from the read model
+user.name # reads name from the read model
+```
+
+### Updating Read Model Schema
+
+Whenever you make changes to your aggregates (adding/removing aggregates or attributes), you need to update your read model schema. Use the provided Rails generator:
+
+```shell
+rails generate yes:read_models:update
+```
+
+This generator will create a migration file that updates the read model schema to match the current state of your aggregates.
+
+Limitation: The generator does not currently support changing attribute types.
 
 ## Development
 

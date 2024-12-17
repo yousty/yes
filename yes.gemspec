@@ -35,6 +35,10 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'pg_eventstore', '~> 1.3'
 
+  spec.add_development_dependency 'generator_spec' # For testing Rails generators
+  spec.add_development_dependency 'rails', '~> 7.1'
+  spec.add_development_dependency 'database_cleaner-active_record'
+
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
   spec.metadata['rubygems_mfa_required'] = 'true'

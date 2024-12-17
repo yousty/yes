@@ -9,8 +9,4 @@ load 'pg_eventstore/tasks/setup.rake'
 
 RSpec::Core::RakeTask.new(:spec)
 
-require 'rubocop/rake_task'
-
-RuboCop::RakeTask.new
-
-task default: %i[spec rubocop]
+task default: :spec

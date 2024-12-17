@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe Yes::Aggregate::DSL::ClassNameConvention do
-  let(:convention) { described_class.new(context: 'Blog', aggregate: 'Post') }
+  subject(:convention) { described_class.new(context:, aggregate:) }
+
+  let(:context) { 'Blog' }
+  let(:aggregate) { 'Post' }
 
   describe '#class_name_for' do
     {
