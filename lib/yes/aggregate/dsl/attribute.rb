@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative 'attribute_method_definers/base'
-require_relative 'attribute_method_definers/change_command'
-require_relative 'attribute_method_definers/can_change_command'
-require_relative 'attribute_method_definers/accessor'
-
 module Yes
   class Aggregate
     module DSL
