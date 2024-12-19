@@ -10,6 +10,9 @@ require_relative 'yes/version'
 require_relative 'yes/type_lookup'
 require_relative 'yes/aggregate/dsl/class_name_convention'
 require_relative 'yes/aggregate/dsl/constant_resolver'
+require_relative 'yes/concerns'
+require_relative 'yes/concerns/has_read_model'
+require_relative 'yes/command_utilities'
 
 # Attribute method definers
 require_relative 'yes/aggregate/dsl/attribute_method_definers/base'

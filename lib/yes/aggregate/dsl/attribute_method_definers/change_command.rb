@@ -15,8 +15,8 @@ module Yes
             aggregate_class.define_method(command_method) do |**payload|
               return false unless send(:"can_change_#{name}?", **payload)
 
-              command = build_command(name, payload)
-              handler_class = fetch_handler_class(name)
+              command = command_utilities.build_command(name, payload)
+              handler_class = command_utilities.fetch_handler_class(name)
               handler = handler_class.new(command, revision_check: false)
               # only run base class call method which publishes events
               result = Yes::CommandHandler.instance_method(:call).bind_call(handler)

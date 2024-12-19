@@ -16,8 +16,8 @@ module Yes
             name = @name
 
             aggregate_class.define_method(can_change_method) do |**payload|
-              command = build_command(name, payload)
-              handler_class = fetch_handler_class(name)
+              command = command_utilities.build_command(name, payload)
+              handler_class = command_utilities.fetch_handler_class(name)
 
               handler_class.new(command, publish_events: false).call
               send(:"#{error_method}=", nil)
