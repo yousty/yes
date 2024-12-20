@@ -17,7 +17,7 @@ module Yes
         # @param options [Hash] Additional options for the attribute
         # @option options [String] :context The context name for the attribute
         # @option options [String] :aggregate The aggregate name
-        def initialize(name, type, aggregate_class, options)
+        def initialize(name, type, aggregate_class, options = {})
           @name = name
           @type = type
           @aggregate_class = aggregate_class

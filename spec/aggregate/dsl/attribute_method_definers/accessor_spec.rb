@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::Accessor do
-  subject(:definer) { described_class.new(attribute_name, aggregate_class) }
+  subject(:definer) { described_class.new(attribute_data) }
 
   let(:attribute_name) { :test_field }
+  let(:attribute_type) { :string }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:read_model) { instance_double('ReadModel', test_field: 'test value') }
   let(:aggregate_instance) { aggregate_class.new }
+  let(:attribute_data) { Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class) }
 
   before do
     allow(aggregate_instance).to receive(:read_model).and_return(read_model)
@@ -26,4 +28,4 @@ RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::Accessor do
       expect(read_model).to have_received(:test_field)
     end
   end
-end 
+end

@@ -10,7 +10,7 @@ module Yes
           # @return [void]
           def call
             name = @name
-            
+
             aggregate_class.define_method(name) do
               read_model.public_send(name)
             end
@@ -19,4 +19,4 @@ module Yes
       end
     end
   end
-end 
+end

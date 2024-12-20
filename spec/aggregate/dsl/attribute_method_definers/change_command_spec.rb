@@ -3,7 +3,7 @@
 RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::ChangeCommand do
   subject { instance.call }
 
-  let(:instance) { described_class.new(attribute_name, aggregate_class) }
+  let(:instance) { described_class.new(attribute_data) }
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
   let(:attribute_name) { :test_field }
@@ -11,6 +11,7 @@ RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::ChangeCommand do
   let(:options) { { context:, aggregate: } }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:command_name) { :change_test_field }
+  let(:attribute_data) { Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class) }
 
   before do
     # Set up the namespace, handler and command classes
@@ -20,15 +21,15 @@ RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::ChangeCommand do
 
     # Register the command and handler classes
     Yes.configuration.register_aggregate_class(context, aggregate, command_name, :command,
-                                            Test::User::Commands::ChangeTestField::Command)
+                                               Test::User::Commands::ChangeTestField::Command)
     Yes.configuration.register_aggregate_class(context, aggregate, command_name, :handler,
-                                            Test::User::Commands::ChangeTestField::Handler)
+                                               Test::User::Commands::ChangeTestField::Handler)
 
     # Define the can_change method
-    Yes::Aggregate::DSL::AttributeMethodDefiners::CanChangeCommand.new(attribute_name, aggregate_class).call
+    Yes::Aggregate::DSL::AttributeMethodDefiners::CanChangeCommand.new(attribute_data).call
 
     # Define the attribute accessor method
-    Yes::Aggregate::DSL::AttributeMethodDefiners::Accessor.new(attribute_name, aggregate_class).call
+    Yes::Aggregate::DSL::AttributeMethodDefiners::Accessor.new(attribute_data).call
   end
 
   after do
@@ -75,4 +76,4 @@ RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::ChangeCommand do
       end
     end
   end
-end 
+end

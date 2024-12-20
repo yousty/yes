@@ -3,15 +3,17 @@
 RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::CanChangeCommand do
   subject { instance.call }
 
-  let(:instance) { described_class.new(attribute_name, aggregate_class) }
+  let(:instance) { described_class.new(attribute_data) }
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
   let(:attribute_name) { :test_field }
+  let(:attribute_type) { :string }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:command_payload) { { test_field: 'test value' } }
   let(:handler_class) { Test::User::Commands::ChangeTestField::Handler }
   let(:aggregate_instance) { aggregate_class.new }
   let(:command_name) { :change_test_field }
+  let(:attribute_data) { Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class) }
 
   before do
     # Set up the namespace, handler and command classes
@@ -21,9 +23,9 @@ RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::CanChangeCommand do
 
     # Register the command and handler classes
     Yes.configuration.register_aggregate_class(context, aggregate, command_name, :command,
-                                            Test::User::Commands::ChangeTestField::Command)
+                                               Test::User::Commands::ChangeTestField::Command)
     Yes.configuration.register_aggregate_class(context, aggregate, command_name, :handler,
-                                            Test::User::Commands::ChangeTestField::Handler)
+                                               Test::User::Commands::ChangeTestField::Handler)
   end
 
   after do
@@ -83,4 +85,4 @@ RSpec.describe Yes::Aggregate::DSL::AttributeMethodDefiners::CanChangeCommand do
       end
     end
   end
-end 
+end
