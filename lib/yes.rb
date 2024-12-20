@@ -11,6 +11,7 @@ require_relative 'yes/type_lookup'
 require_relative 'yes/aggregate/dsl/class_name_convention'
 require_relative 'yes/aggregate/dsl/constant_resolver'
 require_relative 'yes/concerns'
+require_relative 'yes/read_model_class_resolver'
 require_relative 'yes/concerns/has_read_model'
 require_relative 'yes/command_utilities'
 
@@ -28,6 +29,7 @@ require_relative 'yes/aggregate/dsl/class_generators/handler_class_generator'
 # Main classes
 require_relative 'yes/aggregate/dsl/attribute'
 require_relative 'yes/aggregate'
+
 
 module Yes
   class Error < StandardError; end

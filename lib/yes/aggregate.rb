@@ -101,10 +101,10 @@ module Yes
     end
 
     # Initializes a new aggregate instance
-    # @param id [String, nil] The aggregate ID. If nil, a random UUID will be assigned
+    # @param id [String] The aggregate ID.
     # @return [Yes::Aggregate] A new aggregate instance
-    def initialize(id = nil)
-      @id = id || SecureRandom.uuid
+    def initialize(id = SecureRandom.uuid)
+      @id = id
       @command_utilities = CommandUtilities.new(
         context: self.class.context,
         aggregate: self.class.aggregate,

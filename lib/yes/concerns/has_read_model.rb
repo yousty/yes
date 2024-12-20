@@ -79,23 +79,7 @@ module Yes
       # @return [Class] The read model class
       # @raise [NameError] If the class cannot be found and cannot be generated
       def read_model_class
-        @read_model_class ||= begin
-          class_name = self.class.read_model_name.classify
-          class_name.constantize
-        rescue NameError
-          generate_read_model_class
-        end
-      end
-
-      # Dynamically generates a read model class inheriting from ApplicationRecord
-      #
-      # @return [Class] The generated read model class
-      # @raise [NameError] If the class cannot be created
-      def generate_read_model_class
-        class_name = self.class.read_model_name.classify
-        klass = Class.new(ApplicationRecord)
-        klass.table_name = self.class.read_model_name.tableize
-        Object.const_set(class_name, klass)
+        @read_model_class ||= ReadModelClassResolver.new(self.class).resolve
       end
     end
   end
