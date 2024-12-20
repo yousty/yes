@@ -70,8 +70,8 @@ module Yes
       # @example Define an email attribute with options
       #   attribute :email, :email, validate: true
       def attribute(name, type, **options)
-        @_attributes ||= {}
-        @_attributes[name] = type
+        @attributes ||= {}
+        @attributes[name] = type
         options = options.merge(context:, aggregate:)
         DSL::AttributeDefiner.new(DSL::AttributeData.new(name, type, self, options)).call
       end
@@ -96,7 +96,7 @@ module Yes
 
       # @return [Hash] The attributes defined on this aggregate
       def attributes
-        @_attributes ||= {}
+        @attributes ||= {}
       end
     end
 

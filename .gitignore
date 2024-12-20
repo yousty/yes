@@ -23,3 +23,5 @@ Gemfile.lock
 /dummy/tmp/
 /dummy/.sass-cache
 /dummy/storage/
+
+/db/postgresql/data
