@@ -10,6 +10,10 @@ require_relative 'yes/version'
 require_relative 'yes/type_lookup'
 require_relative 'yes/aggregate/dsl/class_name_convention'
 require_relative 'yes/aggregate/dsl/constant_resolver'
+require_relative 'yes/aggregate/dsl/class_resolvers/base'
+require_relative 'yes/aggregate/dsl/class_resolvers/command'
+require_relative 'yes/aggregate/dsl/class_resolvers/event'
+require_relative 'yes/aggregate/dsl/class_resolvers/handler'
 require_relative 'yes/concerns'
 require_relative 'yes/read_model_class_resolver'
 require_relative 'yes/concerns/has_read_model'
@@ -20,11 +24,6 @@ require_relative 'yes/aggregate/dsl/attribute_method_definers/base'
 require_relative 'yes/aggregate/dsl/attribute_method_definers/change_command'
 require_relative 'yes/aggregate/dsl/attribute_method_definers/can_change_command'
 require_relative 'yes/aggregate/dsl/attribute_method_definers/accessor'
-
-# Class generators
-require_relative 'yes/aggregate/dsl/class_generators/command_class_generator'
-require_relative 'yes/aggregate/dsl/class_generators/event_class_generator'
-require_relative 'yes/aggregate/dsl/class_generators/handler_class_generator'
 
 # Main classes
 require_relative 'yes/aggregate/dsl/attribute'
