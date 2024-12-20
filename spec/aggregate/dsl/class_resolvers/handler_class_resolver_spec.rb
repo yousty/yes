@@ -7,10 +7,12 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Handler do
   let(:attribute_type) { :string }
   let(:options) { { context:, aggregate: } }
   let(:aggregate_class) { Test::User::Aggregate }
-  let(:attribute) { Yes::Aggregate::DSL::Attribute.new(attribute_name, attribute_type, aggregate_class, options) }
+  let(:attribute_data) do
+    Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class, options)
+  end
 
   describe '#call' do
-    subject { described_class.new(attribute).call }
+    subject { described_class.new(attribute_data).call }
 
     it 'resolves handler class with correct event name' do
       expect(subject.event_name).to eq('TestFieldChanged')
@@ -28,4 +30,4 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Handler do
       expect(subject.instance_methods(false)).to include(:call)
     end
   end
-end 
+end

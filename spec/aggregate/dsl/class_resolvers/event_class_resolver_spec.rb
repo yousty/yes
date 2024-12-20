@@ -9,10 +9,12 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Event do
   let(:aggregate_class) { Test::User::Aggregate }
   let(:user_id) { SecureRandom.uuid }
   let(:test_field) { 'value' }
-  let(:attribute) { Yes::Aggregate::DSL::Attribute.new(attribute_name, attribute_type, aggregate_class, options) }
+  let(:attribute_data) do
+    Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class, options)
+  end
 
   describe '#call' do
-    subject { described_class.new(attribute).call }
+    subject { described_class.new(attribute_data).call }
 
     it 'resolves event class with correct schema' do
       event = subject.new(data: { user_id:, test_field: })
@@ -29,4 +31,4 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Event do
       expect(event.data[:test_field]).to eq('New Value')
     end
   end
-end 
+end

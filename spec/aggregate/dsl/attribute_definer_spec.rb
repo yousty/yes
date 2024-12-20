@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Aggregate::DSL::Attribute do
+RSpec.describe Yes::Aggregate::DSL::AttributeDefiner do
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
   let(:attribute_name) { :test_field }
@@ -8,17 +8,20 @@ RSpec.describe Yes::Aggregate::DSL::Attribute do
   let(:options) { { context:, aggregate: } }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:user_id) { SecureRandom.uuid }
+  let(:attribute_data) do
+    Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class, options)
+  end
 
   describe '.define' do
     # define a new attribute on the existing user aggregate
-    subject { described_class.define(attribute_name, attribute_type, aggregate_class, **options) }
+    subject { described_class.new(attribute_data).call }
 
     it 'creates and registers command, event, and handler classes' do
       expect { subject }.to change {
         Test::User::Commands.const_defined?('ChangeTestField::Command')
       }.from(false).to(true).
         and change {
-              Test::User::Events.const_defined?('TestFieldChanged')
+              Test::User::Events.const_defined?(:TestFieldChanged)
             }.from(false).to(true).
         and change {
               Test::User::Commands.const_defined?('ChangeTestField::Handler')

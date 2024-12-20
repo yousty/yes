@@ -8,10 +8,12 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Command do
   let(:options) { { context:, aggregate: } }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:user_id) { SecureRandom.uuid }
-  let(:attribute) { Yes::Aggregate::DSL::Attribute.new(attribute_name, attribute_type, aggregate_class, options) }
+  let(:attribute_data) do
+    Yes::Aggregate::DSL::AttributeData.new(attribute_name, attribute_type, aggregate_class, options)
+  end
 
   describe '#call' do
-    subject { described_class.new(attribute).call }
+    subject { described_class.new(attribute_data).call }
 
     it 'resolves command class with correct attributes' do
       command_class = subject
@@ -19,7 +21,7 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Command do
       aggregate_failures do
         expect(command_class.superclass).to eq(Yes::Command)
         expect(command_class.schema.key?(:user_id)).to be true
-        expect(command_class.schema.key?(:test_field)).to be true 
+        expect(command_class.schema.key?(:test_field)).to be true
       end
     end
 
@@ -40,4 +42,4 @@ RSpec.describe Yes::Aggregate::DSL::ClassResolvers::Command do
       end
     end
   end
-end 
+end

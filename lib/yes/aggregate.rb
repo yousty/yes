@@ -73,7 +73,7 @@ module Yes
         @_attributes ||= {}
         @_attributes[name] = type
         options = options.merge(context:, aggregate:)
-        DSL::Attribute.define(name, type, self, **options)
+        DSL::AttributeDefiner.new(DSL::AttributeData.new(name, type, self, options)).call
       end
 
       # Returns the context namespace for the aggregate

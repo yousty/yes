@@ -26,9 +26,9 @@ require_relative 'yes/aggregate/dsl/attribute_method_definers/can_change_command
 require_relative 'yes/aggregate/dsl/attribute_method_definers/accessor'
 
 # Main classes
-require_relative 'yes/aggregate/dsl/attribute'
+require_relative 'yes/aggregate/dsl/attribute_data'
+require_relative 'yes/aggregate/dsl/attribute_definer'
 require_relative 'yes/aggregate'
-
 
 module Yes
   class Error < StandardError; end
