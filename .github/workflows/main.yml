@@ -34,6 +34,9 @@ jobs:
           cd yes-core
           bundle install
           cd ..
+          cd dummy
+          bundle install
+          cd ..
           sleep 10
           ./bin/setup_db
           cd yes-core
