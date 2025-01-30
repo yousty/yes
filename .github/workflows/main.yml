@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Ruby ${{ matrix.ruby }}
+    defaults:
+      run:
+        working-directory: ./app
     strategy:
       matrix:
         ruby:
@@ -29,7 +32,8 @@ jobs:
         run: docker compose up --detach
       - name: Run tests
         run: |
-         sleep 10
+          sleep 10
           ./bin/setup_db
           cd yes-core
+          bundle install
           bundle exec rspec
