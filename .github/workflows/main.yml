@@ -29,6 +29,9 @@ jobs:
         run: docker compose up --detach
       - name: Run tests
         run: |
+          cd yes-core
+          bundle install
+          cd ..
           sleep 10
           ./bin/setup_db
           cd yes-core
