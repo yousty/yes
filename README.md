@@ -2,9 +2,14 @@
 
 The `Yes::Aggregate` class provides a DSL for defining event-sourced aggregates.
 
+## Overview
+
 The DSL provides the following methods for usage inside the `Yes::Aggregate` class:
 
 - `attribute`: automatically generates the necessary commands, events, and handlers for managing your aggregate's state.
+- `read_model`: allows you to specify a custom read model name and visibility.
+- `parent`: allows you to specify a parent aggregate.
+- `primary_context`: allows you to specify the primary context for the aggregate.
 
 ## Basic Usage
 
@@ -148,23 +153,116 @@ This generator will create a migration file that updates the read model schema t
 
 Limitation: The generator does not currently support changing attribute types.
 
+
+### Command and Read APIs
+
+In case you have the command api mounted to your application, your aggregates commands will be available on the command api.
+
+In case you have the read api mounted to your application, the default read model will be available on the read api. 
+
+Note that you will need to create the necessary authorizers.
+
+
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies.
 
-Then run the pg eventstore using docker:
+Then run pg eventstore using docker:
 
 ```shell
 docker compose up
 ```
 
-To setup pg eventstore run the `setup_db` script:
+To setup pg eventstore and dummy app development and test dbs run the `setup_db` script:
 
 ```shell
 ./bin/setup_db
 ```
 
-Now you can enter a dev console by running `bin/console` or run tests by running the `rspec` command.
+Now you can enter a dev console by running 
+
+```shell
+rails c
+```
+
+To get familiar with `Yes` you can play around with the existing aggregates in the dummy app.
+
+Example:
+
+```ruby
+user = Users::User::Aggregate.new
+user.change_name(name: "John Doe")
+user.name # => "John Doe"
+User.last.name # => "John Doe"
+```
+
+The dummy app has the command and read apis monted, so you can play around with those too.
+Just run 
+
+```shell
+rails s
+```
+
+to start the dummy app server.
+
+You need to set the public and private key environment variables for the jwt token auth. Example:
+
+```shell
+export JWT_TOKEN_AUTH_PUBLIC_KEY=2f8c6129d816cf51c374bc7f08c3e63ed156cf78aefb4a6550d97b87997977ee
+export JWT_TOKEN_AUTH_PRIVATE_KEY=12345678901234567890123456789012
+```
+
+You can then generate the auth token using the following ruby code:
+
+```ruby
+require 'jwt'
+require 'rbnacl'
+
+private_key = RbNaCl::Signatures::Ed25519::SigningKey.new(
+  ENV['JWT_TOKEN_AUTH_PRIVATE_KEY']
+)
+
+identity_id = "<some uuid>"
+JWT.encode(
+  {identity_id:}.merge(exp: 2.years.from_now.to_i), private_key, 'ED25519'
+)
+```
+
+Test firying a command:
+
+```shell
+curl --location 'http://127.0.0.1:3000/commands' \                                                                                   130 ↵
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <your auth token>>' \
+--data '{
+  "commands": [{
+    "subject": "User",
+    "context": "Test",
+    "command": "ChangeName",
+    "data": {
+      "user_id": "47330036-7246-40b4-a3c7-7038df508774",
+      "name": "Judydoody Doodle"   
+    }
+  }]
+}'
+```
+
+Test reading users:
+
+```shell
+curl --rl --location --globoff 'http://127.0.0.1:3000/queries/users' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <your auth token>>'
+```
+
+
+
+To run specs of any of the yes gems, enter their directory and run 
+
+```shell
+rspec
+```
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to `gem.fury.io`. In order to push new releases you need to provide `GEM_FURY_PUSH_TOKEN` env variable.
 

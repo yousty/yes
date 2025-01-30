@@ -1,0 +1,11 @@
+inherit_from:
+  - https://raw.githubusercontent.com/yousty/qa-tools/master/rubocop/base/.rubocop.yml # common enabled rules
+  - https://raw.githubusercontent.com/yousty/qa-tools/master/rubocop/base/.rubocop.disabled.yml # common disabled rules
+  - .rubocop.disabled.yml # project specific disabled rules
+
+# project specific overwritten rules
+
+# example:
+# Layout/LineLength:
+# Max: 100
+# AllowHeredoc: true

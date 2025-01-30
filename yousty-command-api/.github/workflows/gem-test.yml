@@ -1,0 +1,36 @@
+name: Run tests
+
+on:
+  push:
+    branches-ignore: [ release ]
+  pull_request:
+    branches: [ master release ]
+
+jobs:
+  build:
+    name: Test
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        ruby-version: ['3.2']
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1.147.0
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      env:
+        BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
+    - name: Run EventStore DB
+      run: docker compose up --detach
+    - name: Run tests
+      run: |
+        bundle exec rails db:create
+        bundle exec rails db:migrate
+        bundle install
+        sleep 10
+        TEST_COVERAGE=true bundle exec rspec
+      env:
+        BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}

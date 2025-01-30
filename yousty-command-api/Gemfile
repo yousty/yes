@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+# Specify your gem's dependencies in yousty-command-api.gemspec.
+gemspec
+
+instance_eval(File.read(File.expand_path('spec/dummy/Gemfile', __dir__)))
+
+gem 'message_bus', github: 'yousty/message_bus'
+
+source 'https://gem.fury.io/yousty-ag/' do
+  gem 'jwt_token_auth_client_rails', '~> 3.3'
+  gem 'yousty_dev_tools', '~> 0.2'
+  gem 'yousty-eventsourcing', '~> 11'
+  gem 'yousty_tools', '~> 0.4'
+end

@@ -1,0 +1,19 @@
+# frozen_string_literal: true
+
+require 'bundler/setup'
+require 'dotenv'
+
+Dotenv.load('spec/.env')
+
+APP_RAKEFILE = File.expand_path('dummy_app/Rakefile', __dir__)
+load 'rails/tasks/engine.rake'
+
+load 'rails/tasks/statistics.rake'
+
+require 'bundler/gem_tasks'
+require 'yousty_dev_tools/tasks/release'
+require 'rspec/core/rake_task'
+
+RSpec::Core::RakeTask.new(:spec)
+
+task default: :spec

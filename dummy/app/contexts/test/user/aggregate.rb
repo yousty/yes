@@ -2,12 +2,11 @@
 
 module Test
   module User
-    class Aggregate < Yes::Aggregate
+    class Aggregate < Yes::Core::Aggregate
       attribute :name, :string
       attribute :email, :email
       attribute :age, :integer
       attribute :active, :boolean
-      attribute :something, :string # missing from read model
     end
   end
 end

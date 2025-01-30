@@ -2,16 +2,13 @@
 
 source 'https://rubygems.org'
 
-ruby '3.3.6'
-
-# Specify your gem's dependencies in yes.gemspec
 gemspec
 
-gem 'rake', '~> 13.0'
+gem 'yes-core', path: 'yes-core'
 
-gem 'rspec', '~> 3.0'
+gem 'rspec'
 
-gem 'rubocop', '~> 1.21'
+instance_eval(File.read(File.expand_path('dummy/Gemfile', __dir__)))
 
 source 'https://gem.fury.io/yousty-ag/' do
   gem 'yousty-eventsourcing', '~> 12'

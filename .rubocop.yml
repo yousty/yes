@@ -3,6 +3,14 @@ inherit_from:
   - https://raw.githubusercontent.com/yousty/qa-tools/master/rubocop/base/.rubocop.disabled.yml # common disabled rules
   - .rubocop.disabled.yml # project specific disabled rules
 
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3.6
+  Exclude:
+    - 'node_modules/**/*'
+    - 'vendor/**/*'
+    - 'sig/**/*'
+    
 # project specific overwritten rules
 
 # example:

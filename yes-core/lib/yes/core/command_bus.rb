@@ -1,0 +1,40 @@
+# frozen_string_literal: true
+
+module Yes
+  module Core
+    class CommandBus
+      attr_reader :command_processor
+      private :command_processor
+
+      def initialize(command_processor: CommandProcessor)
+        @command_processor = command_processor
+      end
+
+      # Passees commands on to the command processor, in case origin is not provided,
+      # it will be derived from the caller. Also decides based on config whether to perform commands inline or not
+      # @param command_or_commands [Command, Array<Command>] Command(s) instance(s)
+      # @param origin [String] Origin of the command
+      # @param notifier_options [Hash] Options for command notifier
+      # @return [void]
+      def call(
+        command_or_commands,
+        origin: nil,
+        notifier_options: {}
+      )
+        origin ||= Utils::CallerUtils.origin_from_caller(caller_locations(1..1).first)
+
+        perform_method = perform_inline ? :perform_now : :perform_later
+        command_processor.public_send(
+          perform_method, origin, command_or_commands, notifier_options
+        )
+      end
+
+      private
+
+      # @return [Boolean] whether to perform commands inline or not
+      def perform_inline
+        Yousty::Eventsourcing.config.process_commands_inline
+      end
+    end
+  end
+end

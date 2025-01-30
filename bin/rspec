@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+RBS_TEST_TARGET='Yes::*' RBS_TEST_OPT='-r forwardable -r optparse -I sig' RUBYOPT='-rbundler/setup -rrbs/test/setup' \
+  RBS_TEST_DOUBLE_SUITE='rspec' bundle exec rspec "$@"
