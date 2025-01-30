@@ -19,7 +19,7 @@ group :development, :test do
 
   gem 'database_cleaner-active_record'
   gem 'generator_spec'
-  gem 'rails', '~> 7.1'
+  gem 'rails', '~> 7.2'
   gem 'rspec', '~> 3.0'
   gem 'rspec-rails', '~> 7.1'
   gem 'rubocop', '~> 1.21'

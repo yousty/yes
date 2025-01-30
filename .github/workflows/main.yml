@@ -11,9 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Ruby ${{ matrix.ruby }}
-    defaults:
-      run:
-        working-directory: ./yes-core
     strategy:
       matrix:
         ruby:
@@ -33,7 +30,6 @@ jobs:
       - name: Run tests
         run: |
           sleep 10
-          cd ..
           ./bin/setup_db
           cd yes-core
           bundle exec rspec
