@@ -15,3 +15,5 @@ source 'https://gem.fury.io/yousty-ag/' do
   gem 'yousty-api', '~> 1.4' 
   gem 'yousty-eventsourcing', '~> 12'
 end
+
+gem 'rails', '~> 7.2'
