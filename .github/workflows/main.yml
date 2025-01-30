@@ -32,4 +32,5 @@ jobs:
           sleep 10
           ./bin/setup_db
           cd yes-core
+          bundle
           bundle exec rspec
