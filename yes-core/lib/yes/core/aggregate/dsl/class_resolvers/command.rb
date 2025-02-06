@@ -42,7 +42,11 @@ module Yes
 
               Class.new(Yes::Core::Command) do
                 attribute :"#{aggregate.underscore}_id", Yousty::Eventsourcing::Types::UUID
-                attribute attribute_name, Yes::Core::TypeLookup.type_for(attribute_type, context)
+                if attribute_type == :aggregate
+                  attribute :"#{attribute_name}_id", Yousty::Eventsourcing::Types::UUID
+                else
+                  attribute attribute_name, Yes::Core::TypeLookup.type_for(attribute_type, context)
+                end
 
                 alias_method :subject_id, :"#{aggregate.underscore}_id"
               end

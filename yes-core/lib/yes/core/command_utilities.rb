@@ -23,7 +23,7 @@ module Yes
       # @return [Object] The instantiated command
       # @raise [RuntimeError] If the command class cannot be found
       def build_command(command, payload)
-        command_class = fetch_class(:"change_#{command}", :command)
+        command_class = fetch_class(:"change_#{command_name(command)}", :command)
         command_class.new("#{@aggregate.underscore}_id": @aggregate_id, **payload)
       end
 
@@ -33,7 +33,7 @@ module Yes
       # @return [Class] The handler class
       # @raise [RuntimeError] If the handler class cannot be found
       def fetch_handler_class(name)
-        fetch_class(:"change_#{name}", :handler)
+        fetch_class(:"change_#{command_name(name)}", :handler)
       end
 
       private
@@ -49,6 +49,11 @@ module Yes
         raise "#{type.to_s.capitalize} class not found for #{command}" unless klass
 
         klass
+      end
+
+      # remove id from command name to support id change in aggregate attributes
+      def command_name(command)
+        command.to_s.sub('_id', '')
       end
     end
   end

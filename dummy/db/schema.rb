@@ -10,9 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_03_21_000000) do
+ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "locations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "email"
@@ -20,6 +25,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000000) do
     t.integer "age"
     t.boolean "active"
     t.string "test_field"
+    t.uuid "location_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

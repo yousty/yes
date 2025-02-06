@@ -46,8 +46,11 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
         expect(migration_content).to include('add_column :users, :something, :string')
       end
 
-      it 'removes extra column from database' do
-        expect(migration_content).to include('remove_column :users, :test_field')
+      it 'removes extra columns from database' do
+        aggregate_failures do
+          expect(migration_content).to include('remove_column :users, :test_field')
+          expect(migration_content).to include('remove_column :users, :location_id')
+        end
       end
 
       it 'does not recreate existing columns' do
@@ -65,6 +68,25 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
         expect(migration_content).to include('t.string :label')
         expect(migration_content).to include('t.integer :size')
         expect(migration_content).to include('t.timestamps')
+      end
+
+      context 'with aggregate type attribute' do
+        before do
+          Universe::Star::Aggregate.attribute :galaxy, :aggregate
+        end
+
+        after do
+          Universe::Star::Aggregate.singleton_class.instance_variable_set(:@attributes,
+                                                                          Universe::Star::Aggregate.attributes.except(:galaxy))
+        end
+
+        it 'creates table with _id column for aggregate attribute' do
+          expect(migration_content).to include('t.uuid :galaxy_id')
+        end
+
+        it 'does not create column without _id suffix' do
+          expect(migration_content).not_to include('t.string :galaxy')
+        end
       end
     end
   end

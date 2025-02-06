@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'spec_helper'
+
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
@@ -16,36 +18,115 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
     # define a new attribute on the existing user aggregate
     subject { described_class.new(attribute_data).call }
 
-    it 'creates and registers command, event, and handler classes' do
-      expect { subject }.to change {
-        Test::User::Commands.const_defined?('ChangeTestField::Command')
-      }.from(false).to(true).
-        and change {
-              Test::User::Events.const_defined?(:TestFieldChanged)
-            }.from(false).to(true).
-        and change {
-              Test::User::Commands.const_defined?('ChangeTestField::Handler')
-            }.from(false).to(true)
-    end
+    context 'with standard attributes' do
+      after do
+        # Clean up standard attribute constants
+        if Test::User::Commands.const_defined?(:ChangeTestField)
+          Test::User::Commands.send(:remove_const, 'ChangeTestField')
+        end
+        if Test::User::Events.const_defined?(:TestFieldChanged)
+          Test::User::Events.send(:remove_const,
+                                  :TestFieldChanged)
+        end
+      end
 
-    context 'change command method' do
-      it 'defines a change method for the attribute' do
-        subject
-        expect(aggregate_class.new).to respond_to(:change_test_field)
+      it 'creates and registers command, event, and handler classes' do
+        aggregate_failures do
+          expect { subject }.to change {
+            Test::User::Commands.const_defined?('ChangeTestField::Command')
+          }.from(false).to(true).
+            and change {
+                  Test::User::Events.const_defined?(:TestFieldChanged)
+                }.from(false).to(true).
+            and change {
+                  Test::User::Commands.const_defined?('ChangeTestField::Handler')
+                }.from(false).to(true)
+        end
+      end
+
+      context 'change command method' do
+        it 'defines a change method for the attribute' do
+          subject
+          expect(aggregate_class.new).to respond_to(:change_test_field)
+        end
+      end
+
+      context 'can_change...? command method' do
+        it 'defines a can_change...? method for the attribute' do
+          subject
+          expect(aggregate_class.new).to respond_to(:can_change_test_field?)
+        end
+      end
+
+      context 'attribute accessor method' do
+        it 'defines a reader method for the attribute' do
+          subject
+          expect(aggregate_class.new).to respond_to(:test_field)
+        end
       end
     end
 
-    context 'can_change...? command method' do
-      it 'defines a can_change...? method for the attribute' do
-        subject
-        expect(aggregate_class.new).to respond_to(:can_change_test_field?)
-      end
-    end
+    context 'with aggregate attributes' do
+      let(:attribute_name) { :location }
+      let(:attribute_type) { :aggregate }
 
-    context 'attribute accessor method' do
-      it 'defines a reader method for the attribute' do
-        subject
-        expect(aggregate_class.new).to respond_to(:test_field)
+      after do
+        # Clean up aggregate attribute constants
+        if Test::User::Commands.const_defined?(:ChangeLocation)
+          Test::User::Commands.send(:remove_const,
+                                    'ChangeLocation')
+        end
+        Test::User::Events.send(:remove_const, :LocationChanged) if Test::User::Events.const_defined?(:LocationChanged)
+      end
+
+      it 'creates and registers command, event, and handler classes' do
+        aggregate_failures do
+          expect { subject }.to change {
+            Test::User::Commands.const_defined?('ChangeLocation::Command')
+          }.from(false).to(true).
+            and change {
+                  Test::User::Events.const_defined?(:LocationChanged)
+                }.from(false).to(true).
+            and change {
+                  Test::User::Commands.const_defined?('ChangeLocation::Handler')
+                }.from(false).to(true)
+        end
+      end
+
+      context 'change command methods' do
+        it 'defines both change methods for the attribute' do
+          subject
+          aggregate = aggregate_class.new
+
+          aggregate_failures do
+            expect(aggregate).to respond_to(:change_location)
+            expect(aggregate).to respond_to(:change_location_id)
+          end
+        end
+      end
+
+      context 'can_change...? command method' do
+        it 'defines both can_change methods for the attribute' do
+          subject
+          aggregate = aggregate_class.new
+
+          aggregate_failures do
+            expect(aggregate).to respond_to(:can_change_location?)
+            expect(aggregate).to respond_to(:can_change_location_id?)
+          end
+        end
+      end
+
+      context 'attribute accessor methods' do
+        it 'defines both reader methods for the attribute' do
+          subject
+          aggregate = aggregate_class.new
+
+          aggregate_failures do
+            expect(aggregate).to respond_to(:location)
+            expect(aggregate).to respond_to(:location_id)
+          end
+        end
       end
     end
   end

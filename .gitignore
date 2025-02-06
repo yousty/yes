@@ -25,3 +25,5 @@ Gemfile.lock
 /dummy/storage/
 
 /db/postgresql/data
+
+/prompts/*

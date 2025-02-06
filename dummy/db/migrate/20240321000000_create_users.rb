@@ -8,8 +8,9 @@ class CreateUsers < ActiveRecord::Migration[7.1]
       t.integer :age
       t.boolean :active
       t.string :test_field # dynamically generated in specs
+      t.uuid :location_id # dynamically generated in specs
 
       t.timestamps
     end
   end
-end 
+end

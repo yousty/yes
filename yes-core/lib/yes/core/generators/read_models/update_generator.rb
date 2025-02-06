@@ -72,7 +72,10 @@ module Yes
           def alter_table_block(aggregate, table_name)
             existing_columns = ActiveRecord::Base.connection.columns(table_name).map(&:name) - %w[id created_at
                                                                                                   updated_at]
-            defined_columns = aggregate[:attributes].keys.map(&:to_s)
+            defined_columns = aggregate[:attributes].keys.map do |key|
+              type = aggregate[:attributes][key]
+              type == :aggregate ? "#{key}_id" : key.to_s
+            end
 
             columns_to_add = defined_columns - existing_columns
             columns_to_remove = existing_columns - defined_columns
@@ -80,7 +83,8 @@ module Yes
             statements = []
 
             columns_to_add.each do |column|
-              type = aggregate[:attributes][column.to_sym]
+              attribute_name = column.end_with?('_id') ? column.chomp('_id').to_sym : column.to_sym
+              type = aggregate[:attributes][attribute_name]
               statements << "add_column :#{table_name}, :#{column}, :#{database_type(type)}"
             end
 
@@ -93,7 +97,11 @@ module Yes
 
           def column_definitions(attributes)
             attributes.map do |name, type|
-              "t.#{database_type(type)} :#{name}"
+              if type == :aggregate
+                "t.uuid :#{name}_id"
+              else
+                "t.#{database_type(type)} :#{name}"
+              end
             end.join("\n      ")
           end
 
@@ -110,6 +118,7 @@ module Yes
             when :float then :float
             when :datetime then :datetime
             when :hash then :jsonb
+            when :aggregate then :uuid
             else :string # default to string for unknown types
             end
           end

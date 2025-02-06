@@ -46,7 +46,11 @@ module Yes
                 define_method :schema do
                   Dry::Schema.Params do
                     required(:"#{aggregate.underscore}_id").value(Yousty::Eventsourcing::Types::UUID)
-                    required(attribute_name).value(Yes::Core::TypeLookup.type_for(attribute_type, context, :event))
+                    if attribute_type == :aggregate
+                      required(:"#{attribute_name}_id").value(Yousty::Eventsourcing::Types::UUID)
+                    else
+                      required(attribute_name).value(Yes::Core::TypeLookup.type_for(attribute_type, context, :event))
+                    end
                   end
                 end
               end

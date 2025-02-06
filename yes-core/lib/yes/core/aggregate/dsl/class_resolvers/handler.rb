@@ -43,9 +43,10 @@ module Yes
             # Generates a new handler class with the required validation methods
             #
             # @return [Class] A new handler class inheriting from Yes::Core::CommandHandler
-            def generate_class # rubocop:disable Metrics/AbcSize
+            def generate_class # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
               aggregate = aggregate_name
               attribute_name = attribute.send(:name)
+              attribute_type = attribute.send(:type)
               event_name = attribute.send(:event_name)
 
               Class.new(Yes::Core::CommandHandler) do
@@ -57,10 +58,11 @@ module Yes
                 end
 
                 define_method :"check_#{attribute_name}_is_not_changing" do
+                  attribute_key = attribute_type == :aggregate ? :"#{attribute_name}_id" : attribute_name
                   if no_change?(
                     subject_data,
                     { :"#{aggregate.underscore}_id" => attributes["#{aggregate.underscore}_id"],
-                      attribute_name => attributes[attribute_name.to_s] },
+                      attribute_key => attributes[attribute_key.to_s] },
                     event_name.to_s.camelize
                   )
                     no_change_transition("#{attribute_name.to_s.humanize} is not changing")

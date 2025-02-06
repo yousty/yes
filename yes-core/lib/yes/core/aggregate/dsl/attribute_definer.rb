@@ -4,8 +4,7 @@ module Yes
   module Core
     class Aggregate
       module Dsl
-        # Handles the definition and generation of attribute-related classes for aggregates.
-        # This includes commands, events, and handlers for attribute changes.
+        # Factory class that creates the appropriate attribute definer based on the attribute type
         #
         # @example
         #   attribute_data = AttributeData.new(name: :name, type: :string, aggregate_class: User, validate: true)
@@ -24,36 +23,23 @@ module Yes
             @attribute_data = attribute_data
           end
 
-          # Generates and registers all necessary classes for the attribute.
-          # This includes command classes, event classes, and handler classes,
-          # as well as defining related methods on the aggregate class.
+          # Creates the appropriate definer and calls it to generate the necessary classes and methods
           #
           # @return [void]
           def call
-            define_classes
-            define_methods
+            definer_for_type.new(attribute_data).call
           end
 
           private
 
-          # Defines the command, event, and handler classes for the attribute
+          # Returns the appropriate definer class based on the attribute type
           #
-          # @return [void]
-          def define_classes
-            ClassResolvers::Command.new(attribute_data).call
-            ClassResolvers::Event.new(attribute_data).call
-            ClassResolvers::Handler.new(attribute_data).call
-          end
-
-          # Defines methods on the aggregate class for
-          #   - handling attribute changes
-          #   - accessing the state of the attribute
-          #
-          # @return [void]
-          def define_methods
-            AttributeMethodDefiners::ChangeCommand.new(attribute_data).call
-            AttributeMethodDefiners::CanChangeCommand.new(attribute_data).call
-            AttributeMethodDefiners::Accessor.new(attribute_data).call
+          # @return [Class] The definer class to use
+          def definer_for_type
+            case attribute_data.type
+            when :aggregate then AttributeDefiners::Aggregate
+            else AttributeDefiners::Standard
+            end
           end
         end
       end
