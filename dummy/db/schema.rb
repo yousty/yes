@@ -15,6 +15,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
   enable_extension "plpgsql"
 
   create_table "locations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "revision", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -26,6 +27,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
     t.boolean "active"
     t.string "test_field"
     t.uuid "location_id"
+    t.integer "revision", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

@@ -60,6 +60,38 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
         expect(migration_content).not_to include('t.integer :age')
         expect(migration_content).not_to include('t.boolean :active')
       end
+
+      context 'when revision column does not exist' do
+        let(:existing_columns) do
+          %w[id created_at updated_at name email age active test_field location_id]
+        end
+
+        before do
+          allow(ActiveRecord::Base.connection).to receive(:columns).and_return(
+            existing_columns.map { |name| double(name: name) }
+          )
+        end
+
+        it 'adds revision column' do
+          expect(migration_content).to include('add_column :users, :revision, :integer, null: false, default: 0')
+        end
+      end
+
+      context 'when revision column exists' do
+        let(:existing_columns) do
+          %w[id created_at updated_at name email age active test_field location_id revision]
+        end
+
+        before do
+          allow(ActiveRecord::Base.connection).to receive(:columns).and_return(
+            existing_columns.map { |name| double(name: name) }
+          )
+        end
+
+        it 'does not add revision column again' do
+          expect(migration_content).not_to include('add_column :users, :revision')
+        end
+      end
     end
 
     context 'for non-existing stars table' do
@@ -68,6 +100,10 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
         expect(migration_content).to include('t.string :label')
         expect(migration_content).to include('t.integer :size')
         expect(migration_content).to include('t.timestamps')
+      end
+
+      it 'includes revision column' do
+        expect(migration_content).to include('t.integer :revision, null: false, default: 0')
       end
 
       context 'with aggregate type attribute' do

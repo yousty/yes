@@ -64,6 +64,7 @@ module Yes
             <<~RUBY
               create_table :#{table_name} do |t|
                 #{column_definitions(aggregate[:attributes])}
+                t.integer :revision, null: false, default: 0
                 t.timestamps
               end
             RUBY
@@ -81,6 +82,10 @@ module Yes
             columns_to_remove = existing_columns - defined_columns
 
             statements = []
+
+            unless existing_columns.include?('revision')
+              statements << "add_column :#{table_name}, :revision, :integer, null: false, default: 0"
+            end
 
             columns_to_add.each do |column|
               attribute_name = column.end_with?('_id') ? column.chomp('_id').to_sym : column.to_sym
