@@ -8,7 +8,11 @@ module Yes
         #
         # @example
         #   attribute_data = AttributeData.new(name: :name, type: :string, aggregate_class: User, validate: true)
-        #   AttributeDefiner.new(attribute_data).call
+        #   AttributeDefiner.new(attribute_data).call do
+        #     guard :no_change do
+        #       payload.name == name
+        #     end
+        #   end
         #
         class AttributeDefiner
           # @return [AttributeData] the data object containing attribute configuration
@@ -25,9 +29,10 @@ module Yes
 
           # Creates the appropriate definer and calls it to generate the necessary classes and methods
           #
+          # @param block [Proc] Optional block for defining guards and other attribute configurations
           # @return [void]
-          def call
-            definer_for_type.new(attribute_data).call
+          def call(&)
+            definer_for_type.new(attribute_data).call(&)
           end
 
           private

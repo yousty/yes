@@ -73,7 +73,7 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
         end
 
         it 'adds revision column' do
-          expect(migration_content).to include('add_column :users, :revision, :integer, null: false, default: 0')
+          expect(migration_content).to include('add_column :users, :revision, :integer, null: false, default: -1')
         end
       end
 
@@ -103,7 +103,7 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
       end
 
       it 'includes revision column' do
-        expect(migration_content).to include('t.integer :revision, null: false, default: 0')
+        expect(migration_content).to include('t.integer :revision, null: false, default: -1')
       end
 
       context 'with aggregate type attribute' do

@@ -20,7 +20,7 @@ module Yes
             def define_methods
               AttributeMethodDefiners::ChangeAggregateCommand.new(attribute_data).call
               define_aggregate_id_methods
-              AttributeMethodDefiners::CanChangeCommand.new(attribute_data).call
+              AttributeMethodDefiners::CanChangeAggregateCommand.new(attribute_data).call
               AttributeMethodDefiners::AggregateAccessor.new(attribute_data).call
             end
 

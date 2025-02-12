@@ -1,0 +1,124 @@
+# frozen_string_literal: true
+
+RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
+  subject(:guard_evaluator) { described_class.new(payload:, aggregate:) }
+
+  let(:payload) { { location_id: } }
+  let(:location_id) { SecureRandom.uuid }
+  let(:location) { Test::Location::Aggregate.new(location_id) }
+  let(:aggregate) { Test::User::Aggregate.new }
+
+  before do
+    Test::User::Aggregate.attribute :location, :aggregate
+    aggregate.change_location_id(location_id:)
+  end
+
+  after do
+    # Clean up location attribute and guards
+    Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
+                                                                Test::User::Aggregate.attributes.except(:location))
+    described_class.instance_variable_set(:@guards, [])
+  end
+
+  describe '.guard' do
+    it 'registers a new guard' do
+      described_class.guard(:test) { true }
+      expect(described_class.guards.last[:name]).to eq(:test)
+    end
+  end
+
+  describe '#call' do
+    context 'when all guards pass' do
+      before do
+        described_class.guard(:test) { true }
+      end
+
+      it 'does not raise an error' do
+        expect { guard_evaluator.call }.not_to raise_error
+      end
+    end
+
+    context 'when a guard fails' do
+      before do
+        described_class.guard(:test) { false }
+      end
+
+      it 'raises an InvalidTransition error' do
+        expect { guard_evaluator.call }.to raise_error(described_class::InvalidTransition)
+      end
+    end
+
+    context 'when a no_change guard fails' do
+      before do
+        described_class.guard(:no_change) { false }
+      end
+
+      it 'raises a NoChangeTransition error' do
+        expect { guard_evaluator.call }.to raise_error(described_class::NoChangeTransition)
+      end
+    end
+  end
+
+  describe 'guard evaluation context' do
+    context 'when accessing via aggregate attribute' do
+      before do
+        described_class.guard(:test) { location.id == location_id }
+      end
+
+      it 'tracks the accessed aggregate' do
+        guard_evaluator.call
+
+        expect(guard_evaluator.accessed_external_aggregates).to include(
+          hash_including(
+            id: location_id,
+            context: 'Test',
+            name: 'Location',
+            revision: -1
+          )
+        )
+      end
+    end
+
+    context 'when accessing payload methods' do
+      context 'when accessing via payload hash' do
+        before do
+          described_class.guard(:test) { payload.location_id == location_id }
+        end
+
+        it 'has access to payload methods' do
+          expect { guard_evaluator.call }.not_to raise_error
+        end
+      end
+
+      context 'when accessing via payload aggregate attribute' do
+        before do
+          described_class.guard(:test) { payload.location.id == location_id }
+        end
+
+        it 'tracks the accessed aggregate' do
+          guard_evaluator.call
+
+          expect(guard_evaluator.accessed_external_aggregates).to include(
+            hash_including(
+              id: location_id,
+              context: 'Test',
+              name: 'Location',
+              revision: -1
+            )
+          )
+        end
+      end
+    end
+
+    context 'when accessing aggregate methods' do
+      before do
+        described_class.guard(:test) { name == 'John Doe' }
+      end
+
+      it 'delegates methods to the aggregate' do
+        expect(aggregate).to receive(:name).and_return('John Doe')
+        expect { guard_evaluator.call }.not_to raise_error
+      end
+    end
+  end
+end

@@ -20,7 +20,7 @@ module Yes
 
           # Returns the conventional class name for a given type and name
           #
-          # @param type [Symbol] The type of class (:command, :event, or :handler, ...)
+          # @param type [Symbol] The type of class (:command, :event, or :guard_evaluator, ...)
           # @param name [Symbol, String] The name of the class
           # @return [String] The conventional class name
           def class_name_for(type, name)
@@ -39,8 +39,8 @@ module Yes
             "#{context}::#{aggregate}::Events::#{name.to_s.camelize}"
           end
 
-          def handler_class_name(name)
-            "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::Handler"
+          def guard_evaluator_class_name(name)
+            "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::GuardEvaluator"
           end
 
           def read_model_class_name(name)

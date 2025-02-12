@@ -52,14 +52,14 @@ RSpec.describe Yes::Core::Aggregate do
 
       it 'updates read model after successful attribute change' do
         subject
-        expect(aggregate).to have_received(:update_read_model).with(name: 'New Name')
+        expect(aggregate).to have_received(:update_read_model).with(name: 'New Name', revision: 0)
       end
     end
 
     context 'when attribute change is not allowed' do
       before do
         allow(aggregate).to receive(:update_read_model)
-        allow(aggregate).to receive(:handle_command).and_raise(Yes::Core::CommandHandler::InvalidTransition)
+        allow(aggregate).to receive(:handle_command).and_raise(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
       end
 
       it 'does not update read model' do

@@ -4,8 +4,10 @@ module Yes
   module Core
     class CommandResponse < Dry::Struct
       attribute :cmd, Yousty::Eventsourcing::Types.Instance(Command)
+      attribute? :event, Yousty::Eventsourcing::Types.Instance(Yousty::Eventsourcing::Event).optional
       attribute? :error,
-                 Yousty::Eventsourcing::Types.Instance(Yousty::Eventsourcing::Stateless::CommandHandler::TransitionError).optional
+                 Yousty::Eventsourcing::Types.Instance(Yes::Core::CommandHandling::GuardEvaluator::TransitionError).
+                   optional
 
       # @return [TransactionDetails, nil] command's transaction info if present
       #

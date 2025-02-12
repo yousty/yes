@@ -16,9 +16,9 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassNameConvention do
         title_changed: 'Blog::Post::Events::TitleChanged',
         published: 'Blog::Post::Events::Published'
       },
-      handler: {
-        change_title: 'Blog::Post::Commands::ChangeTitle::Handler',
-        publish: 'Blog::Post::Commands::Publish::Handler'
+      guard_evaluator: {
+        change_title: 'Blog::Post::Commands::ChangeTitle::GuardEvaluator',
+        publish: 'Blog::Post::Commands::Publish::GuardEvaluator'
       }
     }.each do |type, examples|
       context "with #{type} type" do

@@ -7,6 +7,10 @@ module Yes
     # @since 0.1.0
     # @api private
     class CommandUtilities
+      COMMAND_TO_EVENT_VERBS = {
+        'Change' => 'Changed'
+      }.freeze
+
       # @param context [String] The context namespace
       # @param aggregate [String] The aggregate name
       # @param aggregate_id [String] The ID of the aggregate
@@ -24,31 +28,112 @@ module Yes
       # @raise [RuntimeError] If the command class cannot be found
       def build_command(command, payload)
         command_class = fetch_class(:"change_#{command_name(command)}", :command)
-        command_class.new("#{@aggregate.underscore}_id": @aggregate_id, **payload)
+        command_class.new("#{aggregate.underscore}_id": aggregate_id, **payload)
       end
 
-      # Fetches the handler class for a given attribute name
+      # Fetches the guard evaluator class for a given attribute name
       #
       # @param name [Symbol] The attribute name
-      # @return [Class] The handler class
-      # @raise [RuntimeError] If the handler class cannot be found
-      def fetch_handler_class(name)
-        fetch_class(:"change_#{command_name(name)}", :handler)
+      # @return [Class] The guard evaluator class
+      # @raise [RuntimeError] If the guard evaluator class cannot be found
+      def fetch_guard_evaluator_class(name)
+        fetch_class(:"change_#{command_name(name)}", :guard_evaluator)
+      end
+
+      # Builds a PgEventstore::Event instance
+      #
+      # @param command_name [String] The command name
+      # @param event_name [String, nil] Optional explicit event name to use
+      # @param metadata [Hash] Event metadata
+      # @return [PgEventstore::Event] The event instance
+      def build_event(payload:, command_name:, event_name: nil, metadata: {})
+        event_class = resolve_event_class(command_name:, event_name:)
+        event_class.new(
+          type: event_type(command_name:, event_name:),
+          data: payload,
+          metadata:
+        )
+      end
+
+      # Builds a PgEventstore::Stream instance
+      #
+      # @param context [String] The context name
+      # @param name [String] The stream name
+      # @param id [String] The stream ID
+      # @return [PgEventstore::Stream] The stream instance
+      def build_stream(context: @context, name: @aggregate, id: @aggregate_id)
+        PgEventstore::Stream.new(
+          context:,
+          stream_name: name,
+          stream_id: id
+        )
+      end
+
+      # Gets the current revision of a stream
+      #
+      # @param stream [PgEventstore::Stream] The stream to check
+      # @return [Integer] The current revision
+      def stream_revision(stream)
+        PgEventstore.client.read(
+          stream,
+          options: { direction: 'Backwards', max_count: 1 },
+          middlewares: []
+        ).first&.stream_revision || 0
+      rescue PgEventstore::StreamNotFoundError
+        :no_stream
       end
 
       private
 
+      attr_reader :context, :aggregate, :aggregate_id
+
       # Fetches a class based on the command name and type
       #
       # @param command [Symbol] The command name
-      # @param type [Symbol] The type of class to fetch (:command or :handler)
+      # @param type [Symbol] The type of class to fetch (:command or :guard_evaluator)
       # @return [Class] The requested class
       # @raise [RuntimeError] If the requested class cannot be found
       def fetch_class(command, type)
-        klass = Yes::Core.configuration.aggregate_class(@context, @aggregate, command, type)
-        raise "#{type.to_s.capitalize} class not found for #{command}" unless klass
+        klass = Yes::Core.configuration.aggregate_class(context, aggregate, command, type)
+        raise "#{type.to_s.tr('_', ' ').capitalize} class not found for #{command}" unless klass
 
         klass
+      end
+
+      # Resolves the event class to use
+      #
+      # @param command_name [String] The command name
+      # @param event_name [String, nil] Optional explicit event name to use
+      # @return [Class] The event class
+      def resolve_event_class(command_name:, event_name: nil)
+        "#{context}::#{aggregate}::Events::#{event_name || resolved_event_name(command_name:)}".constantize
+      end
+
+      # Builds the event type string
+      #
+      # @param command_name [String] The command name
+      # @param event_name [String, nil] Optional explicit event name to use
+      # @return [String] The event type
+      def event_type(command_name:, event_name: nil)
+        "#{context}::#{aggregate}#{event_name || resolved_event_name(command_name:)}"
+      end
+
+      # Resolves the event name to use by converting command name to event name
+      # For example: ChangeLocation -> LocationChanged
+      #
+      # @param command_name [String] The command name
+      # @return [String] The resolved event name
+      def resolved_event_name(command_name:)
+        COMMAND_TO_EVENT_VERBS.each do |command_verb, event_verb|
+          next unless command_name.start_with?(command_verb)
+
+          # Extract the subject (e.g. "Location" from "ChangeLocation")
+          subject = command_name.delete_prefix(command_verb)
+          # Return subject + verb (e.g. "LocationChanged")
+          return "#{subject}#{event_verb}"
+        end
+
+        command_name
       end
 
       # remove id from command name to support id change in aggregate attributes

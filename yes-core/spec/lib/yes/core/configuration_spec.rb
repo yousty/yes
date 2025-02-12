@@ -32,12 +32,13 @@ RSpec.describe Yes::Core::Configuration do
     end
   end
 
-  describe '#register_handler_class' do
-    subject { configuration.register_handler_class(context_name, aggregate_name, action_name, test_class) }
+  describe '#register_guard_evaluator_class' do
+    subject { configuration.register_guard_evaluator_class(context_name, aggregate_name, action_name, test_class) }
 
-    it 'registers the handler class' do
+    it 'registers the guard evaluator class' do
       subject
-      expect(configuration.aggregate_class(context_name, aggregate_name, action_name, :handler)).to eq(test_class)
+      expect(configuration.aggregate_class(context_name, aggregate_name, action_name,
+                                           :guard_evaluator)).to eq(test_class)
     end
   end
 

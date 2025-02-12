@@ -14,26 +14,13 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand
   let(:attribute_data) { Yes::Core::Aggregate::Dsl::AttributeData.new(attribute_name, attribute_type, aggregate_class) }
 
   before do
-    # Set up the namespace, handler and command classes
-    Test::User::Commands.const_set(:ChangeTestField, Module.new)
-    Test::User::Commands::ChangeTestField.const_set(:Handler, Class.new(Yes::Core::CommandHandler))
-    Test::User::Commands::ChangeTestField.const_set(:Command, Class.new(Yes::Core::Command))
-
-    # Register the command and handler classes
-    Yes::Core.configuration.register_aggregate_class(context, aggregate, command_name, :command,
-                                                     Test::User::Commands::ChangeTestField::Command)
-    Yes::Core.configuration.register_aggregate_class(context, aggregate, command_name, :handler,
-                                                     Test::User::Commands::ChangeTestField::Handler)
-
-    # Define the can_change method
-    Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeCommand.new(attribute_data).call
-
-    # Define the attribute accessor method
-    Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::Accessor.new(attribute_data).call
+    Test::User::Aggregate.attribute :test_field, :string
   end
 
   after do
-    Test::User::Commands.send(:remove_const, :ChangeTestField) if Test::User::Commands.const_defined?(:ChangeTestField)
+    # Clean up location attribute
+    Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
+                                                                Test::User::Aggregate.attributes.except(:test_field))
   end
 
   describe '#call' do
@@ -47,8 +34,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand
     describe '#change_test_field' do
       subject { aggregate_instance.change_test_field(**command_payload) }
 
-      let(:handler_class) { Test::User::Commands::ChangeTestField::Handler }
-      let(:handler_instance) { instance_double(handler_class) }
+      let(:guard_evaluator_class) { Test::User::Commands::ChangeTestField::GuardEvaluator }
+      let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
       let(:command_payload) { { test_field: 'New Value' } }
 
       let(:attribute_setup) do
@@ -58,16 +45,14 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand
       before do
         attribute_setup
 
-        allow(handler_class).to receive(:new).and_return(handler_instance)
-        allow(handler_instance).to receive(:call).and_return(true)
-        allow(handler_instance).to receive(:revision_check)
+        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator_instance)
+        allow(guard_evaluator_instance).to receive(:call).and_return(true)
+        allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
       end
 
-      it 'instantiates and calls the handler with the command' do
+      it 'instantiates and calls the guard evaluator with the command' do
         subject
-
-        # one time for calling actual handler code, one time for publishing events only
-        expect(handler_instance).to have_received(:call).twice
+        expect(guard_evaluator_instance).to have_received(:call)
       end
 
       it 'updates the read model' do

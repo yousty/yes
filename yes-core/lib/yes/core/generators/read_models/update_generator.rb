@@ -64,7 +64,7 @@ module Yes
             <<~RUBY
               create_table :#{table_name} do |t|
                 #{column_definitions(aggregate[:attributes])}
-                t.integer :revision, null: false, default: 0
+                t.integer :revision, null: false, default: -1
                 t.timestamps
               end
             RUBY
@@ -84,7 +84,7 @@ module Yes
             statements = []
 
             unless existing_columns.include?('revision')
-              statements << "add_column :#{table_name}, :revision, :integer, null: false, default: 0"
+              statements << "add_column :#{table_name}, :revision, :integer, null: false, default: -1"
             end
 
             columns_to_add.each do |column|

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
@@ -25,12 +23,11 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
           Test::User::Commands.send(:remove_const, 'ChangeTestField')
         end
         if Test::User::Events.const_defined?(:TestFieldChanged)
-          Test::User::Events.send(:remove_const,
-                                  :TestFieldChanged)
+          Test::User::Events.send(:remove_const, :TestFieldChanged)
         end
       end
 
-      it 'creates and registers command, event, and handler classes' do
+      it 'creates and registers command, event, and guard evaluator classes' do
         aggregate_failures do
           expect { subject }.to change {
             Test::User::Commands.const_defined?('ChangeTestField::Command')
@@ -39,7 +36,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
                   Test::User::Events.const_defined?(:TestFieldChanged)
                 }.from(false).to(true).
             and change {
-                  Test::User::Commands.const_defined?('ChangeTestField::Handler')
+                  Test::User::Commands.const_defined?('ChangeTestField::GuardEvaluator')
                 }.from(false).to(true)
         end
       end
@@ -73,13 +70,12 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
       after do
         # Clean up aggregate attribute constants
         if Test::User::Commands.const_defined?(:ChangeLocation)
-          Test::User::Commands.send(:remove_const,
-                                    'ChangeLocation')
+          Test::User::Commands.send(:remove_const, 'ChangeLocation')
         end
         Test::User::Events.send(:remove_const, :LocationChanged) if Test::User::Events.const_defined?(:LocationChanged)
       end
 
-      it 'creates and registers command, event, and handler classes' do
+      it 'creates and registers command, event, and guard evaluator classes' do
         aggregate_failures do
           expect { subject }.to change {
             Test::User::Commands.const_defined?('ChangeLocation::Command')
@@ -88,7 +84,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
                   Test::User::Events.const_defined?(:LocationChanged)
                 }.from(false).to(true).
             and change {
-                  Test::User::Commands.const_defined?('ChangeLocation::Handler')
+                  Test::User::Commands.const_defined?('ChangeLocation::GuardEvaluator')
                 }.from(false).to(true)
         end
       end

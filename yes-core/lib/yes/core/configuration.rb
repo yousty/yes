@@ -22,7 +22,7 @@ module Yes
       # @param context_name [Symbol, String] The context for the aggregate
       # @param aggregate_name [Symbol, String] The name of the aggregate
       # @param action_name [Symbol, String] The name of the command/event
-      # @param type [Symbol] The type (:command, :event, or :handler)
+      # @param type [Symbol] The type (:command, :event, or :guard_evaluator)
       # @param klass [Class] The class to register
       # @example Register a command class
       #   register_aggregate_class(:authentication, :user, :create, :command, CreateUserCommand)
@@ -63,22 +63,22 @@ module Yes
         register_aggregate_class(context_name, aggregate_name, event_name, :event, klass)
       end
 
-      # Register a handler class for a specific aggregate
+      # Register a guard evaluator class for a specific aggregate
       # @param context_name [Symbol, String] The context for the aggregate
       # @param aggregate_name [Symbol, String] The name of the aggregate
       # @param command_name [Symbol, String] The name of the command
       # @param klass [Class] The class to register
       # @example
-      #   register_handler_class(:authentication, :user, :create, CreateUserHandler)
-      def register_handler_class(context_name, aggregate_name, command_name, klass)
-        register_aggregate_class(context_name, aggregate_name, command_name, :handler, klass)
+      #   register_guard_evaluator_class(:authentication, :user, :create, CreateUserGuardEvaluator)
+      def register_guard_evaluator_class(context_name, aggregate_name, command_name, klass)
+        register_aggregate_class(context_name, aggregate_name, command_name, :guard_evaluator, klass)
       end
 
       # Retrieve a registered class for a given aggregate, action, and type
       # @param context_name [Symbol, String] The context for the aggregate
       # @param aggregate_name [Symbol, String] The name of the aggregate
       # @param action_name [Symbol, String] The name of the action (command/event)
-      # @param type [Symbol] The type of the class (:command, :event, or :handler)
+      # @param type [Symbol] The type of the class (:command, :event, or :guard_evaluator)
       # @return [Class, nil] The registered class or nil if not found
       # @example Get a command class
       #   command_class = aggregate_class(:authentication, :user, :create, :command)
@@ -96,8 +96,8 @@ module Yes
         @registered_classes[[context_name, aggregate_name]]
       end
 
-      def handler_class(context_name, aggregate_name, command_name)
-        aggregate_class(context_name, aggregate_name, command_name.underscore.to_sym, :handler)
+      def guard_evaluator_class(context_name, aggregate_name, command_name)
+        aggregate_class(context_name, aggregate_name, command_name.underscore.to_sym, :guard_evaluator)
       end
 
       # List all registered classes across all aggregates and contexts
@@ -108,10 +108,8 @@ module Yes
       #   # {
       #   #   [:authentication, :user] => {
       #   #     command: { create: CreateUserCommand },
-      #   #     event: { created: UserCreatedEvent }
-      #   #   },
-      #   #   [:content, :user] => {
-      #   #     command: { update_profile: UpdateUserProfileCommand }
+      #   #     event: { created: UserCreatedEvent },
+      #   #     guard_evaluator: { create: CreateUserGuardEvaluator }
       #   #   }
       #   # }
       def list_all_registered_classes

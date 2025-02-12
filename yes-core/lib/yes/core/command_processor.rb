@@ -24,7 +24,7 @@ module Yes
         setup(notifier_options)
 
         commands = [*command_or_commands]
-        ensure_handlers_exist?(commands)
+        ensure_guard_evaluators_exist?(commands)
 
         commands.map! { |cmd| cmd.class.new(cmd.to_h.merge(origin:, batch_id:)) }
 
@@ -76,15 +76,15 @@ module Yes
         "#{command_helper.command_context}::#{command_helper.subject}::Aggregate".constantize
       end
 
-      # Checks if a handler exists for the given command
+      # Checks if a guard evaluator exists for the given command
       # @param cmd [Command] The command to check
-      # @return [Boolean] true if a handler exists
-      # @raise [UnregisteredCommand] if no handler is found for the command
-      def handler_exists?(cmd)
+      # @return [Boolean] true if a guard evaluator exists
+      # @raise [UnregisteredCommand] if no guard evaluator is found for the command
+      def guard_evaluator_exists?(cmd)
         command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
-        klass = Yes::Core.configuration.handler_class(command_helper.command_context,
-                                                      command_helper.subject,
-                                                      command_helper.command_name)
+        klass = Yes::Core.configuration.guard_evaluator_class(command_helper.command_context,
+                                                              command_helper.subject,
+                                                              command_helper.command_name)
 
         raise UnregisteredCommand, "Unregistered command: #{cmd.class}" unless klass
 
@@ -95,8 +95,8 @@ module Yes
       # @param commands [Array<Command>] The commands to check
       # @return [Boolean] true if handlers exist for all commands
       # @raise [UnregisteredCommand] if any command lacks a handler
-      def ensure_handlers_exist?(commands)
-        commands.all? { handler_exists?(_1) }
+      def ensure_guard_evaluators_exist?(commands)
+        commands.all? { guard_evaluator_exists?(_1) }
       end
 
       # Returns the batch id of the current batch.

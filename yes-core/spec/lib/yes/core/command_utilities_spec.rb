@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe Yes::Core::CommandUtilities do
   subject(:instance) { described_class.new(context:, aggregate:, aggregate_id:) }
 
@@ -25,10 +23,6 @@ RSpec.describe Yes::Core::CommandUtilities do
       # Clean up test_field attribute
       Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
                                                                   Test::User::Aggregate.attributes.except(:test_field))
-
-      # Clean up configuration
-      aggregate_classes = Yes::Core.configuration.instance_variable_get(:@aggregate_classes)
-      aggregate_classes&.delete(context)
     end
 
     it 'builds a command with the correct payload' do
@@ -55,7 +49,7 @@ RSpec.describe Yes::Core::CommandUtilities do
 
       before do
         # Add location attribute to the aggregate
-        Test::User::Aggregate.attribute :location, :aggregate, context: 'Test', aggregate: 'Location'
+        Test::User::Aggregate.attribute :location, :aggregate
       end
 
       after do
@@ -74,11 +68,11 @@ RSpec.describe Yes::Core::CommandUtilities do
     end
   end
 
-  describe '#fetch_handler_class' do
-    subject { instance.fetch_handler_class(attribute_name) }
+  describe '#fetch_guard_evaluator_class' do
+    subject { instance.fetch_guard_evaluator_class(attribute_name) }
 
     let(:attribute_name) { :test_field }
-    let(:handler_class) { Test::User::Commands::ChangeTestField::Handler }
+    let(:guard_evaluator_class) { Test::User::Commands::ChangeTestField::GuardEvaluator }
 
     before do
       # Add test_field attribute to the aggregate
@@ -89,27 +83,23 @@ RSpec.describe Yes::Core::CommandUtilities do
       # Clean up test_field attribute
       Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
                                                                   Test::User::Aggregate.attributes.except(:test_field))
-
-      # Clean up configuration
-      aggregate_classes = Yes::Core.configuration.instance_variable_get(:@aggregate_classes)
-      aggregate_classes&.delete(context)
     end
 
-    it 'returns the correct handler class' do
-      expect(subject).to eq(handler_class)
+    it 'returns the correct guard evaluator class' do
+      expect(subject).to eq(guard_evaluator_class)
     end
 
-    context 'when handler class is not found' do
+    context 'when guard evaluator class is not found' do
       let(:attribute_name) { :nonexistent }
 
       it 'raises an error' do
-        expect { subject }.to raise_error(RuntimeError, 'Handler class not found for change_nonexistent')
+        expect { subject }.to raise_error(RuntimeError, 'Guard evaluator class not found for change_nonexistent')
       end
     end
 
     context 'with aggregate attribute id' do
       let(:attribute_name) { :location_id }
-      let(:handler_class) { Test::User::Commands::ChangeLocation::Handler }
+      let(:guard_evaluator_class) { Test::User::Commands::ChangeLocation::GuardEvaluator }
 
       before do
         # Add location attribute to the aggregate
@@ -122,8 +112,8 @@ RSpec.describe Yes::Core::CommandUtilities do
                                                                     Test::User::Aggregate.attributes.except(:location))
       end
 
-      it 'returns the correct handler class using the base command name' do
-        expect(subject).to eq(handler_class)
+      it 'returns the correct guard evaluator class using the base command name' do
+        expect(subject).to eq(guard_evaluator_class)
       end
     end
   end

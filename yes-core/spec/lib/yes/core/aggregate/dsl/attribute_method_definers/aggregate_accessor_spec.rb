@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::AggregateAccessor do
   subject { described_class.new(attribute_data).call }
 

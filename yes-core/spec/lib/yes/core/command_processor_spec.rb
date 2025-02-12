@@ -54,7 +54,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
     context 'with unregistered command' do
       before do
-        allow(Yes::Core.configuration).to receive(:handler_class).
+        allow(Yes::Core.configuration).to receive(:guard_evaluator_class).
           with('Test', 'User', 'change_name').
           and_return(nil)
       end

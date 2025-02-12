@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
   subject(:definer) { described_class.new(attribute_data) }
 
@@ -11,16 +9,24 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
     before do
       allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Command).to receive(:new).and_return(command_resolver)
       allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Event).to receive(:new).and_return(event_resolver)
-      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Handler).to receive(:new).and_return(handler_resolver)
+      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::GuardEvaluator).to(
+        receive(:new).and_return(guard_evaluator_resolver)
+      )
 
-      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand).to receive(:new).and_return(change_command)
-      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeCommand).to receive(:new).and_return(can_change_command)
+      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand).to(
+        receive(:new).and_return(change_command)
+      )
+      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeCommand).to(
+        receive(:new).and_return(can_change_command)
+      )
       allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::Accessor).to receive(:new).and_return(accessor)
     end
 
     let(:command_resolver) { instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Command', call: true) }
     let(:event_resolver) { instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Event', call: true) }
-    let(:handler_resolver) { instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Handler', call: true) }
+    let(:guard_evaluator_resolver) do
+      instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::GuardEvaluator', call: true)
+    end
 
     let(:change_command) do
       instance_double('Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand', call: true)

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggregateCommand do
   subject { instance.call }
 
@@ -18,26 +16,13 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggrega
   end
 
   before do
-    # Set up the namespace, handler and command classes
-    Test::User::Commands.const_set(:ChangeLocation, Module.new)
-    Test::User::Commands::ChangeLocation.const_set(:Handler, Class.new(Yes::Core::CommandHandler))
-    Test::User::Commands::ChangeLocation.const_set(:Command, Class.new(Yes::Core::Command))
-
-    # Register the command and handler classes
-    Yes::Core.configuration.register_aggregate_class(context, aggregate, command_name, :command,
-                                                     Test::User::Commands::ChangeLocation::Command)
-    Yes::Core.configuration.register_aggregate_class(context, aggregate, command_name, :handler,
-                                                     Test::User::Commands::ChangeLocation::Handler)
-
-    # Define the can_change method
-    Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeCommand.new(attribute_data).call
-
-    # Define the attribute accessor method
-    Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::AggregateAccessor.new(attribute_data).call
+    Test::User::Aggregate.attribute :location, :aggregate
   end
 
   after do
-    Test::User::Commands.send(:remove_const, :ChangeLocation) if Test::User::Commands.const_defined?(:ChangeLocation)
+    # Clean up location attribute
+    Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
+                                                                Test::User::Aggregate.attributes.except(:location))
   end
 
   describe '#call' do
@@ -51,8 +36,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggrega
     describe '#change_location' do
       subject { aggregate_instance.change_location(**command_payload) }
 
-      let(:handler_class) { Test::User::Commands::ChangeLocation::Handler }
-      let(:handler_instance) { instance_double(handler_class) }
+      let(:guard_evaluator_class) { Test::User::Commands::ChangeLocation::GuardEvaluator }
+      let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
       let(:location_id) { SecureRandom.uuid }
       let(:location_aggregate) { instance_double('Test::Location::Aggregate', id: location_id) }
       let(:command_payload) { { location: location_aggregate } }
@@ -64,16 +49,14 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggrega
       before do
         attribute_setup
 
-        allow(handler_class).to receive(:new).and_return(handler_instance)
-        allow(handler_instance).to receive(:call).and_return(true)
-        allow(handler_instance).to receive(:revision_check)
+        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator_instance)
+        allow(guard_evaluator_instance).to receive(:call).and_return(true)
+        allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
       end
 
-      it 'instantiates and calls the handler with the command' do
+      it 'instantiates and calls the guard evaluator with the command' do
         subject
-
-        # one time for calling actual handler code, one time for publishing events only
-        expect(handler_instance).to have_received(:call).twice
+        expect(guard_evaluator_instance).to have_received(:call)
       end
 
       it 'updates the read model with the aggregate ID' do
@@ -81,15 +64,14 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggrega
         expect(aggregate_instance.location_id).to eq(location_id)
       end
 
-      context 'when the handler raises an error' do
+      context 'when the guard evaluator raises an error' do
         before do
-          allow(handler_instance).to receive(:call).and_raise(Yes::Core::CommandHandler::InvalidTransition,
-                                                              'test error')
+          allow(guard_evaluator_instance).to receive(:call).
+            and_raise(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition, 'test error')
         end
 
         it 'does not update the read model' do
           original_id = aggregate_instance.location_id
-          subject
           expect(aggregate_instance.location_id).to eq(original_id)
         end
       end

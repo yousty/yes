@@ -108,6 +108,8 @@ module Yes
         def read_model
           @read_model ||= self.class.read_model_class.find_or_create_by(id:)
         end
+
+        delegate :revision, to: :read_model
       end
     end
   end

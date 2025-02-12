@@ -8,8 +8,9 @@ module Yes
           # Base class for attribute definers that handles common functionality
           class Base
             # @return [AttributeData] the data object containing attribute configuration
-            attr_reader :attribute_data
-            private :attribute_data
+            attr_reader :attribute_data, :guard_evaluator_class
+
+            private :attribute_data, :guard_evaluator_class
 
             # Initializes a new Base instance
             #
@@ -20,24 +21,26 @@ module Yes
             end
 
             # Generates and registers all necessary classes for the attribute.
-            # This includes command classes, event classes, and handler classes,
+            # This includes command classes, event classes, and guard evaluator classes,
             # as well as defining related methods on the aggregate class.
             #
+            # @param block [Proc] Optional block for defining guards and other attribute configurations
             # @return [void]
-            def call
+            def call(&block)
               define_classes
               define_methods
+              evaluate_dsl_block(&block) if block
             end
 
             private
 
-            # Defines the command, event, and handler classes for the attribute
+            # Defines the command, event, and guard evaluator classes for the attribute
             #
             # @return [void]
             def define_classes
               ClassResolvers::Command.new(attribute_data).call
               ClassResolvers::Event.new(attribute_data).call
-              ClassResolvers::Handler.new(attribute_data).call
+              @guard_evaluator_class = ClassResolvers::GuardEvaluator.new(attribute_data).call
             end
 
             # Defines methods on the aggregate class
@@ -46,6 +49,40 @@ module Yes
             # @return [void]
             def define_methods
               raise NotImplementedError, "#{self.class} must implement #define_methods"
+            end
+
+            # Evaluates the DSL block in the context of a DSLEvaluator
+            #
+            # @param block [Proc] The block to evaluate
+            # @return [void]
+            def evaluate_dsl_block(&block)
+              return unless block
+
+              dsl_evaluator = DSLEvaluator.new(attribute_data, guard_evaluator_class)
+              dsl_evaluator.instance_eval(&block)
+            end
+
+            # DSL evaluator class for attribute configuration blocks
+            class DSLEvaluator
+              # @return [AttributeData] The attribute data being configured
+              # @return [Class] The guard evaluator class for this attribute
+              attr_reader :attribute_data, :guard_evaluator_class
+
+              # @param attribute_data [AttributeData] The attribute data to configure
+              # @param guard_evaluator_class [Class] The guard evaluator class for this attribute
+              def initialize(attribute_data, guard_evaluator_class)
+                @attribute_data = attribute_data
+                @guard_evaluator_class = guard_evaluator_class
+              end
+
+              # Defines a guard for the attribute
+              #
+              # @param name [Symbol] The name of the guard
+              # @param block [Proc] The guard evaluation block
+              # @return [void]
+              def guard(name, &)
+                guard_evaluator_class.guard(name, &)
+              end
             end
           end
         end

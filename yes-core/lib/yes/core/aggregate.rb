@@ -82,19 +82,27 @@ module Yes
         # @param name [Symbol] name of the attribute
         # @param type [Symbol] type of the attribute (e.g., :string, :email, :uuid)
         # @param options [Hash] additional options for the attribute
+        # @param block [Proc] Optional block for defining guards and other attribute configurations
         #
         # @example Define a string attribute
         #   attribute :name, :string
         #
         # @example Define an email attribute with options
         #   attribute :email, :email, validate: true
-        def attribute(name, type, **options)
+        #
+        # @example Define an attribute with guards
+        #   attribute :location, :aggregate do
+        #     guard :something do
+        #       name == 'John'
+        #     end
+        #   end
+        def attribute(name, type, **options, &)
           @attributes ||= {}
           @attributes[name] = type
           options = options.merge(context:, aggregate:)
           Dsl::AttributeDefiner.new(
             Dsl::AttributeData.new(name, type, self, options)
-          ).call
+          ).call(&)
         end
 
         # Returns the context namespace for the aggregate
