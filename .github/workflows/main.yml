@@ -19,16 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure Bundler
-        run: |
-          bundle config set --global path 'vendor/bundle'
-          bundle config set --global frozen true
-          bundle config set --global jobs 4
-          bundle config set --global retry 3
-          bundle config set --global gem.fury.io ${{secrets.GEM_FURY_TOKEN}}
-        env:
-          BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
-
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -36,6 +26,16 @@ jobs:
           bundler-cache: true
           cache-version: 1
           working-directory: .
+        env:
+          BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
+
+      - name: Configure Bundler
+        run: |
+          bundle config set --global path 'vendor/bundle'
+          bundle config set --global frozen true
+          bundle config set --global jobs 4
+          bundle config set --global retry 3
+          bundle config set --global gem.fury.io ${{secrets.GEM_FURY_TOKEN}}
 
       - name: Run Test Dependencies (Postgres, Redis)
         run: docker compose up --detach
