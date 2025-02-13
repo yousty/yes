@@ -28,16 +28,7 @@ jobs:
       - name: Run Test Dependencies (Postgres, Redis)
         run: docker compose up --detach
       - name: Run tests
-        env:
-          BUNDLE_GEM__FURY__IO: ${{secrets.GEM_FURY_TOKEN}}
         run: |
-          cd yes-core
-          bundle install
-          cd ..
-          cd dummy
-          bundle install
-          cd ..
           sleep 10
           ./bin/setup_db
-          cd yes-core
-          bundle exec rspec
+          bundle exec rspec yes-core/spec
