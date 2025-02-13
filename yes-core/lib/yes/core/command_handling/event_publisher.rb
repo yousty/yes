@@ -5,19 +5,31 @@ module Yes
     module CommandHandling
       # Handles publishing events with revision checks
       class EventPublisher
+        # Value object containing aggregate data needed for event publication
+        AggregateEventPublicationData = Struct.new(:id, :context, :name, :revision, keyword_init: true) do
+          def self.from_aggregate(aggregate)
+            new(
+              id: aggregate.id,
+              context: aggregate.class.context,
+              name: aggregate.class.name.split('::')[1],
+              revision: aggregate.revision
+            )
+          end
+        end
+
         # @param command [Object] The command instance
-        # @param aggregate [Object] The current aggregate instance
+        # @param aggregate_data [AggregateEventPublicationData] The aggregate publication data
         # @param accessed_external_aggregates [Array<Hash>] List of accessed external aggregates with their revisions
         # @param event_name [String, nil] Optional explicit event name to use
-        def initialize(command:, aggregate:, accessed_external_aggregates:, event_name: nil)
+        def initialize(command:, aggregate_data:, accessed_external_aggregates:, event_name: nil)
           @command = command
-          @aggregate = aggregate
+          @aggregate_data = aggregate_data
           @accessed_external_aggregates = accessed_external_aggregates
           @event_name = event_name
           @command_utilities = CommandUtilities.new(
-            context: aggregate.class.context,
-            aggregate: aggregate.class.name.split('::')[1],
-            aggregate_id: aggregate.id
+            context: aggregate_data.context,
+            aggregate: aggregate_data.name,
+            aggregate_id: aggregate_data.id
           )
         end
 
@@ -34,8 +46,8 @@ module Yes
 
         # @return [Object] The command instance
         attr_reader :command
-        # @return [Object] The current aggregate instance
-        attr_reader :aggregate
+        # @return [AggregateEventPublicationData] The aggregate publication data
+        attr_reader :aggregate_data
         # @return [Array<Hash>] List of accessed external aggregates with their revisions
         attr_reader :accessed_external_aggregates
         # @return [String, nil] The explicit event name to use
@@ -49,7 +61,7 @@ module Yes
         #
         # @return [PgEventstore::Event] The published event
         def publish_event
-          expected_revision = aggregate.revision == -1 ? :no_stream : aggregate.revision
+          expected_revision = aggregate_data.revision == -1 ? :no_stream : aggregate_data.revision
 
           PgEventstore.client.append_to_stream(
             command_utilities.build_stream,

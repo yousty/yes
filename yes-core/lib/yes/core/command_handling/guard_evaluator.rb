@@ -113,7 +113,8 @@ module Yes
 
           aggregate_tracker.track(
             attribute_name: attribute_name.to_s.camelize,
-            instance: instance,
+            id: instance.id,
+            revision: instance.revision,
             context: aggregate.class.context
           )
         end

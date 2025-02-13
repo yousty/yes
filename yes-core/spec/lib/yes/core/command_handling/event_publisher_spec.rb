@@ -4,7 +4,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
   subject(:event_publisher) do
     described_class.new(
       command:,
-      aggregate:,
+      aggregate_data: described_class::AggregateEventPublicationData.from_aggregate(aggregate),
       accessed_external_aggregates:,
       event_name:
     )

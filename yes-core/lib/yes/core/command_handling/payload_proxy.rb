@@ -63,7 +63,8 @@ module Yes
           instance = aggregate_class.new(id)
           aggregate_tracker.track(
             attribute_name: method_name,
-            instance:,
+            id: instance.id,
+            revision: instance.revision,
             context:
           )
           instance

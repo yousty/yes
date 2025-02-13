@@ -31,11 +31,23 @@ module Yes
         @registered_classes[key][type][action_name] = klass
       end
 
+      # Register a read model class for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param klass [Class] The class to register
+      # @example
+      #   register_read_model_class(:authentication, :user, UserReadModel)
       def register_read_model_class(context_name, aggregate_name, klass)
         key = [context_name, aggregate_name]
         @registered_classes[key][:read_model] = klass
       end
 
+      # Register a read model filter class for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param klass [Class] The class to register
+      # @example
+      #   register_read_model_filter_class(:authentication, :user, UserReadModelFilter)
       def register_read_model_filter_class(context_name, aggregate_name, klass)
         key = [context_name, aggregate_name]
         @registered_classes[key][:read_model_filter] = klass
@@ -96,6 +108,13 @@ module Yes
         @registered_classes[[context_name, aggregate_name]]
       end
 
+      # Retrieve a guard evaluator class for a specific command
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param command_name [Symbol, String] The name of the command
+      # @return [Class, nil] The registered guard evaluator class or nil if not found
+      # @example
+      #   evaluator = guard_evaluator_class(:authentication, :user, :create)
       def guard_evaluator_class(context_name, aggregate_name, command_name)
         aggregate_class(context_name, aggregate_name, command_name.underscore.to_sym, :guard_evaluator)
       end

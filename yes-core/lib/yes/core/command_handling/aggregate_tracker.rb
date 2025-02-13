@@ -15,17 +15,16 @@ module Yes
         # Tracks an external aggregate access
         #
         # @param attribute_name [Symbol] The attribute name
-        # @param instance [Object] The aggregate instance
+        # @param id [String] The aggregate ID
+        # @param revision [Integer] The aggregate revision
         # @param context [String] The context name
         # @return [void]
-        def track(attribute_name:, instance:, context:)
-          return unless instance
-
+        def track(attribute_name:, id:, revision:, context:)
           accessed_external_aggregates << {
-            id: instance.id,
+            id:,
             context:,
             name: attribute_name.to_s.camelize,
-            revision: instance.revision
+            revision:
           }
         end
       end

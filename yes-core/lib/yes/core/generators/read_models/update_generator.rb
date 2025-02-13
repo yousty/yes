@@ -71,33 +71,47 @@ module Yes
           end
 
           def alter_table_block(aggregate, table_name)
-            existing_columns = ActiveRecord::Base.connection.columns(table_name).map(&:name) - %w[id created_at
-                                                                                                  updated_at]
-            defined_columns = aggregate[:attributes].keys.map do |key|
+            existing_columns = fetch_existing_columns(table_name)
+            defined_columns = build_defined_columns(aggregate)
+
+            build_alter_statements(table_name, existing_columns, defined_columns, aggregate[:attributes])
+          end
+
+          def fetch_existing_columns(table_name)
+            ActiveRecord::Base.connection.columns(table_name).map(&:name) - %w[id created_at updated_at]
+          end
+
+          def build_defined_columns(aggregate)
+            aggregate[:attributes].keys.map do |key|
               type = aggregate[:attributes][key]
               type == :aggregate ? "#{key}_id" : key.to_s
             end
+          end
 
-            columns_to_add = defined_columns - existing_columns
-            columns_to_remove = existing_columns - defined_columns
-
+          def build_alter_statements(table_name, existing_columns, defined_columns, attributes)
             statements = []
-
-            unless existing_columns.include?('revision')
-              statements << "add_column :#{table_name}, :revision, :integer, null: false, default: -1"
-            end
-
-            columns_to_add.each do |column|
-              attribute_name = column.end_with?('_id') ? column.chomp('_id').to_sym : column.to_sym
-              type = aggregate[:attributes][attribute_name]
-              statements << "add_column :#{table_name}, :#{column}, :#{database_type(type)}"
-            end
-
-            columns_to_remove.each do |column|
-              statements << "remove_column :#{table_name}, :#{column}"
-            end
-
+            statements << add_revision_statement(table_name) unless existing_columns.include?('revision')
+            statements.concat(build_add_column_statements(table_name, existing_columns, defined_columns, attributes))
+            statements.concat(build_remove_column_statements(table_name, existing_columns, defined_columns))
             statements.join("\n    ")
+          end
+
+          def add_revision_statement(table_name)
+            "add_column :#{table_name}, :revision, :integer, null: false, default: -1"
+          end
+
+          def build_add_column_statements(table_name, existing_columns, defined_columns, attributes)
+            (defined_columns - existing_columns).map do |column|
+              attribute_name = column.end_with?('_id') ? column.chomp('_id').to_sym : column.to_sym
+              type = attributes[attribute_name]
+              "add_column :#{table_name}, :#{column}, :#{database_type(type)}"
+            end
+          end
+
+          def build_remove_column_statements(table_name, existing_columns, defined_columns)
+            (existing_columns - defined_columns).map do |column|
+              "remove_column :#{table_name}, :#{column}"
+            end
           end
 
           def column_definitions(attributes)
@@ -114,7 +128,7 @@ module Yes
             ActiveRecord::Base.connection.table_exists?(table_name)
           end
 
-          def database_type(type)
+          def database_type(type) # rubocop:disable Metrics/CyclomaticComplexity
             case type
             when :string, :email, :url then :string
             when :integer then :integer

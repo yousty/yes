@@ -42,7 +42,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
     end
 
     context 'when resolving aggregates' do
-      let(:user_aggregate) { instance_double('User::Aggregate', id: 'user-123') }
+      let(:user_aggregate) { instance_double('User::Aggregate', id: 'user-123', revision: -1) }
       let(:user_aggregate_class) { class_double('TestContext::User::Aggregate', new: user_aggregate) }
 
       before do
@@ -59,7 +59,8 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
 
         expect(aggregate_tracker).to have_received(:track).with(
           attribute_name: :user,
-          instance: user_aggregate,
+          id: 'user-123',
+          revision: -1,
           context: context
         )
       end
