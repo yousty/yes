@@ -29,6 +29,7 @@ jobs:
         run: docker compose up --detach
       - name: Run tests
         run: |
+          bundle install
           sleep 10
           ./bin/setup_db
           bundle exec rspec yes-core/spec
