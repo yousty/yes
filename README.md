@@ -151,14 +151,14 @@ rails generate yes:read_models:update
 
 This generator will create a migration file that updates the read model schema to match the current state of your aggregates.
 
-Limitation: The generator does not currently support changing attribute types.
+**Limitation: The generator does not currently support changing attribute types.**
 
 
 ### Command and Read APIs
 
-In case you have the command api mounted to your application, your aggregates commands will be available on the command api.
+In case you have the command api mounted to your application, your aggregate's commands will be available on the command api.
 
-In case you have the read api mounted to your application, the default read model will be available on the read api. 
+In case you have the read api mounted to your application, the default read model will be available on the read api, unless you marked it as private. 
 
 Note that you will need to create the necessary authorizers.
 
