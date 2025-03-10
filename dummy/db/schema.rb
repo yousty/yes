@@ -14,13 +14,13 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
-  create_table "locations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+  create_table "test_locations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.integer "revision", default: -1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
 
-  create_table "users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+  create_table "test_users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "email"
     t.string "name"
     t.integer "age"

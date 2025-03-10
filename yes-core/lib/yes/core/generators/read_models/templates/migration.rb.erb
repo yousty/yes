@@ -3,7 +3,6 @@
 class UpdateReadModels < ActiveRecord::Migration[7.1]
   def change
     <% @aggregates.each do |aggregate| %>
-    # Create or update read model for aggregate <%= "#{aggregate[:context].camelize}::#{aggregate[:aggregate].camelize}" %>
     <%= table_operations(aggregate) %>
     <% end %>
   end

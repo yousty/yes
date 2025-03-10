@@ -3,7 +3,7 @@
 RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModelSerializer do
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
-  let(:read_model_name) { 'User' }
+  let(:read_model_name) { 'test_users' }
   let(:read_model_attributes) { %i[email active age name] }
   let(:test_model) do
     Struct.new(*(%i[id] + read_model_attributes)).new(1, 'test@example.com', true, 25, 'Test User')
@@ -24,7 +24,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModelSerializer do
     end
 
     it 'sets the correct type for JSON:API serialization' do
-      expect(subject.record_type).to eq(:users)
+      expect(subject.record_type).to eq(:test_users)
     end
 
     it 'defines the specified attributes' do

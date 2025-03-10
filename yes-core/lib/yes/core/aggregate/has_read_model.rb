@@ -19,7 +19,7 @@ module Yes
           end
         end
 
-        class_methods do
+        class_methods do # rubocop:disable Metrics/BlockLength
           # Returns the read model class associated with the current aggregate.
           # The class is resolved using ReadModelClassResolver, which either uses an explicitly set
           # class name or derives it from the current namespace.
@@ -45,14 +45,14 @@ module Yes
 
           # @return [String] The name of the read model
           def read_model_name
-            self._read_model_name ||= aggregate.underscore
+            self._read_model_name ||= "#{context}_#{aggregate}".underscore
           end
 
           # Sets the read model name for this aggregate
           # @param name [String] The name for the read model
           # @param public [Boolean] Whether the read model should be public via read API
           def read_model(name, public: true)
-            self._read_model_name = name
+            self._read_model_name = name.to_s.underscore
             self._read_model_public = public
           end
 

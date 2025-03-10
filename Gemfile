@@ -30,6 +30,8 @@ gem 'generator_spec'
 gem 'rspec', '~> 3.0'
 gem 'rspec-rails', '~> 7.1'
 gem 'rubocop', '~> 1.21'
+gem 'rubocop-performance'
+gem 'rubocop-rails'
 
 gem 'yes-core', path: 'yes-core'
 gem 'yousty-command-api', path: 'yousty-command-api'

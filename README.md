@@ -146,7 +146,7 @@ user.name # reads name from the read model
 Whenever you make changes to your aggregates (adding/removing aggregates or attributes), you need to update your read model schema. Use the provided Rails generator:
 
 ```shell
-rails generate yes:read_models:update
+rails generate yes:core:read_models:update
 ```
 
 This generator will create a migration file that updates the read model schema to match the current state of your aggregates.

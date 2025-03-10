@@ -3,7 +3,7 @@
 RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel do
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
-  let(:read_model_name) { 'User' }
+  let(:read_model_name) { 'test_user' }
 
   subject { described_class.new(read_model_name, context, aggregate).call }
 
@@ -13,7 +13,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel do
     end
 
     it 'sets the correct table name' do
-      expect(subject.table_name).to eq('users')
+      expect(subject.table_name).to eq(read_model_name.pluralize)
     end
 
     it 'defines the by_ids scope' do

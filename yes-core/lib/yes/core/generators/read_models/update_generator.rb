@@ -18,10 +18,9 @@ module Yes
             return if @aggregates.empty?
 
             migration_number = self.class.next_migration_number(File.join(destination_root, 'db/migrate'))
-            template(
-              'migration.rb.erb',
-              File.join(destination_root, "db/migrate/#{migration_number}_update_read_models.rb")
-            )
+
+            path = File.join(destination_root, "db/migrate/#{migration_number}_update_read_models.rb")
+            template('migration.rb.erb', path)
           end
 
           # Required by Rails::Generators::Migration
@@ -50,7 +49,7 @@ module Yes
           end
 
           def table_operations(aggregate)
-            table_name = aggregate[:aggregate].underscore.pluralize
+            table_name = aggregate[:read_model_name].to_s.pluralize
 
             if table_exists?(table_name)
               alter_table_block(aggregate, table_name)
@@ -60,7 +59,7 @@ module Yes
           end
 
           def create_table_block(aggregate)
-            table_name = aggregate[:aggregate].underscore.pluralize
+            table_name = aggregate[:read_model_name].to_s.pluralize
             <<~RUBY
               create_table :#{table_name} do |t|
                 #{column_definitions(aggregate[:attributes])}
@@ -109,7 +108,7 @@ module Yes
           end
 
           def build_remove_column_statements(table_name, existing_columns, defined_columns)
-            (existing_columns - defined_columns).map do |column|
+            (existing_columns - defined_columns - ['revision']).map do |column|
               "remove_column :#{table_name}, :#{column}"
             end
           end
