@@ -17,8 +17,8 @@ To define attributes on your aggregate, use the `attribute` method with a name a
 
 ```ruby
 module Users
-  class User
-    class Aggregate < Yes::Aggregate
+  module User
+    class Aggregate < Yes::Core::Aggregate
       attribute :name, :string
       attribute :email, :email
       attribute :age, :integer
@@ -57,8 +57,8 @@ For each attribute, a `can_change_<attribute>?` method is automatically added. T
 
 ```ruby
 module Users
-  class User
-    class Aggregate < Yes::Aggregate
+  module User
+    class Aggregate < Yes::Core::Aggregate
       attribute :email, :email
     end
   end
@@ -87,8 +87,8 @@ Given an aggregate with a `name` attribute:
 
 ```ruby
 module Users
-  class User
-    class Aggregate < Yes::Aggregate
+  module User
+    class Aggregate < Yes::Core::Aggregate
       attribute :name, :string
     end
   end
@@ -111,7 +111,7 @@ user_aggregate.name_change_error  # => "Name is invalid"
 
 ## Read Models
 
-For each aggregate there is a corresponding read model (ActiveRecord model) generated that stores its current state. By default, the read model's name is derived from the aggregate's name. For example, `Users::User::Aggregate` will have a read model named `User`.
+For each aggregate there is a corresponding read model (ActiveRecord model) generated that stores its current state. By default, the read model's name is derived from the aggregate's context and name. For example, `Users::User::Aggregate` will have a read model named `UsersUser`.
 
 ### Customizing Read Models
 
@@ -120,7 +120,7 @@ You can customize the read model name and visibility using the `read_model` meth
 ```ruby
 module Users
   module User
-    class Aggregate < Yes::Aggregate
+    class Aggregate < Yes::Core::Aggregate
       # Use a custom read model name and make the read model private (not accessible via read API)
       read_model 'custom_user', public: false
 
@@ -130,6 +130,8 @@ module Users
   end
 end
 ```
+
+In the example above, the readmodel class name is `CustomUser` instead of the default `UsersUser`.
 
 ### Attribute Accessors
 
@@ -154,7 +156,7 @@ This generator will create a migration file that updates the read model schema t
 **Limitation: The generator does not currently support changing attribute types.**
 
 
-### Command and Read APIs
+## Command and Read APIs
 
 In case you have the command api mounted to your application, your aggregate's commands will be available on the command api.
 
@@ -163,6 +165,73 @@ In case you have the read api mounted to your application, the default read mode
 Note that you will need to create the necessary authorizers.
 
 
+## Custom Guards for Attributes
+
+The `attribute` method supports custom guards as a way to implement domain-specific validation logic beyond simple type checking.
+
+### Basic Guard Usage
+
+To add a guard to an attribute, first add a block to the attribute, then add a `guard` block inside:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      attribute :email, :email do 
+        guard :check_email_domain do
+          payload.email.end_with?('@example.com')
+        end
+      end
+    end
+  end
+end
+```
+
+In this example, the user email can only be changed to addresses ending with '@example.com'.
+
+Inside a guard block you can access the command payload using `payload` and all aggregate attributes directly:
+
+```ruby
+  guard :some_check do
+    payload.something != 'xyz' && something.blank?    # accesses the 'something' attribute in the payload and also the current value for 'something'
+  end
+```
+
+The guard will pass if the block evaluates to `true`.
+
+By default, when a guard fails it will raise an `invalid_transition` error. If you want to explicitly define a `no_change` check guard, you need to name the guard `:no_change`:
+
+```ruby
+  guard :no_change do
+    payload.something != something
+  end
+```
+
+Note that in most cases you don't need to do this, because the `no_change` guard is defined by default for all attributes.
+
+
+### Guard with Custom Error Messages
+
+You can provide custom localized error messages for guards inside I18n translation files. 
+
+Example:
+
+```yaml
+aggregates:
+  test: # context
+    apprenticeship: # aggregate
+      commands:
+        change_location: # command
+          guards:
+            location_published: # guard
+              error: "Location is not published"
+            company_matches:
+              error: "Location company does not match apprenticeship company"
+```
+
+### Combining Guards with Type Validation
+
+Guards are executed after type validation. If the type validation fails, the guard will not be executed. This allows you to focus your guard logic on business rules rather than basic type checking.
 
 ## Development
 
