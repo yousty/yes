@@ -25,8 +25,8 @@ module Yes
           end
         end
 
-        # @param payload [Object] The command payload
-        # @param aggregate [Object] The aggregate instance
+        # @param payload [Hash] The command payload
+        # @param aggregate [Yes::Core::Aggregate] The aggregate instance
         def initialize(payload:, aggregate:)
           @raw_payload = payload
           @aggregate = aggregate
@@ -67,7 +67,19 @@ module Yes
           return if result
 
           error_class = guard[:name] == :no_change ? NoChangeTransition : InvalidTransition
-          raise error_class, "Guard '#{guard[:name]}' failed"
+          raise error_class, error_message(guard[:name])
+        end
+
+        # Looks up the error message for a guard from I18n translations
+        #
+        # @param guard_name [Symbol] The name of the guard
+        # @return [String] The error message
+        def error_message(guard_name)
+          context_name = aggregate.class.context
+          aggregate_name = aggregate.class.aggregate
+          command_name = self.class.name.sub('::GuardEvaluator', '').demodulize
+
+          Yes::Core::ErrorMessages.guard_error(context_name, aggregate_name, command_name, guard_name)
         end
 
         # Handles method missing to delegate attribute calls to the current aggregate

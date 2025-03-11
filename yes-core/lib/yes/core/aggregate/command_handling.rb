@@ -14,7 +14,7 @@ module Yes
         private
 
         # Handles a command using the specified guard evaluator class
-        # @param command [Object] The command to be handled
+        # @param command [Yes::Core::Command] The command to be handled
         # @param guard_evaluator_class [Class] The guard evaluator class to process the command
         # @return [GuardEvaluator] The guard evaluator instance
         # @raise [CommandHandling::GuardEvaluator::InvalidTransition] If the command transition is invalid
@@ -37,7 +37,7 @@ module Yes
         end
 
         # Executes a command within a transaction, handling errors and publishing events
-        # @param cmd [Object] The command to execute
+        # @param cmd [Yes::Core::Command] The command to execute
         # @param guard_evaluator_class [Class] The guard evaluator class to process the command
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] with error if command handling fails
