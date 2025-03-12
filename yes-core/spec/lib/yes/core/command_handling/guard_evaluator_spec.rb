@@ -121,4 +121,27 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
       end
     end
   end
+
+  describe '#error_message' do
+    let(:guard_name) { :test_guard }
+    let(:command_evaluator_class) do
+      Class.new(described_class) do
+        def self.name
+          'Test::User::TestCommand::GuardEvaluator'
+        end
+      end
+    end
+    let(:command_evaluator) { command_evaluator_class.new(payload: {}, aggregate:) }
+
+    it 'generates the correct error message using ErrorMessages' do
+      aggregate_failures do
+        expect(Yes::Core::ErrorMessages).to receive(:guard_error).
+          with('Test', 'User', 'TestCommand', guard_name).
+          and_return('Error message')
+
+        # Call the private method using send
+        expect(command_evaluator.send(:error_message, guard_name)).to eq('Error message')
+      end
+    end
+  end
 end

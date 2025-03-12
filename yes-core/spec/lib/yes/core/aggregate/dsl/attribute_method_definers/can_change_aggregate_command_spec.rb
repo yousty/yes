@@ -44,13 +44,12 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeAggr
     end
 
     describe '#can_change_location?' do
-      subject { aggregate_instance.can_change_location?(**command_payload) }
+      subject { aggregate_instance.can_change_location?(command_payload) }
 
       let(:guard_evaluator_class) { Test::User::Commands::ChangeLocation::GuardEvaluator }
       let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
       let(:location_id) { SecureRandom.uuid }
       let(:location_aggregate) { instance_double('Test::Location::Aggregate', id: location_id) }
-      let(:command_payload) { { location: location_aggregate } }
 
       let(:attribute_setup) do
         instance.call
@@ -64,47 +63,61 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeAggr
         allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
       end
 
-      context 'when validation succeeds' do
-        it 'returns true' do
-          expect(subject).to be true
+      shared_examples 'correct validation' do
+        context 'when validation succeeds' do
+          it 'returns true' do
+            expect(subject).to be true
+          end
+
+          it 'clears any previous error' do
+            aggregate_instance.change_location_error = 'Previous error'
+            subject
+            expect(aggregate_instance.change_location_error).to be_nil
+          end
         end
 
-        it 'clears any previous error' do
-          aggregate_instance.change_location_error = 'Previous error'
-          subject
-          expect(aggregate_instance.change_location_error).to be_nil
+        context 'when validation fails' do
+          let(:error_message) { 'Validation failed' }
+
+          before do
+            allow(guard_evaluator_instance).to receive(:call).and_raise(
+              Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition, error_message
+            )
+          end
+
+          it 'returns false' do
+            expect(subject).to be false
+          end
+
+          it 'sets the error message' do
+            subject
+            expect(aggregate_instance.change_location_error).to eq(error_message)
+          end
+        end
+
+        context 'when no change is needed' do
+          before do
+            allow(guard_evaluator_instance).to receive(:call).and_raise(
+              Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition, 'No change needed'
+            )
+          end
+
+          it 'returns false' do
+            expect(subject).to be false
+          end
         end
       end
 
-      context 'when validation fails' do
-        let(:error_message) { 'Validation failed' }
+      context 'when using hash payload' do
+        let(:command_payload) { { location: location_aggregate } }
 
-        before do
-          allow(guard_evaluator_instance).to receive(:call).and_raise(
-            Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition, error_message
-          )
-        end
-
-        it 'returns false' do
-          expect(subject).to be false
-        end
-
-        it 'sets the error message' do
-          subject
-          expect(aggregate_instance.change_location_error).to eq(error_message)
-        end
+        it_behaves_like 'correct validation'
       end
 
-      context 'when no change is needed' do
-        before do
-          allow(guard_evaluator_instance).to receive(:call).and_raise(
-            Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition, 'No change needed'
-          )
-        end
+      context 'when using shorthand value payload' do
+        let(:command_payload) { location_aggregate }
 
-        it 'returns false' do
-          expect(subject).to be false
-        end
+        it_behaves_like 'correct validation'
       end
     end
   end

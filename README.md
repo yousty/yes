@@ -73,6 +73,12 @@ user.can_change_email?(email: "invalid-email")  # => false
 user.can_change_email?(email: "user@example.com")  # => true
 ```
 
+There is also a shorthand version where you can supply the new value for the attribute directly:
+
+```ruby
+user.can_change_email?("user@example.com") 
+```
+
 ## `change_<attribute>` Method
 
 For each attribute defined on an aggregate, an instance method `change_<attribute>` is automatically added. This method allows you to change the attribute's value by:
@@ -107,6 +113,12 @@ In case the change is invalid, the change method will return `false` and the `<a
 ```ruby
 user_aggregate.change_name(name: "New Name")  # => false
 user_aggregate.name_change_error  # => "Name is invalid"
+```
+
+There is also a shorthand version where you can supply the new value for the attribute directly:
+
+```ruby
+user_aggregate.change_name("New Name")
 ```
 
 ## Read Models

@@ -13,7 +13,8 @@ module Yes
               command_method = :"change_#{name}"
               name = @name
 
-              aggregate_class.define_method(command_method) do |**payload|
+              aggregate_class.define_method(command_method) do |payload|
+                payload = command_utilities.prepare_payload(name, payload)
                 cmd = command_utilities.build_command(name, payload)
                 guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(name)
 

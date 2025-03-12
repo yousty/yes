@@ -32,11 +32,11 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand
     end
 
     describe '#change_test_field' do
-      subject { aggregate_instance.change_test_field(**command_payload) }
+      subject { aggregate_instance.change_test_field(command_payload) }
 
       let(:guard_evaluator_class) { Test::User::Commands::ChangeTestField::GuardEvaluator }
       let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
-      let(:command_payload) { { test_field: 'New Value' } }
+      let(:new_value) { 'New Value' }
 
       let(:attribute_setup) do
         instance.call
@@ -50,14 +50,28 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand
         allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
       end
 
-      it 'instantiates and calls the guard evaluator with the command' do
-        subject
-        expect(guard_evaluator_instance).to have_received(:call)
+      shared_examples 'a command that updates the test_field' do
+        it 'instantiates and calls the guard evaluator with the command' do
+          subject
+          expect(guard_evaluator_instance).to have_received(:call)
+        end
+
+        it 'updates the read model' do
+          subject
+          expect(aggregate_instance.test_field).to eq(new_value)
+        end
       end
 
-      it 'updates the read model' do
-        subject
-        expect(aggregate_instance.test_field).to eq('New Value')
+      context 'when using hash payload' do
+        let(:command_payload) { { test_field: new_value } }
+
+        it_behaves_like 'a command that updates the test_field'
+      end
+
+      context 'when using shorthand value payload' do
+        let(:command_payload) { new_value }
+
+        it_behaves_like 'a command that updates the test_field'
       end
     end
   end

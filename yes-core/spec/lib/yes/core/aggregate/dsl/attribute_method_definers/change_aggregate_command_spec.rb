@@ -34,13 +34,12 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggrega
     end
 
     describe '#change_location' do
-      subject { aggregate_instance.change_location(**command_payload) }
+      subject { aggregate_instance.change_location(command_payload) }
 
       let(:guard_evaluator_class) { Test::User::Commands::ChangeLocation::GuardEvaluator }
       let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
       let(:location_id) { SecureRandom.uuid }
       let(:location_aggregate) { instance_double('Test::Location::Aggregate', id: location_id) }
-      let(:command_payload) { { location: location_aggregate } }
 
       let(:attribute_setup) do
         instance.call
@@ -54,14 +53,28 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeAggrega
         allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
       end
 
-      it 'instantiates and calls the guard evaluator with the command' do
-        subject
-        expect(guard_evaluator_instance).to have_received(:call)
+      shared_examples 'a command that updates the location' do
+        it 'instantiates and calls the guard evaluator with the command' do
+          subject
+          expect(guard_evaluator_instance).to have_received(:call)
+        end
+
+        it 'updates the read model with the aggregate ID' do
+          subject
+          expect(aggregate_instance.location_id).to eq(location_id)
+        end
       end
 
-      it 'updates the read model with the aggregate ID' do
-        subject
-        expect(aggregate_instance.location_id).to eq(location_id)
+      context 'when using hash payload' do
+        let(:command_payload) { { location: location_aggregate } }
+
+        it_behaves_like 'a command that updates the location'
+      end
+
+      context 'when using shorthand value payload' do
+        let(:command_payload) { location_aggregate }
+
+        it_behaves_like 'a command that updates the location'
       end
 
       context 'when the guard evaluator raises an error' do

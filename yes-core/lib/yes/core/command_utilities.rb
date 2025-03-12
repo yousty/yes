@@ -20,14 +20,14 @@ module Yes
         @aggregate_id = aggregate_id
       end
 
-      # Builds a command instance for the given command name and payload
+      # Builds a change command instance for the given attribute and payload
       #
-      # @param command [Symbol] The command name
+      # @param attribute [Symbol] The attribute name
       # @param payload [Hash] The command payload
-      # @return [Object] The instantiated command
+      # @return [Yes::Core::Command] The instantiated command
       # @raise [RuntimeError] If the command class cannot be found
-      def build_command(command, payload)
-        command_class = fetch_class(:"change_#{command_name(command)}", :command)
+      def build_command(attribute, payload)
+        command_class = fetch_class(:"change_#{command_name(attribute)}", :command)
         command_class.new("#{aggregate.underscore}_id": aggregate_id, **payload)
       end
 
@@ -83,6 +83,12 @@ module Yes
         :no_stream
       end
 
+      def prepare_payload(attribute, payload)
+        return payload if payload.is_a?(Hash)
+
+        { attribute => payload }
+      end
+
       private
 
       attr_reader :context, :aggregate, :aggregate_id
@@ -136,9 +142,16 @@ module Yes
         command_name
       end
 
-      # remove id from command name to support id change in aggregate attributes
-      def command_name(command)
-        command.to_s.sub('_id', '')
+      # Removes the '_id' suffix from an attribute name
+      #
+      # @param attribute [Symbol, String] The attribute name that might contain an '_id' suffix
+      # @return [String] The attribute name without the '_id' suffix
+      # @example
+      #   command_name(:user_id) # => "user"
+      #   command_name("company_id") # => "company"
+      #   command_name(:name) # => "name"
+      def command_name(attribute)
+        attribute.to_s.sub('_id', '')
       end
     end
   end

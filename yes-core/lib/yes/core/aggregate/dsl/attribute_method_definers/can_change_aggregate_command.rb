@@ -9,7 +9,7 @@ module Yes
           class CanChangeAggregateCommand < Base
             # Defines a can_change? method on the aggregate class that accepts an aggregate instance
             # @return [void]
-            def call
+            def call # rubocop:disable Metrics/AbcSize
               can_change_method = :"can_change_#{name}?"
               error_method = :"change_#{name}_error"
               name = @name
@@ -17,7 +17,8 @@ module Yes
 
               aggregate_class.attr_accessor error_method
 
-              aggregate_class.define_method(can_change_method) do |**payload|
+              aggregate_class.define_method(can_change_method) do |payload|
+                payload = command_utilities.prepare_payload(name, payload)
                 aggregate_instance = payload[name]
                 cmd = command_utilities.build_command(name, { id_name => aggregate_instance.id })
                 guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(name)

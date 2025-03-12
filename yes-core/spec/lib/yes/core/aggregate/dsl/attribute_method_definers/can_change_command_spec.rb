@@ -9,7 +9,6 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeComm
   let(:attribute_name) { :test_field }
   let(:attribute_type) { :string }
   let(:aggregate_class) { Test::User::Aggregate }
-  let(:command_payload) { { test_field: 'test value' } }
   let(:guard_evaluator_class) { Test::User::Commands::ChangeTestField::GuardEvaluator }
   let(:aggregate_instance) { aggregate_class.new }
   let(:command_name) { :change_test_field }
@@ -39,45 +38,59 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeComm
       expect(aggregate_instance).to respond_to(:change_test_field_error=)
     end
 
-    context 'when validation succeeds' do
-      let(:guard_evaluator_instance) { instance_double(guard_evaluator_class, call: true) }
+    shared_examples 'correct validation' do
+      context 'when validation succeeds' do
+        let(:guard_evaluator_instance) { instance_double(guard_evaluator_class, call: true) }
 
-      before do
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator_instance)
-        allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
+        before do
+          allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator_instance)
+          allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
+        end
+
+        it 'returns true' do
+          expect(aggregate_instance.can_change_test_field?(command_payload)).to be true
+        end
+
+        it 'clears any previous error' do
+          aggregate_instance.change_test_field_error = 'Previous error'
+          aggregate_instance.can_change_test_field?(command_payload)
+          expect(aggregate_instance.change_test_field_error).to be_nil
+        end
       end
 
-      it 'returns true' do
-        expect(aggregate_instance.can_change_test_field?(**command_payload)).to be true
-      end
+      context 'when validation fails' do
+        let(:error_message) { 'Validation failed' }
+        let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
 
-      it 'clears any previous error' do
-        aggregate_instance.change_test_field_error = 'Previous error'
-        aggregate_instance.can_change_test_field?(**command_payload)
-        expect(aggregate_instance.change_test_field_error).to be_nil
+        before do
+          allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator_instance)
+          allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
+          allow(guard_evaluator_instance).to receive(:call).and_raise(
+            Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition, error_message
+          )
+        end
+
+        it 'returns false' do
+          expect(aggregate_instance.can_change_test_field?(command_payload)).to be false
+        end
+
+        it 'sets the error message' do
+          aggregate_instance.can_change_test_field?(command_payload)
+          expect(aggregate_instance.change_test_field_error).to eq(error_message)
+        end
       end
     end
 
-    context 'when validation fails' do
-      let(:error_message) { 'Validation failed' }
-      let(:guard_evaluator_instance) { instance_double(guard_evaluator_class) }
+    context 'when using hash payload' do
+      let(:command_payload) { { test_field: 'test value' } }
 
-      before do
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator_instance)
-        allow(guard_evaluator_instance).to receive(:accessed_external_aggregates).and_return([])
-        allow(guard_evaluator_instance).to receive(:call).and_raise(
-          Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition, error_message
-        )
-      end
+      it_behaves_like 'correct validation'
+    end
 
-      it 'returns false' do
-        expect(aggregate_instance.can_change_test_field?(**command_payload)).to be false
-      end
+    context 'when using shorthand value payload' do
+      let(:command_payload) { 'test value' }
 
-      it 'sets the error message' do
-        aggregate_instance.can_change_test_field?(**command_payload)
-        expect(aggregate_instance.change_test_field_error).to eq(error_message)
-      end
+      it_behaves_like 'correct validation'
     end
   end
 end
