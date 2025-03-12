@@ -1,10 +1,10 @@
-# Yes::Aggregate
+# Yes::Core::Aggregate
 
-The `Yes::Aggregate` class provides a DSL for defining event-sourced aggregates.
+The `Yes::Core::Aggregate` class provides a DSL for defining event-sourced aggregates.
 
 ## Overview
 
-The DSL provides the following methods for usage inside the `Yes::Aggregate` class:
+The DSL provides the following methods for usage inside the `Yes::Core::Aggregate` class:
 
 - `attribute`: automatically generates the necessary commands, events, and handlers for managing your aggregate's state.
 - `read_model`: allows you to specify a custom read model name and visibility.
