@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command do
+RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::Command do
   let(:context) { 'Test' }
   let(:aggregate) { 'User' }
   let(:attribute_name) { :test_field }

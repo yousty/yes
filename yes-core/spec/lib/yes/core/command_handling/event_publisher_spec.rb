@@ -45,7 +45,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
   before do
     PgEventstore::TestHelpers.clean_up_db
 
-    Test::User::Aggregate.attribute :location, :aggregate
+    Test::User::Aggregate.attribute :location, :aggregate, command: true
   end
 
   after do

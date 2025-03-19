@@ -16,7 +16,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Aggregate do
   end
 
   before do
-    Test::User::Aggregate.attribute :location, :aggregate
+    Test::User::Aggregate.attribute :location, :aggregate, command: true
   end
 
   after do

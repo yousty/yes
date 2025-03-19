@@ -15,7 +15,7 @@ module Yes
 
         # Handles a command using the specified guard evaluator class
         # @param command [Yes::Core::Command] The command to be handled
-        # @param guard_evaluator_class [Class] The guard evaluator class to process the command
+        # @param guard_evaluator_class [Class] The guard evaluator class to process the command with
         # @return [GuardEvaluator] The guard evaluator instance
         # @raise [CommandHandling::GuardEvaluator::InvalidTransition] If the command transition is invalid
         # @raise [CommandHandling::GuardEvaluator::NoChangeTransition] If the command results in no change

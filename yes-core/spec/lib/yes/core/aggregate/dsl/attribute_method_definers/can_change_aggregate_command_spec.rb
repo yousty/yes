@@ -16,7 +16,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeAggr
   end
 
   before do
-    Test::User::Aggregate.attribute :location, :aggregate
+    Test::User::Aggregate.attribute :location, :aggregate, command: true
   end
 
   after do

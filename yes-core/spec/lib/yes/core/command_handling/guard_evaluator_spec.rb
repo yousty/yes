@@ -9,7 +9,7 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
   let(:aggregate) { Test::User::Aggregate.new }
 
   before do
-    Test::User::Aggregate.attribute :location, :aggregate
+    Test::User::Aggregate.attribute :location, :aggregate, command: true
     aggregate.change_location_id(location_id:)
   end
 

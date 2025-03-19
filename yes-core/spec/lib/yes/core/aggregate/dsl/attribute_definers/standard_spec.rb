@@ -7,9 +7,9 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
 
   describe '#call' do
     before do
-      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Command).to receive(:new).and_return(command_resolver)
-      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Event).to receive(:new).and_return(event_resolver)
-      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::GuardEvaluator).to(
+      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::Command).to receive(:new).and_return(command_resolver)
+      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::Event).to receive(:new).and_return(event_resolver)
+      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::GuardEvaluator).to(
         receive(:new).and_return(guard_evaluator_resolver)
       )
 
@@ -22,10 +22,14 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
       allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::Accessor).to receive(:new).and_return(accessor)
     end
 
-    let(:command_resolver) { instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Command', call: true) }
-    let(:event_resolver) { instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Event', call: true) }
+    let(:command_resolver) do
+      instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::Command', call: true)
+    end
+    let(:event_resolver) do
+      instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::Event', call: true)
+    end
     let(:guard_evaluator_resolver) do
-      instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::GuardEvaluator', call: true)
+      instance_double('Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::GuardEvaluator', call: true)
     end
 
     let(:change_command) do

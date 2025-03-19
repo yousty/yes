@@ -15,7 +15,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeComm
   let(:attribute_data) { Yes::Core::Aggregate::Dsl::AttributeData.new(attribute_name, attribute_type, aggregate_class) }
 
   before do
-    Test::User::Aggregate.attribute :test_field, :string
+    Test::User::Aggregate.attribute :test_field, :string, command: true
   end
 
   after do

@@ -8,7 +8,27 @@ module Yes
     # @api private
     class CommandUtilities
       COMMAND_TO_EVENT_VERBS = {
-        'Change' => 'Changed'
+        'Change' => 'Changed',
+        'Add' => 'Added',
+        'Remove' => 'Removed',
+        'Enable' => 'Enabled',
+        'Disable' => 'Disabled',
+        'Activate' => 'Activated',
+        'Deactivate' => 'Deactivated',
+        'Open' => 'Opened',
+        'Close' => 'Closed',
+        'Start' => 'Started',
+        'Stop' => 'Stopped',
+        'Submit' => 'Submitted',
+        'Approve' => 'Approved',
+        'Reject' => 'Rejected',
+        'Confirm' => 'Confirmed',
+        'Cancel' => 'Cancelled',
+        'Complete' => 'Completed',
+        'Fail' => 'Failed',
+        'Resolve' => 'Resolved',
+        'Reopen' => 'Reopened',
+        'Reactivate' => 'Reactivated'
       }.freeze
 
       # @param context [String] The context namespace
@@ -26,8 +46,18 @@ module Yes
       # @param payload [Hash] The command payload
       # @return [Yes::Core::Command] The instantiated command
       # @raise [RuntimeError] If the command class cannot be found
-      def build_command(attribute, payload)
-        command_class = fetch_class(:"change_#{command_name(attribute)}", :command)
+      def build_attribute_command(attribute, payload)
+        build_command(:"change_#{command_name(attribute)}", payload)
+      end
+
+      # Builds a command instance for the given command name and payload
+      #
+      # @param command_name [Symbol] The command name
+      # @param payload [Hash] The command payload
+      # @return [Yes::Core::Command] The instantiated command
+      # @raise [RuntimeError] If the command class cannot be found
+      def build_command(command_name, payload)
+        command_class = fetch_class(command_name, :command)
         command_class.new("#{aggregate.underscore}_id": aggregate_id, **payload)
       end
 
@@ -36,8 +66,17 @@ module Yes
       # @param name [Symbol] The attribute name
       # @return [Class] The guard evaluator class
       # @raise [RuntimeError] If the guard evaluator class cannot be found
+      def fetch_attribute_guard_evaluator_class(name)
+        fetch_guard_evaluator_class(:"change_#{command_name(name)}")
+      end
+
+      # Fetches the guard evaluator class for a given command name
+      #
+      # @param name [Symbol] The command name
+      # @return [Class] The guard evaluator class
+      # @raise [RuntimeError] If the guard evaluator class cannot be found
       def fetch_guard_evaluator_class(name)
-        fetch_class(:"change_#{command_name(name)}", :guard_evaluator)
+        fetch_class(name, :guard_evaluator)
       end
 
       # Builds a PgEventstore::Event instance

@@ -7,6 +7,8 @@ class CreateTestUsers < ActiveRecord::Migration[7.1]
       t.string :name
       t.integer :age
       t.boolean :active
+      t.string :document_ids
+      t.string :another
       t.string :test_field # dynamically generated in specs
       t.uuid :location_id # dynamically generated in specs
       t.integer :revision, null: false, default: -1

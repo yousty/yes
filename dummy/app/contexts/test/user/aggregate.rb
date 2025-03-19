@@ -3,10 +3,21 @@
 module Test
   module User
     class Aggregate < Yes::Core::Aggregate
-      attribute :name, :string
-      attribute :email, :email
-      attribute :age, :integer
-      attribute :active, :boolean
+      attribute :name, :string, command: true
+      attribute :email, :email, command: true
+      attribute :age, :integer, command: true
+      attribute :active, :boolean, command: true
+
+      attribute :document_ids, :string
+      attribute :another, :string
+
+      command :approve_documents do
+        payload document_ids: :string, another: :string
+
+        # guard :something do
+        #   payload.another == 'John'
+        # end
+      end
 
       # uncomment for testing guard in console
       # attribute :location, :aggregate do

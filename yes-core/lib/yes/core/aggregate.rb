@@ -22,6 +22,19 @@ module Yes
     #     attribute :bio, :string
     #   end
     #
+    # @example Define an aggregate with a command
+    #   class CompanyAggregate < Yes::Core::Aggregate
+    #     primary_context 'Companies'
+    #
+    #     command :assign_user do
+    #       payload user_id: :uuid
+    #
+    #       guard :user_already_assigned do
+    #         user_id.present?
+    #       end
+    #     end
+    #   end
+    #
     # @since 0.1.0
     # @author Nico Ritsche
     class Aggregate
@@ -84,14 +97,14 @@ module Yes
         # @param options [Hash] additional options for the attribute
         # @param block [Proc] Optional block for defining guards and other attribute configurations
         #
-        # @example Define a string attribute
+        # @example Define a string attribute (without command)
         #   attribute :name, :string
         #
-        # @example Define an email attribute with options
-        #   attribute :email, :email, validate: true
+        # @example Define an email attribute with command
+        #   attribute :email, :email, command: true
         #
         # @example Define an attribute with guards
-        #   attribute :location, :aggregate do
+        #   attribute :location, :aggregate, command: true do
         #     guard :something do
         #       name == 'John'
         #     end
@@ -99,10 +112,40 @@ module Yes
         def attribute(name, type, **options, &)
           @attributes ||= {}
           @attributes[name] = type
+
+          # Only define command, event, and handler if command: true is specified
+          return unless options.delete(:command)
+
           options = options.merge(context:, aggregate:)
           Dsl::AttributeDefiner.new(
             Dsl::AttributeData.new(name, type, self, options)
           ).call(&)
+        end
+
+        # Defines a command on the aggregate which creates corresponding command and event classes
+        #
+        # @param name [Symbol] name of the command
+        # @param block [Proc] Optional block for defining payload, guards, and other command configurations
+        #
+        # @example Define a basic command
+        #   command :assign_user
+        #
+        # @example Define a command with custom payload and guards
+        #   command :assign_user do
+        #     payload user_id: :uuid
+        #
+        #     guard :user_already_assigned do
+        #       user_id.present?
+        #     end
+        #
+        #     event :user_assigned
+        #   end
+        def command(name, &)
+          @commands ||= {}
+          command_data = Dsl::CommandData.new(name, self, { context:, aggregate: })
+          @commands[name] = command_data
+
+          Dsl::CommandDefiner.new(command_data).call(&)
         end
 
         # Returns the context namespace for the aggregate
@@ -126,6 +169,11 @@ module Yes
         # @return [Hash] The attributes defined on this aggregate
         def attributes
           @attributes ||= {}
+        end
+
+        # @return [Hash] The commands defined on this aggregate
+        def commands
+          @commands ||= {}
         end
       end
 

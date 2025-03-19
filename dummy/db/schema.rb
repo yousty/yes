@@ -25,6 +25,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
     t.string "name"
     t.integer "age"
     t.boolean "active"
+    t.string "document_ids"
+    t.string "another"
     t.string "test_field"
     t.uuid "location_id"
     t.integer "revision", default: -1, null: false

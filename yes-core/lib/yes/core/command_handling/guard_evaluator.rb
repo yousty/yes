@@ -31,6 +31,7 @@ module Yes
           @raw_payload = payload
           @aggregate = aggregate
           @aggregate_tracker = AggregateTracker.new
+
           @payload = PayloadProxy.new(
             raw_payload:,
             context: aggregate.class.context,

@@ -15,8 +15,8 @@ module Yes
 
               aggregate_class.define_method(command_method) do |payload|
                 payload = command_utilities.prepare_payload(name, payload)
-                cmd = command_utilities.build_command(name, payload)
-                guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(name)
+                cmd = command_utilities.build_attribute_command(name, payload)
+                guard_evaluator_class = command_utilities.fetch_attribute_guard_evaluator_class(name)
 
                 response = execute_command(cmd, guard_evaluator_class)
                 update_read_model(name => payload[name], revision: response.event.stream_revision) if response.success?

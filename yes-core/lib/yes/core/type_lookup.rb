@@ -29,6 +29,8 @@ module Yes
           Yousty::Eventsourcing::Types::Coercible::Float
         when :uuid
           Yousty::Eventsourcing::Types::UUID
+        when :uuids
+          Yousty::Eventsourcing::Types::UUIDS
         when :email
           Yousty::Eventsourcing::Types::EMAIL
         when :url

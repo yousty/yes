@@ -4,22 +4,21 @@ module Yes
   module Core
     class Aggregate
       module Dsl
-        module AttributeMethodDefiners
-          # Defines the can_change? method for an attribute
-          class CanChangeCommand < Base
-            # Defines a method that checks if an attribute can be changed
+        module CommandMethodDefiners
+          # Defines a can_<command_name>? method on the aggregate class
+          class CanCommand < Base
             # @return [void]
             def call
-              can_change_method = :"can_change_#{name}?"
-              error_method = :"change_#{name}_error"
+              can_change_method = :"can_#{name}?"
+              error_method = :"#{name}_error"
 
               aggregate_class.attr_accessor error_method
-              name = @name
+              command_name = @name
 
-              aggregate_class.define_method(can_change_method) do |payload|
-                payload = command_utilities.prepare_payload(name, payload)
-                cmd = command_utilities.build_attribute_command(name, payload)
-                guard_evaluator_class = command_utilities.fetch_attribute_guard_evaluator_class(name)
+              aggregate_class.define_method(can_change_method) do |payload = {}|
+                payload = command_utilities.prepare_payload(command_name, payload)
+                cmd = command_utilities.build_command(command_name, payload)
+                guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
                 # handle_command returns a guard evaluator instance if successful
                 send(:handle_command, cmd, guard_evaluator_class).present?

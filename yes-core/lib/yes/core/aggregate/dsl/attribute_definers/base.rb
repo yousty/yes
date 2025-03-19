@@ -38,9 +38,9 @@ module Yes
             #
             # @return [void]
             def define_classes
-              ClassResolvers::Command.new(attribute_data).call
-              ClassResolvers::Event.new(attribute_data).call
-              @guard_evaluator_class = ClassResolvers::GuardEvaluator.new(attribute_data).call
+              ClassResolvers::Attribute::Command.new(attribute_data).call
+              ClassResolvers::Attribute::Event.new(attribute_data).call
+              @guard_evaluator_class = ClassResolvers::Attribute::GuardEvaluator.new(attribute_data).call
             end
 
             # Defines methods on the aggregate class
@@ -51,19 +51,19 @@ module Yes
               raise NotImplementedError, "#{self.class} must implement #define_methods"
             end
 
-            # Evaluates the DSL block in the context of a DSLEvaluator
+            # Evaluates the DSL block in the context of a DslEvaluator
             #
             # @param block [Proc] The block to evaluate
             # @return [void]
             def evaluate_dsl_block(&block)
               return unless block
 
-              dsl_evaluator = DSLEvaluator.new(attribute_data, guard_evaluator_class)
+              dsl_evaluator = DslEvaluator.new(attribute_data, guard_evaluator_class)
               dsl_evaluator.instance_eval(&block)
             end
 
             # DSL evaluator class for attribute configuration blocks
-            class DSLEvaluator
+            class DslEvaluator
               # @return [AttributeData] The attribute data being configured
               # @return [Class] The guard evaluator class for this attribute
               attr_reader :attribute_data, :guard_evaluator_class
