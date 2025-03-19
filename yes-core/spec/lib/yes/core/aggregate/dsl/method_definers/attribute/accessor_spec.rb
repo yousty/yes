@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::Accessor do
+RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::Accessor do
   subject { described_class.new(attribute_data).call }
 
   let(:attribute_name) { :test_field }

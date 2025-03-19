@@ -27,7 +27,7 @@ module Yes
             # @param block [Proc] Optional block for defining guards and other attribute configurations
             # @return [void]
             def call(&block)
-              define_classes
+              define_classes if define_command?
               define_methods
               evaluate_dsl_block(&block) if block
             end
@@ -60,6 +60,10 @@ module Yes
 
               dsl_evaluator = DslEvaluator.new(attribute_data, guard_evaluator_class)
               dsl_evaluator.instance_eval(&block)
+            end
+
+            def define_command?
+              attribute_data.define_command
             end
 
             # DSL evaluator class for attribute configuration blocks

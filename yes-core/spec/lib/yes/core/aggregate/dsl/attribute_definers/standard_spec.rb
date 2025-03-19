@@ -3,7 +3,7 @@
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
   subject(:definer) { described_class.new(attribute_data) }
 
-  let(:attribute_data) { instance_double('Yes::Core::Aggregate::Dsl::AttributeData') }
+  let(:attribute_data) { instance_double('Yes::Core::Aggregate::Dsl::AttributeData', define_command: true) }
 
   describe '#call' do
     before do
@@ -13,13 +13,13 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
         receive(:new).and_return(guard_evaluator_resolver)
       )
 
-      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand).to(
+      allow(Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::ChangeCommand).to(
         receive(:new).and_return(change_command)
       )
-      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeCommand).to(
+      allow(Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::CanChangeCommand).to(
         receive(:new).and_return(can_change_command)
       )
-      allow(Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::Accessor).to receive(:new).and_return(accessor)
+      allow(Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::Accessor).to receive(:new).and_return(accessor)
     end
 
     let(:command_resolver) do
@@ -33,12 +33,12 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
     end
 
     let(:change_command) do
-      instance_double('Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand', call: true)
+      instance_double('Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::ChangeCommand', call: true)
     end
     let(:can_change_command) do
-      instance_double('Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::CanChangeCommand', call: true)
+      instance_double('Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::CanChangeCommand', call: true)
     end
-    let(:accessor) { instance_double('Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::Accessor', call: true) }
+    let(:accessor) { instance_double('Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::Accessor', call: true) }
 
     it 'defines standard attribute methods' do
       definer.call

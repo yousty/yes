@@ -18,10 +18,13 @@ module Yes
             #
             # @return [void]
             def define_methods
-              AttributeMethodDefiners::ChangeAggregateCommand.new(attribute_data).call
+              MethodDefiners::Attribute::AggregateAccessor.new(attribute_data).call
+
+              return unless define_command?
+
+              MethodDefiners::Attribute::ChangeAggregateCommand.new(attribute_data).call
               define_aggregate_id_methods
-              AttributeMethodDefiners::CanChangeAggregateCommand.new(attribute_data).call
-              AttributeMethodDefiners::AggregateAccessor.new(attribute_data).call
+              MethodDefiners::Attribute::CanChangeAggregateCommand.new(attribute_data).call
             end
 
             # Defines methods specifically for the aggregate ID
@@ -33,8 +36,8 @@ module Yes
               id_attribute_data.define_singleton_method(:name) { :"#{super()}_id" }
               id_attribute_data.define_singleton_method(:type) { :uuid }
 
-              AttributeMethodDefiners::ChangeCommand.new(id_attribute_data).call
-              AttributeMethodDefiners::CanChangeCommand.new(id_attribute_data).call
+              MethodDefiners::Attribute::ChangeCommand.new(id_attribute_data).call
+              MethodDefiners::Attribute::CanChangeCommand.new(id_attribute_data).call
             end
           end
         end

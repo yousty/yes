@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::AggregateAccessor do
+RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::AggregateAccessor do
   subject { described_class.new(attribute_data).call }
 
   let(:attribute_name) { :location }

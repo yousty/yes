@@ -3,7 +3,9 @@
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Base do
   subject(:definer) { described_class.new(attribute_data) }
 
-  let(:attribute_data) { instance_double('Yes::Core::Aggregate::Dsl::AttributeData') }
+  let(:attribute_data) do
+    instance_double('Yes::Core::Aggregate::Dsl::AttributeData', define_command: true)
+  end
 
   describe '#call' do
     before do

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::Dsl::AttributeMethodDefiners::ChangeCommand do
+RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Attribute::ChangeCommand do
   subject { instance.call }
 
   let(:instance) { described_class.new(attribute_data) }

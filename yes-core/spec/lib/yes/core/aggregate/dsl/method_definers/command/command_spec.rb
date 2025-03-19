@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::Dsl::CommandMethodDefiners::Command do
+RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
   subject { described_class.new(command_data).call }
 
   let(:command_data) do
     Yes::Core::Aggregate::Dsl::CommandData.new(
       command_name,
       aggregate_class,
-      context: 'Test',
-      aggregate: 'User',
+      context:,
+      aggregate: aggregate_name,
       payload_attributes: {
         document_ids: :string,
         another: :string
@@ -16,6 +16,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandMethodDefiners::Command do
     )
   end
 
+  let(:context) { 'Test' }
+  let(:aggregate_name) { 'User' }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:command_name) { :approve_documents }
 
@@ -41,10 +43,26 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandMethodDefiners::Command do
       let(:payload) { { document_ids:, another: } }
 
       context 'when command execution succeeds' do
-        it 'updates the read model with payload and revision' do
-          expect(aggregate).to receive(:update_read_model).with({ document_ids:, another:, revision: 0 })
+        let(:stream) { PgEventstore::Stream.new(context:, stream_name:, stream_id:) }
+        let(:stream_name) { aggregate_name }
+        let(:stream_id) { aggregate.id }
+        let(:latest_event) { PgEventstore.client.read(stream, options: { max_count: 1, direction: :desc }).first }
 
-          aggregate.approve_documents(payload)
+        before { aggregate.approve_documents(payload) }
+
+        it 'updates the read model with payload and revision' do
+          aggregate_failures do
+            expect(aggregate.revision).to eq(0)
+            expect(aggregate.document_ids).to eq(document_ids)
+            expect(aggregate.another).to eq(another)
+          end
+        end
+
+        it 'publishes the event' do
+          aggregate_failures do
+            expect(latest_event.type).to eq('Test::UserDocumentsApproved')
+            expect(latest_event.data).to eq({ user_id: aggregate.id }.merge(payload).stringify_keys)
+          end
         end
       end
 

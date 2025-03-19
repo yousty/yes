@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::Dsl::CommandMethodDefiners::CanCommand do
+RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
   subject { described_class.new(command_data).call }
 
   let(:command_data) do

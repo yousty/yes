@@ -13,9 +13,12 @@ module Yes
             #
             # @return [void]
             def define_methods
-              AttributeMethodDefiners::ChangeCommand.new(attribute_data).call
-              AttributeMethodDefiners::CanChangeCommand.new(attribute_data).call
-              AttributeMethodDefiners::Accessor.new(attribute_data).call
+              MethodDefiners::Attribute::Accessor.new(attribute_data).call
+
+              return unless define_command?
+
+              MethodDefiners::Attribute::ChangeCommand.new(attribute_data).call
+              MethodDefiners::Attribute::CanChangeCommand.new(attribute_data).call
             end
           end
         end

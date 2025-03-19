@@ -38,7 +38,8 @@ module Yes
           #
           # @param block [Proc] Optional block for defining payload, guards and other command configurations
           # @return [void]
-          # @raise [UndefinedAttributeError] If the command is defined with payload attributes that are not defined on the aggregate
+          # @raise [UndefinedAttributeError] If the command is defined with payload attributes that are not defined on
+          # the aggregate
           def call(&block)
             # defines an empty guard evaluator class, because we don't have any default guards defined
             @guard_evaluator_class = ClassResolvers::Command::GuardEvaluator.new(command_data).call
@@ -47,8 +48,8 @@ module Yes
             validate_payload_attributes!
             @command_class = ClassResolvers::Command::Command.new(command_data).call
             @event_class = ClassResolvers::Command::Event.new(command_data).call
-            CommandMethodDefiners::Command.new(command_data).call
-            CommandMethodDefiners::CanCommand.new(command_data).call
+            MethodDefiners::Command::Command.new(command_data).call
+            MethodDefiners::Command::CanCommand.new(command_data).call
           end
 
           private
@@ -56,7 +57,8 @@ module Yes
           # Validates that all payload attributes are defined on the aggregate
           #
           # @return [void]
-          # @raise [UndefinedAttributeError] If the command is defined with payload attributes that are not defined on the aggregate
+          # @raise [UndefinedAttributeError] If the command is defined with payload attributes that are not defined on
+          # the aggregate
           def validate_payload_attributes!
             return if command_data.payload_attributes.empty?
 

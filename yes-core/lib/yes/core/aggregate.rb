@@ -113,9 +113,6 @@ module Yes
           @attributes ||= {}
           @attributes[name] = type
 
-          # Only define command, event, and handler if command: true is specified
-          return unless options.delete(:command)
-
           options = options.merge(context:, aggregate:)
           Dsl::AttributeDefiner.new(
             Dsl::AttributeData.new(name, type, self, options)
