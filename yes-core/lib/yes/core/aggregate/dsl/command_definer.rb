@@ -14,6 +14,11 @@ module Yes
         #     guard :user_already_assigned do
         #       user_id.present?
         #     end
+        #
+        #     update_state do
+        #       some_attribute { payload.xyz }
+        #       another_attribute { "#{payload.abc}_#{email}" }
+        #     end
         #   end
         #
         class CommandDefiner
@@ -43,9 +48,15 @@ module Yes
           def call(&block)
             # defines an empty guard evaluator class, because we don't have any default guards defined
             @guard_evaluator_class = ClassResolvers::Command::GuardEvaluator.new(command_data).call
+            @state_updater_class = ClassResolvers::Command::StateUpdater.new(command_data).call
             evaluate_dsl_block(&block) if block
 
-            validate_payload_attributes!
+            if command_data.update_state_block
+              validate_state_update_attributes!
+            else
+              validate_payload_attributes!
+            end
+
             @command_class = ClassResolvers::Command::Command.new(command_data).call
             @event_class = ClassResolvers::Command::Event.new(command_data).call
             MethodDefiners::Command::Command.new(command_data).call
@@ -76,6 +87,25 @@ module Yes
                                            "Please define these attributes using the 'attribute' method first."
           end
 
+          # Validates that all attributes used in the update_state block are defined on the aggregate
+          #
+          # @return [void]
+          # @raise [UndefinedAttributeError] If the update_state block uses attributes that are not defined on the aggregate
+          def validate_state_update_attributes!
+            return unless @state_updater_class.updated_attributes
+
+            aggregate_attributes = command_data.aggregate_class.attributes
+            undefined_attributes = @state_updater_class.updated_attributes.reject do |attr_name|
+              aggregate_attributes.key?(attr_name)
+            end
+
+            return if undefined_attributes.empty?
+
+            raise UndefinedAttributeError, "Command '#{command_data.name}' update_state block uses attributes " \
+                                           "that are not defined on the aggregate: #{undefined_attributes.join(', ')}. " \
+                                           "Please define these attributes using the 'attribute' method first."
+          end
+
           def register_command_events
             Yes::Core.configuration.register_command_events(
               command_data.context_name,
@@ -92,7 +122,7 @@ module Yes
           def evaluate_dsl_block(&block)
             return unless block
 
-            dsl_evaluator = DslEvaluator.new(command_data, @guard_evaluator_class)
+            dsl_evaluator = DslEvaluator.new(command_data, @guard_evaluator_class, @state_updater_class)
             dsl_evaluator.instance_eval(&block)
           end
 
@@ -100,13 +130,16 @@ module Yes
           class DslEvaluator
             # @return [CommandData] The command data being configured
             # @return [Class] The guard evaluator class for this command
-            attr_reader :command_data, :guard_evaluator_class
+            # @return [Class] The state updater class for this command
+            attr_reader :command_data, :guard_evaluator_class, :state_updater_class
 
             # @param command_data [CommandData] The command data to configure
             # @param guard_evaluator_class [Class] The guard evaluator class for this command
-            def initialize(command_data, guard_evaluator_class)
+            # @param state_updater_class [Class] The state updater class for this command
+            def initialize(command_data, guard_evaluator_class, state_updater_class)
               @command_data = command_data
               @guard_evaluator_class = guard_evaluator_class
+              @state_updater_class = state_updater_class
             end
 
             # Defines a guard for the command
@@ -133,6 +166,7 @@ module Yes
             # @return [void]
             def update_state(&block)
               command_data.update_state_block = block
+              state_updater_class.update_state(&block)
             end
 
             # Defines the event name for the command

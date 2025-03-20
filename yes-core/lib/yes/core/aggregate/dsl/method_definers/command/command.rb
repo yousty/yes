@@ -16,12 +16,14 @@ module Yes
                   payload = command_utilities.prepare_payload(command_name, payload)
                   cmd = command_utilities.build_command(command_name, payload)
                   guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
+                  state_updater_class = command_utilities.fetch_state_updater_class(command_name)
 
                   response = execute_command(cmd, guard_evaluator_class)
 
                   if response.success?
+                    state_updater = state_updater_class.new(payload: cmd.payload, aggregate: self)
                     update_read_model(
-                      payload.except(:"#{self.class.aggregate.underscore}_id").merge(
+                      state_updater.call.merge(
                         revision: response.event.stream_revision
                       )
                     )

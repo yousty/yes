@@ -7,8 +7,8 @@ module Yes
       class PayloadProxy
         # @param raw_payload [Hash] The raw command payload
         # @param context [String] The context name
-        # @param aggregate_tracker [AggregateTracker] The tracker instance
-        def initialize(raw_payload:, context:, aggregate_tracker:)
+        # @param aggregate_tracker [AggregateTracker, nil] The tracker instance (optional)
+        def initialize(raw_payload:, context:, aggregate_tracker: nil)
           @raw_payload = raw_payload
           @context = context
           @aggregate_tracker = aggregate_tracker
@@ -61,12 +61,14 @@ module Yes
           id = raw_payload[:"#{method_name}_id"]
           aggregate_class = "#{context}::#{method_name.to_s.camelize}::Aggregate".constantize
           instance = aggregate_class.new(id)
-          aggregate_tracker.track(
+
+          aggregate_tracker&.track(
             attribute_name: method_name,
             id: instance.id,
             revision: instance.revision,
             context:
           )
+
           instance
         end
       end

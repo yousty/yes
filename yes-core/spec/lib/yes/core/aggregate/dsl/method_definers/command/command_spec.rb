@@ -88,6 +88,29 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
             expect(latest_event.type).to eq('Test::UserDocumentHappilyApproved')
           end
         end
+
+        context 'with custom state update' do
+          before do
+            Test::User::Aggregate.command :do_something do
+              payload blah_blah: :integer, huhu: :string
+
+              event :something_done
+
+              update_state do
+                name { "#{payload[:blah_blah]} #{payload[:huhu]}" }
+                email { "#{payload[:huhu]}@xyz.ch" }
+              end
+            end
+            aggregate.do_something(payload)
+          end
+
+          let(:payload) { { blah_blah: 123, huhu: 'test_value' } }
+
+          it 'updates the state' do
+            expect(aggregate.name).to eq('123 test_value')
+            expect(aggregate.email).to eq('test_value@xyz.ch')
+          end
+        end
       end
 
       context 'when command execution fails' do

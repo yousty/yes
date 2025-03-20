@@ -100,5 +100,21 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandDefiner do
         }.from(false).to(true)
       end
     end
+
+    context 'with custom state update' do
+      context 'when updated attribute is not defined on the aggregate' do
+        subject do
+          described_class.new(command_data).call do
+            update_state do
+              blah_blub { "#{payload[:huhu]}@xyz.ch" }
+            end
+          end
+        end
+
+        it 'raises an error' do
+          expect { subject }.to raise_error(Yes::Core::Aggregate::Dsl::CommandDefiner::UndefinedAttributeError)
+        end
+      end
+    end
   end
 end
