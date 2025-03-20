@@ -9,6 +9,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
       aggregate_class,
       context:,
       aggregate: aggregate_name,
+      event_name:,
       payload_attributes: {
         document_ids: :string,
         another: :string
@@ -22,6 +23,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
   let(:command_name) { :approve_documents }
 
   let(:aggregate) { aggregate_class.new }
+  let(:event_name) { nil }
 
   describe '#call' do
     before do
@@ -48,57 +50,67 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
         let(:stream_id) { aggregate.id }
         let(:latest_event) { PgEventstore.client.read(stream, options: { max_count: 1, direction: :desc }).first }
 
-        before { aggregate.approve_documents(payload) }
+        context 'with default event name' do
+          before { aggregate.approve_documents(payload) }
 
-        it 'updates the read model with payload and revision' do
-          aggregate_failures do
-            expect(aggregate.revision).to eq(0)
-            expect(aggregate.document_ids).to eq(document_ids)
-            expect(aggregate.another).to eq(another)
+          it 'updates the read model with payload and revision' do
+            aggregate_failures do
+              expect(aggregate.revision).to eq(0)
+              expect(aggregate.document_ids).to eq(document_ids)
+              expect(aggregate.another).to eq(another)
+            end
+          end
+
+          it 'publishes the event' do
+            aggregate_failures do
+              expect(latest_event.type).to eq('Test::UserDocumentsApproved')
+              expect(latest_event.data).to eq({ user_id: aggregate.id }.merge(payload).stringify_keys)
+            end
           end
         end
 
-        it 'publishes the event' do
-          aggregate_failures do
-            expect(latest_event.type).to eq('Test::UserDocumentsApproved')
-            expect(latest_event.data).to eq({ user_id: aggregate.id }.merge(payload).stringify_keys)
+        context 'with custom event name' do
+          let(:event_name) { :document_happily_approved }
+
+          let(:command_data) do
+            Yes::Core::Aggregate::Dsl::CommandData.new(
+              :approve_documents_with_custom_event,
+              aggregate_class,
+              context:,
+              aggregate: aggregate_name,
+              event_name:
+            )
+          end
+
+          before { aggregate.approve_documents_with_custom_event }
+
+          it 'publishes the event with the custom name' do
+            expect(latest_event.type).to eq('Test::UserDocumentHappilyApproved')
           end
         end
       end
 
-      # context 'when command execution fails' do
-      #   before do
-      #     allow(aggregate).to receive(:execute_command).and_return(command_response)
-      #   end
+      context 'when command execution fails' do
+        let(:command_response) do
+          Yes::Core::CommandResponse.new(cmd:, event: nil, error:)
+        end
 
-      #   it 'does not update the read model' do
-      #     expect(aggregate).not_to receive(:update_read_model)
+        let(:cmd) do
+          Test::User::Commands::ApproveDocuments::Command.new(payload.merge(user_id: aggregate.id))
+        end
 
-      #     aggregate.approve_documents(payload)
-      #   end
-      # end
+        let(:error) { Yes::Core::CommandHandling::GuardEvaluator::TransitionError.new }
 
-      # it 'returns the command response' do
-      #   cmd = Yes::Core::Command.new(
-      #     command_id: SecureRandom.uuid,
-      #     payload:,
-      #     metadata: {}
-      #   )
+        before { allow(aggregate).to receive(:execute_command).and_return(command_response) }
 
-      #   command_response = Yes::Core::CommandResponse.new(
-      #     cmd:,
-      #     event: Yes::Core::Event.new(
-      #       id: SecureRandom.uuid,
-      #       type: 'Test::User::DocumentsApproved',
-      #       data: payload,
-      #       stream_revision: 2
-      #     )
-      #   )
-
-      #   allow(aggregate).to receive(:execute_command).and_return(command_response)
-
-      #   expect(aggregate.approve_documents(payload)).to eq(command_response)
-      # end
+        it 'does not update the read model' do
+          aggregate_failures do
+            expect(aggregate.revision).to eq(-1)
+            expect(aggregate.document_ids).to eq(nil)
+            expect(aggregate.another).to eq(nil)
+          end
+        end
+      end
     end
   end
 end

@@ -5,8 +5,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
     described_class.new(
       command:,
       aggregate_data: described_class::AggregateEventPublicationData.from_aggregate(aggregate),
-      accessed_external_aggregates:,
-      event_name:
+      accessed_external_aggregates:
     )
   end
 
@@ -39,8 +38,6 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
       revision: -1
     }]
   end
-
-  let(:event_name) { nil }
 
   before do
     PgEventstore::TestHelpers.clean_up_db
@@ -104,32 +101,6 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
 
       it 'raises a WrongExpectedRevisionError' do
         expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError)
-      end
-    end
-
-    context 'with explicit event name' do
-      let(:event_name) { 'CustomLocationChanged' }
-
-      before do
-        stub_const('Test::User::Events::CustomLocationChanged',
-                   Class.new(Yousty::Eventsourcing::Event) do
-                     def schema
-                       Dry::Schema.Params do
-                         required(:user_id).value(Yousty::Api::Types::UUID)
-                         required(:location_id).value(Yousty::Api::Types::UUID)
-                       end
-                     end
-                   end)
-      end
-
-      it 'uses the explicit event name' do
-        event = event_publisher.call
-
-        aggregate_failures do
-          expect(event).to be_a(PgEventstore::Event)
-          expect(event.type).to eq('Test::UserCustomLocationChanged')
-          expect(event.data).to eq(command.payload.stringify_keys)
-        end
       end
     end
   end

@@ -30,6 +30,7 @@ module Yes
               define_classes if define_command?
               define_methods
               evaluate_dsl_block(&block) if block
+              register_command_events if define_command?
             end
 
             private
@@ -49,6 +50,15 @@ module Yes
             # @return [void]
             def define_methods
               raise NotImplementedError, "#{self.class} must implement #define_methods"
+            end
+
+            def register_command_events
+              Yes::Core.configuration.register_command_events(
+                attribute_data.context_name,
+                attribute_data.aggregate_name,
+                :"change_#{attribute_data.name}",
+                [attribute_data.event_name]
+              )
             end
 
             # Evaluates the DSL block in the context of a DslEvaluator

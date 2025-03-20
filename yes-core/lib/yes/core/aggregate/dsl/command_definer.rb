@@ -50,6 +50,8 @@ module Yes
             @event_class = ClassResolvers::Command::Event.new(command_data).call
             MethodDefiners::Command::Command.new(command_data).call
             MethodDefiners::Command::CanCommand.new(command_data).call
+
+            register_command_events
           end
 
           private
@@ -72,6 +74,15 @@ module Yes
             raise UndefinedAttributeError, "Command '#{command_data.name}' is defined with payload attributes " \
                                            "that are not defined on the aggregate: #{undefined_attributes.join(', ')}. " \
                                            "Please define these attributes using the 'attribute' method first."
+          end
+
+          def register_command_events
+            Yes::Core.configuration.register_command_events(
+              command_data.context_name,
+              command_data.aggregate_name,
+              command_data.name,
+              [command_data.event_name]
+            )
           end
 
           # Evaluates the DSL block in the context of a DslEvaluator

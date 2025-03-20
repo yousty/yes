@@ -43,52 +43,21 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
     end
 
     context 'when executing the can_<command_name>? method' do
-      # let(:command_name) { :approve_documents }
-      # let(:document_ids) { SecureRandom.uuid }
-      # let(:another) { 'test_value' }
-      # let(:payload) { { document_ids:, another: } }
+      let(:guard_evaluator_class) { Test::User::Commands::ApproveDocuments::GuardEvaluator }
+      let(:guard_evaluator) { instance_double(guard_evaluator_class) }
+      let(:document_ids) { SecureRandom.uuid }
+      let(:another) { 'test_value' }
+      let(:payload) { { document_ids:, another: } }
 
-      # context 'when command execution succeeds' do
-      #   it 'updates the read model with payload and revision' do
-      #     expect(aggregate).to receive(:update_read_model).with({ document_ids:, another:, revision: 0 })
+      before do
+        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator)
+        allow(guard_evaluator).to receive(:call)
+        aggregate.can_approve_documents?(payload)
+      end
 
-      #     aggregate.approve_documents(payload)
-      #   end
-      # end
-
-      # context 'when command execution fails' do
-      #   before do
-      #     allow(aggregate).to receive(:execute_command).and_return(command_response)
-      #   end
-
-      #   it 'does not update the read model' do
-      #     expect(aggregate).not_to receive(:update_read_model)
-
-      #     aggregate.approve_documents(payload)
-      #   end
-      # end
-
-      # it 'returns the command response' do
-      #   cmd = Yes::Core::Command.new(
-      #     command_id: SecureRandom.uuid,
-      #     payload:,
-      #     metadata: {}
-      #   )
-
-      #   command_response = Yes::Core::CommandResponse.new(
-      #     cmd:,
-      #     event: Yes::Core::Event.new(
-      #       id: SecureRandom.uuid,
-      #       type: 'Test::User::DocumentsApproved',
-      #       data: payload,
-      #       stream_revision: 2
-      #     )
-      #   )
-
-      #   allow(aggregate).to receive(:execute_command).and_return(command_response)
-
-      #   expect(aggregate.approve_documents(payload)).to eq(command_response)
-      # end
+      it 'calls the guard evaluator' do
+        expect(guard_evaluator).to have_received(:call)
+      end
     end
   end
 end

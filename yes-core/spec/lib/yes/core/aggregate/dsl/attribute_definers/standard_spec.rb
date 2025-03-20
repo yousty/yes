@@ -3,7 +3,12 @@
 RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiners::Standard do
   subject(:definer) { described_class.new(attribute_data) }
 
-  let(:attribute_data) { instance_double('Yes::Core::Aggregate::Dsl::AttributeData', define_command: true) }
+  let(:attribute_data) do
+    instance_double(
+      'Yes::Core::Aggregate::Dsl::AttributeData',
+      define_command: true, context_name: 'Context', aggregate_name: 'Aggregate', name: :change_x, event_name: :x_changed
+    )
+  end
 
   describe '#call' do
     before do

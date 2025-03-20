@@ -86,6 +86,26 @@ module Yes
         register_aggregate_class(context_name, aggregate_name, command_name, :guard_evaluator, klass)
       end
 
+      def register_command_events(context_name, aggregate_name, command_name, event_names)
+        key = [context_name, aggregate_name]
+        @registered_classes[key][:command_event_mappings][command_name] = event_names
+      end
+
+      def command_event_mappings(context_name, aggregate_name)
+        key = [context_name, aggregate_name]
+        @registered_classes[key][:command_event_mappings]
+      end
+
+      def command_event_mapping(context_name, aggregate_name, command_name)
+        command_event_mappings(context_name, aggregate_name)[command_name] || []
+      end
+
+      def event_classes_for_command(context_name, aggregate_name, command_name)
+        command_event_mapping(context_name, aggregate_name, command_name).map do |event_name|
+          aggregate_class(context_name, aggregate_name, event_name, :event)
+        end
+      end
+
       # Retrieve a registered class for a given aggregate, action, and type
       # @param context_name [Symbol, String] The context for the aggregate
       # @param aggregate_name [Symbol, String] The name of the aggregate

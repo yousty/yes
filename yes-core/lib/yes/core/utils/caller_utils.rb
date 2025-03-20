@@ -11,8 +11,8 @@ module Yes
           # @return [String] origin of the command, derived from caller
           def origin_from_caller(caller)
             root_path = defined?(Rails) ? Rails.root.to_s : ''
-            # #absolute_path may be nil in case the code is run under irb for example. In this case - grab the script name
-            # by calling #path
+            # #absolute_path may be nil in case the code is run under irb for example. In this case - grab the script
+            # name by calling #path
             caller_path = caller.absolute_path || caller.path
             caller_path.
               sub("#{root_path}/", '').

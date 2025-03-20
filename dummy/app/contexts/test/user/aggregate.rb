@@ -19,6 +19,10 @@ module Test
         # end
       end
 
+      command :approve_documents_with_custom_event do
+        event :document_happily_approved
+      end
+
       # uncomment for testing guard in console
       # attribute :location, :aggregate do
       #   guard :something do

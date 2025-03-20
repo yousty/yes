@@ -26,7 +26,7 @@ module Yes
           @aggregate_data = aggregate_data
           @accessed_external_aggregates = accessed_external_aggregates
           @event_name = event_name
-          @command_utilities = CommandUtilities.new(
+          @command_utilities = Utils::CommandUtils.new(
             context: aggregate_data.context,
             aggregate: aggregate_data.name,
             aggregate_id: aggregate_data.id
@@ -52,7 +52,7 @@ module Yes
         attr_reader :accessed_external_aggregates
         # @return [String, nil] The explicit event name to use
         attr_reader :event_name
-        # @return [CommandUtilities] The command utilities instance
+        # @return [CommandUtils] The command utilities instance
         attr_reader :command_utilities
 
         delegate :payload, :origin, :batch_id, :metadata, to: :command
@@ -99,9 +99,8 @@ module Yes
         # @return [PgEventstore::Event] The event with metadata
         def event_with_metadata
           command_utilities.build_event(
+            command_name: command.class.name.split('::')[-2].underscore.to_sym,
             payload:,
-            command_name: command.class.name.split('::')[-2],
-            event_name:,
             metadata: event_metadata
           )
         end

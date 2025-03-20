@@ -179,7 +179,7 @@ module Yes
       # @return [Yes::Core::Aggregate] A new aggregate instance
       def initialize(id = SecureRandom.uuid)
         @id = id
-        @command_utilities = CommandUtilities.new(
+        @command_utilities = Utils::CommandUtils.new(
           context: self.class.context,
           aggregate: self.class.aggregate,
           aggregate_id: @id
