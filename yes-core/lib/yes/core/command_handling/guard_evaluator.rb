@@ -18,7 +18,8 @@ module Yes
           # Defines a new guard with a name and evaluation block
           #
           # @param name [Symbol] Name of the guard
-          # @param block [Proc] Block to evaluate the guard condition
+          # @yield Block to evaluate the guard condition
+          # @yieldreturn [Boolean] True if the guard passes, false otherwise
           # @return [void]
           def guard(name, &block)
             guards << { name:, block: }
@@ -86,8 +87,8 @@ module Yes
         # Handles method missing to delegate attribute calls to the current aggregate
         #
         # @param method_name [Symbol] The method name being called
-        # @param args [Array] Method arguments
-        # @param block [Proc] Method block
+        # @yield Optional block passed to the method (unused)
+        # @yieldreturn [void]
         # @return [Object] The result of calling the method on the current aggregate
         def method_missing(method_name, *, &)
           if aggregate.respond_to?(method_name)

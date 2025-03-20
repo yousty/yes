@@ -29,10 +29,11 @@ module Yes
         # Handles dynamic method calls to access payload values or resolve aggregates
         #
         # @param method_name [Symbol] The method being called
-        # @param args [Array] Method arguments
-        # @param block [Proc] Method block
+        # @param args [Array] Method arguments (unused)
+        # @yield Optional block passed to the method (unused)
+        # @yieldreturn [void]
         # @return [Object] The payload value or resolved aggregate
-        def method_missing(method_name, *, &)
+        def method_missing(method_name, *args, &)
           if raw_payload.key?(method_name)
             raw_payload[method_name]
           elsif raw_payload.key?(:"#{method_name}_id")

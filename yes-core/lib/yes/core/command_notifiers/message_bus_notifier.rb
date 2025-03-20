@@ -7,12 +7,8 @@ module Yes
         attr_reader :channel
         private :channel
 
-        # @param options [Hash] the options to create a notifier with.
-        # At the moment only :channel is supported.
-        # It is the channel name to publish notifications to.
-        # @param options [Hash]
-        # @option channel [String] the channel name to publish notifications to
-        #
+        # @param options [Hash] the options to create a notifier with
+        # @option options [String] :channel the channel name to publish notifications to
         def initialize(options)
           super()
 

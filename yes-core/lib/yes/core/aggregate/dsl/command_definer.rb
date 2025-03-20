@@ -43,7 +43,8 @@ module Yes
           # This includes command classes, event classes, a guard evaluator class,
           # a state updater class, as well as defining related methods on the aggregate class.
           #
-          # @param block [Proc] Optional block for defining payload, guards and other command configurations
+          # @yield Block for defining payload, guards and other command configurations
+          # @yieldreturn [void]
           # @return [void]
           # @raise [UndefinedAttributeError] If attributes used in the command are not defined on the aggregate
           def call(&block)
@@ -124,7 +125,8 @@ module Yes
 
           # Evaluates the DSL block in the context of a DslEvaluator
           #
-          # @param block [Proc] The block to evaluate
+          # @yield The block to evaluate
+          # @yieldreturn [void]
           # @return [void]
           def evaluate_dsl_block(&block)
             return unless block
@@ -152,7 +154,8 @@ module Yes
             # Defines a guard for the command
             #
             # @param name [Symbol] The name of the guard
-            # @param block [Proc] The guard evaluation block
+            # @yield The guard evaluation block
+            # @yieldreturn [Boolean] True if the guard passes, false otherwise
             # @return [void]
             def guard(name, &)
               command_data.add_guard(name)
@@ -169,7 +172,8 @@ module Yes
 
             # Defines how the state should be updated
             #
-            # @param block [Proc] The block defining how to update the state
+            # @yield Block defining how to update the state
+            # @yieldreturn [void]
             # @return [void]
             def update_state(&block)
               command_data.update_state_block = block

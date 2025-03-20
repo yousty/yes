@@ -12,7 +12,8 @@ module Yes
 
           # Defines the update state block and analyzes it for attribute updates
           #
-          # @param block [Proc] Block to evaluate for state updates
+          # @yield Block to evaluate for state updates
+          # @yieldreturn [void]
           # @return [void]
           def update_state(&block)
             @update_state_block = block
@@ -33,7 +34,12 @@ module Yes
             @updated_attributes = []
           end
 
-          def method_missing(method_name, *, &block)
+          # @param method_name [Symbol] The method being called
+          # @param args [Array] Method arguments (unused)
+          # @yield Optional block to evaluate for attribute value
+          # @yieldreturn [void]
+          # @return [void]
+          def method_missing(method_name, *args, &block)
             @updated_attributes << method_name if block
           end
 
@@ -74,8 +80,8 @@ module Yes
         # Handles method missing to delegate attribute calls to the current aggregate
         #
         # @param method_name [Symbol] The method name being called
-        # @param args [Array] Method arguments
-        # @param block [Proc] The block to evaluate for the attribute value
+        # @yield Optional block to evaluate for the attribute value
+        # @yieldreturn [Object] The value to set for the attribute
         # @return [Object] The result of calling the method on the current aggregate
         def method_missing(method_name, *, &block)
           if block

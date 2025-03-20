@@ -29,7 +29,8 @@ module Yes
 
           # Creates the appropriate definer and calls it to generate the necessary classes and methods
           #
-          # @param block [Proc] Optional block for defining guards and other attribute configurations
+          # @yield Block for defining guards and other attribute configurations
+          # @yieldreturn [void]
           # @return [void]
           def call(&)
             definer_for_type.new(attribute_data).call(&)

@@ -95,7 +95,8 @@ module Yes
         # @param name [Symbol] name of the attribute
         # @param type [Symbol] type of the attribute (e.g., :string, :email, :uuid)
         # @param options [Hash] additional options for the attribute
-        # @param block [Proc] Optional block for defining guards and other attribute configurations
+        # @yield Block for defining guards and other attribute configurations
+        # @yieldreturn [void]
         #
         # @example Define a string attribute (without command)
         #   attribute :name, :string
@@ -122,7 +123,8 @@ module Yes
         # Defines a command on the aggregate which creates corresponding command and event classes
         #
         # @param name [Symbol] name of the command
-        # @param block [Proc] Optional block for defining payload, guards, and other command configurations
+        # @yield Block for defining payload, guards, and other command configurations
+        # @yieldreturn [void]
         #
         # @example Define a basic command
         #   command :assign_user

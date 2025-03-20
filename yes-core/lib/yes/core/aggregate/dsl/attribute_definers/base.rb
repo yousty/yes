@@ -24,7 +24,8 @@ module Yes
             # This includes command classes, event classes, and guard evaluator classes,
             # as well as defining related methods on the aggregate class.
             #
-            # @param block [Proc] Optional block for defining guards and other attribute configurations
+            # @yield Block for defining guards and other attribute configurations
+            # @yieldreturn [void]
             # @return [void]
             def call(&block)
               define_classes if define_command?
@@ -63,7 +64,8 @@ module Yes
 
             # Evaluates the DSL block in the context of a DslEvaluator
             #
-            # @param block [Proc] The block to evaluate
+            # @yield The block to evaluate
+            # @yieldreturn [void]
             # @return [void]
             def evaluate_dsl_block(&block)
               return unless block
@@ -92,7 +94,8 @@ module Yes
               # Defines a guard for the attribute
               #
               # @param name [Symbol] The name of the guard
-              # @param block [Proc] The guard evaluation block
+              # @yield The guard evaluation block
+              # @yieldreturn [Boolean] True if the guard passes, false otherwise
               # @return [void]
               def guard(name, &)
                 guard_evaluator_class.guard(name, &)
