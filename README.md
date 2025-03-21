@@ -1,4 +1,4 @@
-# Yes (Yousty Eventsourcing)
+# Yes
 
 Yes is a framework for building event-sourced systems, originally developed to power Switzerland's leading apprenticeship platform [yousty.ch](https://www.yousty.ch/de-CH).
 
