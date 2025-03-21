@@ -1,197 +1,135 @@
-# Yes::Core::Aggregate
+# Yes (Yousty Eventsourcing)
 
-The `Yes::Core::Aggregate` class provides a DSL for defining event-sourced aggregates.
+Yes is a framework for building event-sourced systems, originally developed to power Switzerland's leading apprenticeship platform [yousty.ch](https://www.yousty.ch/de-CH).
 
-## Overview
+## Table of Contents
 
-The DSL provides the following methods for usage inside the `Yes::Core::Aggregate` class:
+- [Quick Start](#quick-start)
+- [Naming Conventions](#naming-conventions)
+- [Core DSL Methods](#core-dsl-methods)
+  - [attribute](#attribute)
+  - [command](#command)
+- [Attribute Details](#attribute-details)
+  - [Available Types](#available-types)
+  - [Attribute Commands](#attribute-commands)
+- [Command Details](#command-details)
+  - [Command Configuration Options](#command-configuration-options)
+  - [State Update Behavior](#state-update-behavior)
+  - [Generated Command Methods](#generated-command-methods)
+- [Guards](#guards)
+  - [Adding Guards to Attributes](#adding-guards-to-attributes)
+  - [Adding Guards to Commands](#adding-guards-to-commands)
+  - [Guard Error Types](#guard-error-types)
+  - [Custom Error Messages](#custom-error-messages)
+- [Read Models](#read-models)
+  - [Default Naming](#default-naming)
+  - [Customizing Read Models](#customizing-read-models)
+  - [Read Model Schema Generator](#read-model-schema-generator)
+- [Additional Features](#additional-features)
+  - [Parent Aggregates](#parent-aggregates)
+  - [Primary Context](#primary-context)
+- [Development](#development)
+  - [Example Usage](#example-usage)
+  - [Testing the APIs](#testing-the-apis)
+  - [Running Specs](#running-specs)
+  - [Gem Installation and Release](#gem-installation-and-release)
+- [Contributing](#contributing)
 
-- `attribute`: automatically generates the necessary commands, events, and handlers for managing your aggregate's state.
-- `read_model`: allows you to specify a custom read model name and visibility.
-- `parent`: allows you to specify a parent aggregate.
-- `primary_context`: allows you to specify the primary context for the aggregate.
+## Quick Start
 
-## Basic Usage
-
-To define attributes on your aggregate, use the `attribute` method with a name and type:
-
-```ruby
-module Users
-  module User
-    class Aggregate < Yes::Core::Aggregate
-      attribute :name, :string
-      attribute :email, :email
-      attribute :age, :integer
-    end
-  end
-end
-```
-
-This will create a fully event-sourced user entity with all necessary components for managing these attributes through commands and events.
-
-Note that when defining an aggregate you need to use the following namespacing / class naming rule: `<Context>::<AggregateName>::Aggregate`.
-
-## Available Types
-
-The attribute system supports various types, for example:
-- `:string` - For text values
-- `:email` - For email addresses
-- `:uuid` - For UUID values
-- `:integer` - For numeric values
-
-For the full list of types see [lib/yes/type_lookup.rb](lib/yes/type_lookup.rb)
-
-## Generated Components
-
-For each attribute, the system automatically generates:
-- A command for updating the attribute
-- An event for recording attribute changes
-- A handler for processing the command
-- State management for the attribute value
-
-## `can_change_<attribute>?` Method
-
-For each attribute, a `can_change_<attribute>?` method is automatically added. This method allows you to validate whether a change would be successful without actually making the change. It returns `true` if the change would be valid, and `false` otherwise. If the change would be invalid, an error message is stored in the corresponding `<attribute>_change_error` accessor.
-
-### Example
+At the core of Yes is the `Yes::Core::Aggregate` class, which provides a DSL for defining event-sourced aggregates:
 
 ```ruby
 module Users
   module User
     class Aggregate < Yes::Core::Aggregate
-      attribute :email, :email
+      # Define attributes with types
+      attribute :name, :string, command: true # this will generate a change_name command
+      attribute :email, :email, command: true # this will generate a change_email command
+      
+      attribute :company_id, :uuid # this will not generate a command, just an accessor
+
+      # Define custom commands
+      command :assign_to_company do
+        payload company_id: :uuid # Payload keys need to match attributes
+        
+        guard :company_exists do
+          CompanyReadModel.exists?(payload.company_id)
+        end
+      end
     end
   end
 end
 
+# Usage
 user = Users::User::Aggregate.new
-
-# Invalid change
-user.can_change_email?(email: "invalid-email")  # => false
-
-# Valid change
-user.can_change_email?(email: "user@example.com")  # => true
+user.change_name("John Doe")
+user.assign_to_company(company_id: "123e4567-e89b-12d3-a456-426614174000")
 ```
 
-There is also a shorthand version where you can supply the new value for the attribute directly:
+## Naming Conventions
 
-```ruby
-user.can_change_email?("user@example.com") 
-```
+When defining an aggregate, use the following namespacing pattern:
+`<Context>::<AggregateName>::Aggregate`
 
-## `change_<attribute>` Method
+For example: `Users::User::Aggregate` or `Companies::Company::Aggregate`
 
-For each attribute defined on an aggregate, an instance method `change_<attribute>` is automatically added. This method allows you to change the attribute's value by:
+## Core DSL Methods
 
-1. Instantiating a command with the new value.
-2. Calling the command handler to process the command.
-3. Publishing the corresponding event if the command is successfully handled.
+### `attribute`
 
-### Example
-
-Given an aggregate with a `name` attribute:
+The `attribute` method defines properties of your aggregate:
 
 ```ruby
 module Users
   module User
     class Aggregate < Yes::Core::Aggregate
+      # Basic attributes without commands
       attribute :name, :string
-    end
-  end
-end
-```
-
-You can change the `name` attribute using the `change_name` method:
-
-```ruby
-user_aggregate = Users::User::Aggregate.new
-user_aggregate.change_name(name: "New Name") # => PgEventstore::Event
-```
-
-In case the change is invalid, the change method will return `false` and the `<attribute>_change_error` accessor will be set to the error message.
-
-```ruby
-user_aggregate.change_name(name: "New Name")  # => false
-user_aggregate.name_change_error  # => "Name is invalid"
-```
-
-There is also a shorthand version where you can supply the new value for the attribute directly:
-
-```ruby
-user_aggregate.change_name("New Name")
-```
-
-## Read Models
-
-For each aggregate there is a corresponding read model (ActiveRecord model) generated that stores its current state. By default, the read model's name is derived from the aggregate's context and name. For example, `Users::User::Aggregate` will have a read model named `UsersUser`.
-
-### Customizing Read Models
-
-You can customize the read model name and visibility using the `read_model` method in your aggregate:
-
-```ruby
-module Users
-  module User
-    class Aggregate < Yes::Core::Aggregate
-      # Use a custom read model name and make the read model private (not accessible via read API)
-      read_model 'custom_user', public: false
-
       attribute :email, :email
-      attribute :name, :string
+      
+      # Attributes with change commands
+      attribute :age, :integer, command: true
+      attribute :bio, :string, command: true
     end
   end
 end
 ```
 
-In the example above, the readmodel class name is `CustomUser` instead of the default `UsersUser`.
+#### Important Options
 
-### Attribute Accessors
+- `command: true` - Generates change commands for the attribute (not generated by default)
 
-For each attribute defined in the aggregate, a corresponding accessor method is automatically created. This accessor reads the attribute's value from the read model:
+When `command: true` is specified, Yes automatically creates:
+- Accessor methods (`user.name`, `user.email`)
+- Change commands (`user.change_age(30)`)
+- Validation methods (`user.can_change_bio?("New bio")`)
+- Event classes for recording changes
 
-```ruby
-user = Users::User::Aggregate.new
-user.email # reads email from the read model
-user.name # reads name from the read model
-```
+Without `command: true`, only the accessor is created.
 
-### Updating Read Model Schema
+### `command`
 
-Whenever you make changes to your aggregates (adding/removing aggregates or attributes), you need to update your read model schema. Use the provided Rails generator:
-
-```shell
-rails generate yes:core:read_models:update
-```
-
-This generator will create a migration file that updates the read model schema to match the current state of your aggregates.
-
-**Limitation: The generator does not currently support changing attribute types.**
-
-
-## Command and Read APIs
-
-In case you have the command api mounted to your application, your aggregate's commands will be available on the command api.
-
-In case you have the read api mounted to your application, the default read model will be available on the read api, unless you marked it as private. 
-
-Note that you will need to create the necessary authorizers.
-
-
-## Custom Guards for Attributes
-
-The `attribute` method supports custom guards as a way to implement domain-specific validation logic beyond simple type checking.
-
-### Basic Guard Usage
-
-To add a guard to an attribute, first add a block to the attribute, then add a `guard` block inside:
+The `command` method defines custom operations on your aggregate:
 
 ```ruby
-module Users
-  module User
+module Companies
+  module Company
     class Aggregate < Yes::Core::Aggregate
-      attribute :email, :email do 
-        guard :check_email_domain do
-          payload.email.end_with?('@example.com')
+      # Define attributes that will be updated by the command
+      attribute :user_ids, :uuids
+      
+      command :assign_user do
+        # Define payload attributes
+        payload user_id: :uuid
+        
+        guard :user_not_already_assigned do
+          !user_ids.include?(payload.user_id)
+        end
+        
+        # Custom state update logic
+        update_state do
+          user_ids { (user_ids || []) + [payload.user_id] }
         end
       end
     end
@@ -199,102 +137,474 @@ module Users
 end
 ```
 
-In this example, the user email can only be changed to addresses ending with '@example.com'.
+## Attribute Details
 
-Inside a guard block you can access the command payload using `payload` and all aggregate attributes directly:
+Attributes are the core properties of your aggregates.
+
+### Available Types
+
+The attribute system supports various types:
+- `:string` - Text values
+- `:email` - Email addresses with validation
+- `:uuid` - UUID values
+- `:integer` - Numeric values
+- `:boolean` - True/false values
+- `:date` - Date values
+- `:uuids` - Arrays of UUIDs
+
+For the complete list, see [lib/yes/type_lookup.rb](lib/yes/type_lookup.rb)
+
+### Attribute Commands
+
+If you specify `command: true` when defining an attribute, Yes generates:
+
+#### `change_<attribute>` Method
+
+Changes the attribute's value through an event:
 
 ```ruby
-  guard :some_check do
-    payload.something != 'xyz' && something.blank?    # accesses the 'something' attribute in the payload and also the current value for 'something'
-  end
+user.change_age(30)
+user.change_bio("Software developer")
 ```
 
-The guard will pass if the block evaluates to `true`.
-
-By default, when a guard fails it will raise an `invalid_transition` error. If you want to explicitly define a `no_change` check guard, you need to name the guard `:no_change`:
+You can also pass parameters as a hash:
 
 ```ruby
+user.change_age(age: 30)
+```
+
+#### `can_change_<attribute>?` Method
+
+Validates a potential change without applying it:
+
+```ruby
+# Valid change
+if user.can_change_email?("user@example.com")
+  user.change_email("user@example.com")
+end
+
+# Invalid change
+user.can_change_email?("invalid-email") # => false
+user.email_change_error # Contains the error message
+```
+
+## Command Details
+
+Commands define operations that can be performed on your aggregate.
+
+### Command Configuration Options
+
+#### Payload Attributes
+
+Define the input data for your command:
+
+```ruby
+command :register_apprenticeship do
+  payload title: :string,
+          start_date: :date,
+          location_id: :uuid
+end
+```
+
+Make sure the payload keys are all defined as attributes on the aggregate if you don't supply an `update_state` block.
+
+#### Guards
+
+Add validation rules with guards:
+
+```ruby
+command :publish do
+  guard :all_required_fields_present do
+    title.present? && description.present?
+  end
+  
+  guard :not_already_published do
+    !published
+  end
+end
+```
+
+#### Custom Event Names
+
+Customize the generated event name:
+
+```ruby
+command :publish do
+  event :apprenticeship_published
+end
+```
+
+When no custom event name is provided, *Yes* automatically generates an event name based on the command name. Currently, only standard command prefixes are supported. If you use a command that doesn't start with a supported prefix, you must specify the event name explicitly. For a list of supported prefixes, see [lib/yes/core/utils/event_name_resolver.rb](yes-core/lib/yes/core/utils/event_name_resolver.rb).
+
+#### Custom State Updates
+
+Define exactly how state should change:
+
+```ruby
+command :add_tag do
+  payload tag: :string
+  
+  update_state do
+    tags { (tags || []) + [payload.tag] }
+  end
+end
+```
+
+You can also use the `update_state` method to update multiple attributes at once:
+
+```ruby
+update_state do
+  name { payload.name }
+  email { payload.email }
+end
+```
+
+Make sure the attributes updated in the `update_state` block are all defined on the aggregate.
+
+### State Update Behavior
+
+Commands update the aggregate state in one of two ways:
+
+#### 1. Automatic State Updates (Without `update_state` Block)
+
+If you don't define an `update_state` block, the command will automatically update the aggregate's attributes based on the payload:
+
+```ruby
+module Companies
+  module Company
+    class Aggregate < Yes::Core::Aggregate
+      # Define attributes that match the payload keys
+      attribute :name, :string
+      attribute :description, :string
+      
+      command :update_details do
+        # Payload keys must match attribute names
+        payload name: :string,
+                description: :string
+        # No update_state block needed - automatic update
+      end
+    end
+  end
+end
+
+company = Companies::Company::Aggregate.new
+company.update_details(name: "Acme Inc", description: "Manufacturing company")
+# Both name and description attributes will be updated automatically
+```
+
+**Important**: When not using an `update_state` block:
+- All payload keys must be defined as attributes on the aggregate
+- The system will validate this and raise an error if there's a mismatch
+- The attribute values will be updated directly from the payload values
+
+#### 2. Custom State Updates (With `update_state` Block)
+
+When you define an `update_state` block, you have complete control over how attributes are updated:
+
+```ruby
+module Articles
+  module Article
+    class Aggregate < Yes::Core::Aggregate
+      attribute :title, :string
+      attribute :tags, :array
+      attribute :status, :string
+      
+      command :publish do
+        payload title: :string
+        
+        update_state do
+          # You can reference payload values
+          title { payload.title }
+          # Or set static values
+          status { "published" }
+          # Or combine existing data with payload
+          tags { (tags || []) + ["published"] }
+        end
+      end
+    end
+  end
+end
+```
+
+**Important**: When using an `update_state` block:
+- Payload keys don't need to match attribute names
+- However, all attributes updated in the block must be defined on the aggregate
+- The system will validate this and raise an error if an undefined attribute is updated
+- You have full control over transformation logic
+
+### Generated Command Methods
+
+For each command, Yes generates:
+
+#### Command Method
+
+Executes the command:
+
+```ruby
+company.assign_user(user_id: "123e4567-e89b-12d3-a456-426614174000")
+```
+
+#### Can Command Method
+
+Validates if the command would succeed:
+
+```ruby
+if company.can_assign_user?(user_id: "123e4567-e89b-12d3-a456-426614174000")
+  company.assign_user(user_id: "123e4567-e89b-12d3-a456-426614174000")
+else
+  puts company.assign_user_error
+end
+```
+
+## Guards
+
+Guards are powerful validation mechanisms that enforce business rules by controlling when commands and attribute changes are permitted to execute. They act as gatekeepers that ensure all operations maintain the integrity of your domain logic.
+
+### Adding Guards to Attributes
+
+When defining an attribute with a command, you can add guards to implement validation:
+
+```ruby
+attribute :email, :email, command: true do
+  guard :check_email_domain do
+    payload.email.end_with?('@example.com')
+  end
+end
+```
+
+### Adding Guards to Commands
+
+Similarly, you can add guards to commands to control when they can execute:
+
+```ruby
+command :publish do
+  guard :all_required_fields_present do
+    title.present? && description.present?
+  end
+  
+  guard :not_already_published do
+    !published
+  end
+end
+```
+
+Inside any guard block you can access:
+- `payload` - The command payload
+- Any aggregate attribute directly by name
+
+### Guard Error Types
+
+Guards have two distinct behaviors based on their name:
+
+- Guards named `:no_change` trigger a **no-change transition** error when they fail. This indicates that the operation would not modify the aggregate's state.
+- All other guard names trigger an **invalid transition** error when they fail. This indicates that the operation is not allowed in the current state.
+
+```ruby
+command :update_profile do
+  payload bio: :string
+  
+  # Will trigger a no-change transition error if bio hasn't changed
   guard :no_change do
-    payload.something != something
+    payload.bio == bio
   end
+  
+  # Will trigger an invalid transition error if bio contains prohibited words
+  guard :appropriate_content do
+    !payload.bio.include?("prohibited content")
+  end
+end
 ```
 
-Note that in most cases you don't need to do this, because the `no_change` guard is defined by default for all attributes.
+### Custom Error Messages
 
-
-### Guard with Custom Error Messages
-
-You can provide custom localized error messages for guards inside I18n translation files. 
-
-Example:
+You can provide custom localized error messages for guards using I18n translation files:
 
 ```yaml
-aggregates:
-  test: # context
-    apprenticeship: # aggregate
-      commands:
-        change_location: # command
-          guards:
-            location_published: # guard
-              error: "Location is not published"
-            company_matches:
-              error: "Location company does not match apprenticeship company"
+# config/locales/en.yml
+en:
+  aggregates:
+    test: # context
+      apprenticeship: # aggregate
+        commands:
+          change_location: # command
+            guards:
+              location_published: # guard
+                error: "Location is not published"
+              company_matches:
+                error: "Location company does not match apprenticeship company"
 ```
 
-### Combining Guards with Type Validation
+This allows you to define human-readable error messages that can be easily translated to different languages. These messages will be used instead of the default error messages when a guard fails.
 
-Guards are executed after type validation. If the type validation fails, the guard will not be executed. This allows you to focus your guard logic on business rules rather than basic type checking.
+## Read Models
+
+Each aggregate automatically gets a corresponding read model (ActiveRecord model) that persists its current state. This is how you access attribute values from an aggregate.
+
+```ruby
+user = Users::User::Aggregate.new
+user.change_name("Jane Doe") 
+user.name # => "Jane Doe" (reads from the read model)
+```
+
+### Default Naming
+
+By default, the read model's name is derived from the aggregate's context and name:
+
+```ruby
+# For Users::User::Aggregate
+# The read model class will be UsersUser
+# And the database table will be users_users
+```
+
+### Customizing Read Models
+
+You can customize the read model name and visibility using the `read_model` method:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      # Use a custom read model name
+      read_model 'custom_user', public: false
+      
+      attribute :email, :email, command: true
+      attribute :name, :string
+    end
+  end
+end
+```
+
+In this example:
+- The read model class will be `CustomUser` instead of `UsersUser`
+- The database table will be `custom_users`
+- `public: false` means this read model won't be accessible via the read API
+
+### Read Model Schema Generator
+
+When you add or remove aggregates or attributes, you need to update your database schema. Yes provides a Rails generator for this:
+
+```shell
+rails generate yes:core:read_models:update
+```
+
+This will:
+1. Find all aggregates in your application
+2. Create migration files that update read model tables to match your aggregate definitions
+3. Add, modify, or remove columns as needed
+
+Example generated migration:
+
+```ruby
+class UpdateReadModels < ActiveRecord::Migration[7.1]
+  def change
+    create_table :users do |t|
+      t.string :name
+      t.string :email
+      t.integer :age
+      t.integer :revision, null: false, default: -1
+      t.timestamps
+    end
+    
+    add_column :companies, :name, :string
+    remove_column :companies, :old_field
+  end
+end
+```
+
+#### Type Mapping
+
+Attribute types are mapped to database column types as follows:
+- `:string`, `:email`, `:url` → `:string`
+- `:integer` → `:integer`
+- `:uuid` → `:uuid`
+- `:boolean` → `:boolean`
+- `:hash` → `:jsonb`
+- `:aggregate` → `:uuid` (stored as `<attribute_name>_id`)
+
+## Additional Features
+
+### Parent Aggregates
+
+Link aggregates in a hierarchy:
+
+```ruby
+module Companies
+  module Location
+    class Aggregate < Yes::Core::Aggregate
+      parent :company
+      
+      attribute :name, :string, command: true
+      attribute :address, :string, command: true
+    end
+  end
+end
+```
+
+### Primary Context
+
+Specify the main context:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      primary_context :users
+      
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
 
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies.
 
-Then run pg eventstore using docker:
+Start PG EventStore using Docker:
 
 ```shell
 docker compose up
 ```
 
-To setup pg eventstore and dummy app development and test dbs run the `setup_db` script:
+Setup databases:
 
 ```shell
 ./bin/setup_db
 ```
 
-Now you can enter a dev console by running 
+Enter a development console:
 
 ```shell
 rails c
 ```
 
-To get familiar with `Yes` you can play around with the existing aggregates in the dummy app.
-
-Example:
+### Example Usage
 
 ```ruby
 user = Users::User::Aggregate.new
-user.change_name(name: "John Doe")
+user.change_name(name: "John Doe") # assuming command: true was set
 user.name # => "John Doe"
 User.last.name # => "John Doe"
 ```
 
-The dummy app has the command and read apis monted, so you can play around with those too.
-Just run 
+### Testing the APIs
+
+The dummy app includes mounted command and read APIs for testing. Start the server with:
 
 ```shell
 rails s
 ```
 
-to start the dummy app server.
+#### Setting Up Authentication
 
-You need to set the public and private key environment variables for the jwt token auth. Example:
+Set the required JWT token authentication environment variables:
 
 ```shell
 export JWT_TOKEN_AUTH_PUBLIC_KEY=2f8c6129d816cf51c374bc7f08c3e63ed156cf78aefb4a6550d97b87997977ee
 export JWT_TOKEN_AUTH_PRIVATE_KEY=12345678901234567890123456789012
 ```
 
-You can then generate the auth token using the following ruby code:
+Generate an authentication token with:
 
 ```ruby
 require 'jwt'
@@ -310,12 +620,14 @@ JWT.encode(
 )
 ```
 
-Test firying a command:
+#### Testing Command API
+
+Execute a command with curl:
 
 ```shell
-curl --location 'http://127.0.0.1:3000/commands' \                                                                                   130 ↵
+curl --location 'http://127.0.0.1:3000/commands' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Bearer <your auth token>>' \
+--header 'Authorization: Bearer <your auth token>' \
 --data '{
   "commands": [{
     "subject": "User",
@@ -329,23 +641,48 @@ curl --location 'http://127.0.0.1:3000/commands' \                              
 }'
 ```
 
-Test reading users:
+#### Testing Read API
+
+Query the read models:
 
 ```shell
-curl --rl --location --globoff 'http://127.0.0.1:3000/queries/users' \
+curl --location 'http://127.0.0.1:3000/queries/users' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Bearer <your auth token>>'
+--header 'Authorization: Bearer <your auth token>'
 ```
 
+### Running Specs
 
-
-To run specs of any of the yes gems, enter their directory and run 
+To run specs for any of the Yes gems:
 
 ```shell
+cd <gem-directory>
 rspec
 ```
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to `gem.fury.io`. In order to push new releases you need to provide `GEM_FURY_PUSH_TOKEN` env variable.
+Or:
+
+```shell
+bundle exec rspec <gem-directory>
+```
+
+### Gem Installation and Release
+
+Install the gem locally:
+
+```shell
+bundle exec rake install
+```
+
+Release a new version:
+
+1. Update the version in `version.rb`
+2. Run:
+```shell
+bundle exec rake release
+```
+
+This creates a git tag, pushes commits and tags, and pushes the gem to `gem.fury.io`. To push new releases, you need to provide the `GEM_FURY_PUSH_TOKEN` environment variable.
 
 ## Contributing
 
