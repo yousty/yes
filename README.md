@@ -1,6 +1,6 @@
 # Yes
 
-Yes is a framework for building event-sourced systems, originally developed to power Switzerland's leading apprenticeship platform [yousty.ch](https://www.yousty.ch/de-CH). It is designed to be used within Rails applications and relies on [PgEventstore](https://github.com/yousty/pg_eventstore) for event storage, which provides a robust PostgreSQL-based event store implementation.
+Yes is a framework for building event-sourced systems, originally developed to power Switzerland's leading apprenticeship platform [yousty.ch](https://www.yousty.ch/de-CH) and its younger sibling [professional.ch](https://www.professional.ch/). It is designed to be used within Rails applications and relies on [PgEventstore](https://github.com/yousty/pg_eventstore) for event storage, which provides a robust PostgreSQL-based event store implementation.
 
 ## Table of Contents
 
