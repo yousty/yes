@@ -375,6 +375,10 @@ end
 
 Guards are powerful validation mechanisms that enforce business rules by controlling when commands and attribute changes are permitted to execute. They act as gatekeepers that ensure all operations maintain the integrity of your domain logic.
 
+### Default Guards
+
+Both commands and attributes automatically include a `:no_change` guard that ensures the aggregate's state would actually change when applying the command. For commands, this default guard is only active when there is no `update_state` block present in the command definition.
+
 ### Adding Guards to Attributes
 
 When defining an attribute with a command, you can add guards to implement validation:
@@ -671,14 +675,7 @@ curl --location 'http://127.0.0.1:3000/queries/users' \
 To run specs for any of the Yes gems:
 
 ```shell
-cd <gem-directory>
-rspec
-```
-
-Or:
-
-```shell
-bundle exec rspec <gem-directory>
+rspec <gem-directory>
 ```
 
 ### Gem Installation and Release

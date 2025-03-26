@@ -28,11 +28,11 @@ module Yes
 
         # @param payload [Hash] The command payload
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance
-        def initialize(payload:, aggregate:)
+        def initialize(payload:, aggregate:, command_name:)
           @raw_payload = payload
           @aggregate = aggregate
           @aggregate_tracker = AggregateTracker.new
-
+          @command_name = command_name
           @payload = PayloadProxy.new(
             raw_payload:,
             context: aggregate.class.context,
@@ -56,7 +56,7 @@ module Yes
 
         private
 
-        attr_reader :raw_payload, :payload, :aggregate, :aggregate_tracker
+        attr_reader :raw_payload, :payload, :aggregate, :aggregate_tracker, :command_name
 
         # Evaluates a single guard and raises appropriate error if it fails
         #
@@ -79,9 +79,8 @@ module Yes
         def error_message(guard_name)
           context_name = aggregate.class.context
           aggregate_name = aggregate.class.aggregate
-          command_name = self.class.name.sub('::GuardEvaluator', '').demodulize
 
-          Yes::Core::ErrorMessages.guard_error(context_name, aggregate_name, command_name, guard_name)
+          Yes::Core::ErrorMessages.guard_error(context_name, aggregate_name, command_name.to_s.classify, guard_name)
         end
 
         # Handles method missing to delegate attribute calls to the current aggregate

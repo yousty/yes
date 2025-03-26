@@ -23,7 +23,11 @@ module Yes
         def handle_command(cmd, guard_evaluator_class)
           command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
 
-          evaluator = guard_evaluator_class.new(payload: cmd.payload, aggregate: self)
+          evaluator = guard_evaluator_class.new(
+            payload: cmd.payload,
+            aggregate: self,
+            command_name: command_helper.command_name
+          )
           evaluator.call
 
           send(:"#{command_helper.command_name.underscore}_error=", nil)

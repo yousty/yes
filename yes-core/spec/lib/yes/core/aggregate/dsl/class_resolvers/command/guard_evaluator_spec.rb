@@ -35,12 +35,55 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
   describe '#generate_class' do
     let(:generated_class) { subject.send(:generate_class) }
 
-    before do
-      allow(subject).to receive(:aggregate_name).and_return(aggregate)
-    end
-
     it 'generates a class inheriting from GuardEvaluator' do
       expect(generated_class).to be < Yes::Core::CommandHandling::GuardEvaluator
+    end
+
+    it 'includes a no_change guard' do
+      expect(generated_class.guards.pluck(:name)).to include(:no_change)
+    end
+
+    context 'no change guard evaluation' do
+      let(:payload) { { document_ids: '123,456', another: 'John' } }
+      let(:aggregate) { Test::User::Aggregate.new }
+      let(:instance) { generated_class.new(payload:, aggregate:, command_name: :approve_documents) }
+      let(:guard) { generated_class.guards.find { |g| g[:name] == :no_change } }
+
+      let(:command_data) do
+        Yes::Core::Aggregate::Dsl::CommandData.new(
+          :approve_documents,
+          aggregate_class,
+          context: 'UserManagement',
+          aggregate: 'User',
+          payload_attributes: {
+            document_ids: :string,
+            another: :string
+          }
+        )
+      end
+
+      before do
+        # Setup the state updater class which is required in the guard evaluation
+        Yes::Core::Aggregate::Dsl::ClassResolvers::Command::StateUpdater.new(command_data).call
+      end
+
+      context 'when the command changes the state' do
+        it 'passes the guard evaluation' do
+          expect { instance.send(:evaluate_guard, guard) }.not_to raise_error
+        end
+      end
+
+      context 'when the command does not change the state' do
+        before do
+          aggregate.approve_documents(document_ids: payload[:document_ids], another: payload[:another])
+        end
+
+        it 'raises a NoChangeTransition error' do
+          expect { instance.send(:evaluate_guard, guard) }.to(
+            raise_error(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+          )
+        end
+      end
     end
   end
 end

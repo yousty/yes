@@ -41,39 +41,67 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Attribute::GuardEvalua
       expect(generated_class.guards.pluck(:name)).to include(:no_change)
     end
 
-    context 'with standard attribute type' do
-      let(:payload) { { email: 'new@email.com' } }
+    context 'no change guard evaluation' do
       let(:aggregate) { Test::User::Aggregate.new }
+      let(:instance) { generated_class.new(payload:, aggregate:, command_name: :change_email) }
+      let(:guard) { generated_class.guards.find { |g| g[:name] == :no_change } }
 
-      it 'uses the attribute name in the guard' do
-        instance = generated_class.new(payload:, aggregate:)
-        guard = generated_class.guards.find { |g| g[:name] == :no_change }
-        expect { instance.send(:evaluate_guard, guard) }.not_to raise_error
+      context 'with standard attribute type' do
+        let(:payload) { { email: 'new@email.com' } }
+
+        context 'when the command changes the state' do
+          it 'passes the guard evaluation' do
+            expect { instance.send(:evaluate_guard, guard) }.not_to raise_error
+          end
+        end
+
+        context 'when the command does not change the state' do
+          before do
+            aggregate.change_email(email: payload[:email])
+          end
+
+          it 'raises a NoChangeTransition error' do
+            expect { instance.send(:evaluate_guard, guard) }.to(
+              raise_error(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+            )
+          end
+        end
       end
-    end
 
-    context 'with aggregate attribute type' do
-      let(:attribute_type) { :aggregate }
-      let(:attribute_name) { 'location' }
-      let(:new_id) { SecureRandom.uuid }
-      let(:payload) { { location_id: new_id } }
-      let(:aggregate) { Test::User::Aggregate.new }
+      context 'with aggregate attribute type' do
+        let(:attribute_type) { :aggregate }
+        let(:attribute_name) { 'location' }
+        let(:new_id) { SecureRandom.uuid }
+        let(:payload) { { location_id: new_id } }
 
-      before do
-        Test::User::Aggregate.attribute :location, :aggregate, command: true
-      end
+        before do
+          Test::User::Aggregate.attribute :location, :aggregate, command: true
+        end
 
-      after do
-        Test::User::Aggregate.singleton_class.instance_variable_set(
-          :@attributes,
-          Test::User::Aggregate.attributes.except(:location)
-        )
-      end
+        after do
+          Test::User::Aggregate.singleton_class.instance_variable_set(
+            :@attributes,
+            Test::User::Aggregate.attributes.except(:location)
+          )
+        end
 
-      it 'uses the attribute_id in the guard' do
-        instance = generated_class.new(payload:, aggregate:)
-        guard = generated_class.guards.find { |g| g[:name] == :no_change }
-        expect { instance.send(:evaluate_guard, guard) }.not_to raise_error
+        context 'when the command changes the state' do
+          it 'passes the guard evaluation' do
+            expect { instance.send(:evaluate_guard, guard) }.not_to raise_error
+          end
+        end
+
+        context 'when the command does not change the state' do
+          before do
+            aggregate.change_location_id(location_id: payload[:location_id])
+          end
+
+          it 'raises a NoChangeTransition error' do
+            expect { instance.send(:evaluate_guard, guard) }.to(
+              raise_error(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+            )
+          end
+        end
       end
     end
   end

@@ -59,11 +59,9 @@ module Yes
         # Fetches the state updater class for a given command name
         #
         # @param name [Symbol] The command name
-        # @return [Class, nil] The state updater class if it exists, nil otherwise
+        # @return [Class] The state updater class
         def fetch_state_updater_class(name)
           fetch_class(name, :state_updater)
-        rescue RuntimeError
-          nil
         end
 
         # Builds a PgEventstore::Event instance

@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
-  subject(:guard_evaluator) { described_class.new(payload:, aggregate:) }
+  subject(:guard_evaluator) { guard_evaluator_class.new(payload:, aggregate:, command_name: :test_command) }
 
+  let(:guard_evaluator_class) { described_class }
   let(:payload) { { location_id: } }
   let(:location_id) { SecureRandom.uuid }
   let(:location) { Test::Location::Aggregate.new(location_id) }
@@ -124,14 +125,13 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
 
   describe '#error_message' do
     let(:guard_name) { :test_guard }
-    let(:command_evaluator_class) do
+    let(:guard_evaluator_class) do
       Class.new(described_class) do
         def self.name
           'Test::User::TestCommand::GuardEvaluator'
         end
       end
     end
-    let(:command_evaluator) { command_evaluator_class.new(payload: {}, aggregate:) }
 
     it 'generates the correct error message using ErrorMessages' do
       aggregate_failures do
@@ -140,7 +140,7 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
           and_return('Error message')
 
         # Call the private method using send
-        expect(command_evaluator.send(:error_message, guard_name)).to eq('Error message')
+        expect(guard_evaluator.send(:error_message, guard_name)).to eq('Error message')
       end
     end
   end

@@ -8,7 +8,7 @@ module Yes
           module Command
             # Creates and registers guard evaluator classes for aggregate commands
             #
-            # This class resolver generates plain guard evaluator class that process
+            # This class resolver generates plain guard evaluator classes that process
             # commands in aggregates.
             #
             class GuardEvaluator < Base
@@ -32,10 +32,41 @@ module Yes
 
               # Creates a new guard evaluator class
               #
+              # By default, includes a no_change guard that checks if the command would modify the aggregate's state.
+              # This guard is omitted if the command has a custom state_update block since we cannot rely on the default
+              # attribute update logic.
+              #
               # @return [Class] A new guard evaluator class inheriting from Yes::Core::CommandHandling::GuardEvaluator
               # @api private
-              def generate_class
-                Class.new(Yes::Core::CommandHandling::GuardEvaluator)
+              def generate_class # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+                command_name = command_data.name
+                context_name = command_data.context_name
+                aggregate_name = command_data.aggregate_name
+
+                Class.new(Yes::Core::CommandHandling::GuardEvaluator) do
+                  guard :no_change do
+                    state_updater_class = Yes::Core.configuration.aggregate_class(
+                      context_name, aggregate_name, command_name, :state_updater
+                    )
+
+                    next true if state_updater_class.update_state_block
+
+                    payload = raw_payload.except(:"#{aggregate_name.underscore}_id")
+
+                    next true if payload.empty?
+
+                    has_changes = false
+                    payload.each do |attribute, new_value|
+                      current_value = public_send(attribute)
+                      if current_value != new_value
+                        has_changes = true
+                        break
+                      end
+                    end
+
+                    has_changes
+                  end
+                end
               end
             end
           end
