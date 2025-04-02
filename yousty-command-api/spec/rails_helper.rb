@@ -76,5 +76,6 @@ RSpec.configure do |config|
     REDIS.flushdb
     DummyRepository.reset
     TestHelper.clean_up_config
+    PgEventstore::TestHelpers.clean_up_db
   end
 end

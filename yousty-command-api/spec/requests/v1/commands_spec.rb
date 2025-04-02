@@ -225,24 +225,57 @@ RSpec.describe 'Yousty::Command::Api::V1::CommandsController', type: :request do
         ]
       end
 
-      context 'running commands inline' do
-        let(:command_registry) { Yousty::Eventsourcing::CommandRegistry.new }
+      before do
+        command_registry = Yousty::Eventsourcing::CommandRegistry.new
+        command_registry.register(
+          Dummy::Commands::Activity::DoSomethingElse,
+          Dummy::Commands::Activity::DummyHandler
+        )
+        command_registry.register(
+          Dummy::Commands::Activity::DoSomethingImpossible,
+          Dummy::Commands::Activity::DummyHandler
+        )
+        Yousty::Eventsourcing.configure do |config|
+          config.command_registry = command_registry
+        end
+      end
 
+      shared_examples 'publishes messages' do
+        it 'publishes correct messages to proper channel' do
+          subject
+          messages = MessageBus.backlog channel
+          batch_id = response.parsed_body.dig(0, 'batch_id')
+          messages_data = messages.map { |message| message.data }
+
+          aggregate_failures do
+            expect(messages.size).to eq(4)
+
+            expect(messages_data[0]['type']).to eq('batch_started')
+            expect(messages_data[1]['type']).to eq('command_success')
+            expect(messages_data[2]['type']).to eq('command_success')
+            expect(messages_data[3]['type']).to eq('batch_finished')
+
+            expect(messages_data[0]['batch_id']).to eq(batch_id)
+            expect(messages_data[1]['batch_id']).to eq(batch_id)
+            expect(messages_data[2]['batch_id']).to eq(batch_id)
+            expect(messages_data[3]['batch_id']).to eq(batch_id)
+
+            expect(messages_data[1]['command']).to(
+              eq('Dummy::Commands::Activity::DoSomethingElse')
+            )
+            expect(messages_data[2]['command']).to(
+              eq('Dummy::Commands::Activity::DoSomethingImpossible')
+            )
+          end
+        end
+      end
+
+      context 'running commands inline' do
         before do
           Yousty::Eventsourcing.configure do |config|
             config.command_notifier_class = nil
             config.process_commands_inline = true
-            config.command_registry = command_registry
           end
-
-          command_registry.register(
-            Dummy::Commands::Activity::DoSomethingElse,
-            Dummy::Commands::Activity::DummyHandler
-          )
-          command_registry.register(
-            Dummy::Commands::Activity::DoSomethingImpossible,
-            Dummy::Commands::Activity::DummyHandler
-          )
         end
 
         it_behaves_like 'successful inline write response'
@@ -260,34 +293,20 @@ RSpec.describe 'Yousty::Command::Api::V1::CommandsController', type: :request do
 
             expect(handler).to have_received(:call).twice
           end
-        end
 
-        shared_examples 'publishes messages' do
-          it 'publishes correct messages to proper channel' do
-            subject
-            messages = MessageBus.backlog channel
-            batch_id = response.parsed_body.dig(0, 'batch_id')
-            messages_data = messages.map { |message| message.data }
+          context 'adding identity id to command metadata' do
+            let(:command_bus) { instance_spy(Yousty::Eventsourcing::CommandBus) }
+            before do
+              allow(Yousty::Eventsourcing::CommandBus).to receive(:new).and_return(command_bus)
+            end
 
-            aggregate_failures do
-              expect(messages.size).to eq(4)
-
-              expect(messages_data[0]['type']).to eq('batch_started')
-              expect(messages_data[1]['type']).to eq('command_success')
-              expect(messages_data[2]['type']).to eq('command_success')
-              expect(messages_data[3]['type']).to eq('batch_finished')
-
-              expect(messages_data[0]['batch_id']).to eq(batch_id)
-              expect(messages_data[1]['batch_id']).to eq(batch_id)
-              expect(messages_data[2]['batch_id']).to eq(batch_id)
-              expect(messages_data[3]['batch_id']).to eq(batch_id)
-
-              expect(messages_data[1]['command']).to(
-                eq('Dummy::Commands::Activity::DoSomethingElse')
-              )
-              expect(messages_data[2]['command']).to(
-                eq('Dummy::Commands::Activity::DoSomethingImpossible')
-              )
+            it 'adds identity id to command metadata' do
+              subject
+              expect(command_bus).to have_received(:call) do |commands|
+                commands.each do |command|
+                  expect(command.metadata[:identity_id]).to eq(auth_user_uuid)
+                end
+              end
             end
           end
         end
@@ -314,6 +333,51 @@ RSpec.describe 'Yousty::Command::Api::V1::CommandsController', type: :request do
 
             it_behaves_like 'publishes messages'
           end
+        end
+      end
+
+      context 'overriding config.process_commands_inline config option' do
+        context 'when forcing sync processing' do
+          let(:params) { super().merge(async: 'false') }
+
+          before do
+            Yousty::Eventsourcing.configure do |config|
+              config.process_commands_inline = true
+              config.command_notifier_class = Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier
+            end
+          end
+
+          it_behaves_like 'successful inline write response'
+          it_behaves_like 'publishes messages' do
+            let(:channel) { auth_user_uuid }
+          end
+
+          context 'when more than 10 commands were submitted' do
+            let(:commands) { super() * 6 }
+
+            it 'returns error' do
+              subject
+              aggregate_failures do
+                expect(response.parsed_body).to(
+                  eq('error' => 'Too many commands. You can process up to 10 commands inline.')
+                )
+                expect(response).to have_http_status(:unprocessable_content)
+              end
+            end
+          end
+        end
+
+        context 'when forcing async processing' do
+          let(:params) { super().merge(async: 'true') }
+
+          before do
+            Yousty::Eventsourcing.configure do |config|
+              config.process_commands_inline = false
+              config.command_notifier_class = Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier
+            end
+          end
+
+          it_behaves_like 'successful write response'
         end
       end
 

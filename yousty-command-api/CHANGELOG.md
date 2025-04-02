@@ -1,5 +1,11 @@
 # Unreleased
 
+# 2.2.0 - 2025.03.27
+* Add identity ID to command metadata so that it gets merged into event meta data. For use in process managers that can now use the identity_id as a message bus channel. That way, frontend can track commands executed from a process manager. 
+
+# 2.1.0 - 2025.02.05
+* Add ability to process commands in the foreground. To do this - add `async=false` param to your query params. `yousty-eventsourcing` v13.3+ is required for this functional. Using `yousty-eventsourcing` less than v13.3 will ignore `async` param.
+
 # 2.0.0 - 2024.10.08
 * Officially support pg event store, support for command groups
 

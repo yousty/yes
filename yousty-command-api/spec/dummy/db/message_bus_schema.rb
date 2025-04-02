@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_11_090320) do
+ActiveRecord::Schema[7.2].define(version: 2023_07_11_090320) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -21,5 +21,4 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_11_090320) do
     t.index ["added_at"], name: "index_message_bus_messages_on_added_at"
     t.index ["id", "channel"], name: "index_message_bus_messages_on_id_and_channel"
   end
-
 end

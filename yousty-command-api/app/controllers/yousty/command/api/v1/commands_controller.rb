@@ -1,10 +1,14 @@
 # frozen_string_literal: true
 
+# rubocop:disable Rails/HttpStatus
+
 module Yousty
   module Command
     module Api
       module V1
         class CommandsController < ActionController::API
+          MAX_INLINE_COMMANDS_PER_REQ = 10
+
           include JwtTokenAuthClientRails::JwtTokenAuthController
 
           before_action :authenticate_with_token
@@ -40,11 +44,14 @@ module Yousty
             Yousty::Eventsourcing::CommandParamsValidator.call(params[:commands])
             deserialize_commands = Yousty::Eventsourcing::CommandsDeserializer.call(params[:commands])
             expanded_commands = expand_commands(deserialize_commands)
+            return too_many_inline_commands if perform_inline? && expanded_commands.size > MAX_INLINE_COMMANDS_PER_REQ
+
             Yousty::Eventsourcing::CommandsAuthorizer.call(expanded_commands, auth_data)
             Yousty::Eventsourcing::CommandsValidator.call(expanded_commands)
-            cmd_bus_response = Yes::Core::CommandBus.new.call(
-              deserialize_commands,
-              notifier_options: { channel: @channel }
+            cmd_bus_response = command_bus.call(
+              add_identity_id_to_command_metadata(deserialize_commands),
+              notifier_options: { channel: @channel },
+              transaction: transaction_details
             )
 
             render json: success_response_data(cmd_bus_response), status: :ok
@@ -52,10 +59,46 @@ module Yousty
 
           private
 
+          def inline_processing_supported?
+            Gem::Specification.find_by_name('yousty-eventsourcing').version >= Gem::Version.new('13.3.0')
+          end
+
+          def perform_inline?
+            (inline_processing_supported? && params[:async] && params[:async] != 'true') ||
+              Yousty::Eventsourcing.config.process_commands_inline
+          end
+
+          def command_bus
+            return Yousty::Eventsourcing::CommandBus.new unless perform_inline?
+
+            Yousty::Eventsourcing::CommandBus.new(perform_inline: perform_inline?)
+          end
+
+          def too_many_inline_commands
+            error = "Too many commands. You can process up to #{MAX_INLINE_COMMANDS_PER_REQ} commands inline."
+            render json: { error: }, status: :unprocessable_entity
+          end
+
           def expand_commands(deserialize_commands)
             deserialize_commands.map do |command|
               command.is_a?(Yousty::Eventsourcing::CommandGroup) ? command.commands : command
             end.flatten
+          end
+
+          def add_identity_id_to_command_metadata(commands)
+            commands.map do |command|
+              command.class.new(
+                command.to_h.merge(metadata: (command.metadata || {}).merge(identity_id: auth_data[:identity_id]))
+              )
+            end
+          end
+
+          def transaction_details
+            Yousty::Eventsourcing::TransactionDetails.new(
+              name: params['transaction_name'] || 'Command batch processing',
+              caller_id: auth_data[:identity_id],
+              caller_type: 'User'
+            )
           end
 
           def success_response_data(cmd_bus_response)
@@ -106,7 +149,7 @@ module Yousty
               errors: error.extra
             }
 
-            render json: error_info.to_json, status: :unprocessable_entity
+            render json: error_info.to_json, status: 422
           end
 
           def set_channel

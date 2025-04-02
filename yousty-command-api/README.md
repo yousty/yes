@@ -224,10 +224,9 @@ You will have to install Docker first. It is needed to run EventStore DB. You ca
 docker compose up
 ```
 
-Make sure you have db created and run migrations:
+Run setup script:
 ```ruby
-rails db:create
-rails db:migrate
+bin/setup_db
 ```
 
 Now you can enter a dev console by running `bin/console` or run tests by running the `rspec` command.

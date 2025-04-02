@@ -2,6 +2,8 @@
 
 require 'redis'
 require 'dotenv'
+require 'pg_eventstore/rspec/has_option_matcher'
+require 'pg_eventstore/rspec/test_helpers'
 
 Dotenv.load('spec/.env')
 

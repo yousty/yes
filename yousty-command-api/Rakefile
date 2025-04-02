@@ -5,5 +5,9 @@ load 'rails/tasks/engine.rake'
 
 load 'rails/tasks/statistics.rake'
 
+require 'pg_eventstore'
+
+load 'pg_eventstore/tasks/setup.rake'
+
 require 'bundler/gem_tasks'
 require 'yousty_dev_tools/tasks/release'
