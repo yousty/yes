@@ -48,10 +48,9 @@ module Yousty
 
             Yousty::Eventsourcing::CommandsAuthorizer.call(expanded_commands, auth_data)
             Yousty::Eventsourcing::CommandsValidator.call(expanded_commands)
-            cmd_bus_response = command_bus.call(
+            cmd_bus_response = Yes::Core::CommandBus.new.call(
               add_identity_id_to_command_metadata(deserialize_commands),
-              notifier_options: { channel: @channel },
-              transaction: transaction_details
+              notifier_options: { channel: @channel }
             )
 
             render json: success_response_data(cmd_bus_response), status: :ok
