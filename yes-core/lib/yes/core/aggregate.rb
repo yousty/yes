@@ -19,7 +19,7 @@ module Yes
     # @example Define an aggregate with a parent
     #   class ProfileAggregate < Yes::Core::Aggregate
     #     parent :user do
-    #       guard(:user_exists) { User.exists?(id: command.user_id) }
+    #       guard(:user_exists) { payload.user.present? }
     #       guard(:not_removed) { trashed_at.blank? }
     #     end
     #     attribute :bio, :string
