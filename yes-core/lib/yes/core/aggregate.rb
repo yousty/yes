@@ -122,9 +122,31 @@ module Yes
 
         # Defines a command on the aggregate which creates corresponding command and event classes
         #
-        # @param name [Symbol] name of the command
-        # @yield Block for defining payload, guards, and other command configurations
-        # @yieldreturn [void]
+        # @overload command(name, &)
+        #   @param name [Symbol] name of the command
+        #   @yield Block for defining payload, guards, and other command configurations
+        #   @yieldreturn [void]
+        #
+        # @overload command(publish)
+        #   @param publish [Symbol] passing :publish as a name will generate published atttribute and publish command
+        #   @return [void]
+        #
+        # @overload command(change, attribute, **options)
+        #   @param change [Symbol] passing :change as a name will generate a change command and an attribute
+        #   @param attribute [Symbol] attribute name
+        #   @param options [Hash] additional options for the attribute
+        #   @return [void]
+        #
+        # @overload command(enable, attribute, **options)
+        #   @param enable [Symbol] passing :enable or :activate as a name will generate a flag set to true command and an attribute
+        #   @param attribute [Symbol] attribute name
+        #   @param options [Hash] additional options for the attribute
+        #   @return [void]
+        #
+        # @overload command(toggle_names, attribute)
+        #  @param toggle_names [Array<Symbol>] names of set flag to true/false command that will be generated
+        #  @param attribute [Symbol] attribute name
+        #  @return [void]
         #
         # @example Define a basic command
         #   command :assign_user
@@ -139,7 +161,23 @@ module Yes
         #
         #     event :user_assigned
         #   end
-        def command(name, &)
+        #
+        # @example Define change command and an attribute
+        #   command :change, :age, :integer, localized: true
+        #
+        # @example Define set flag to true command an an attribute
+        #   command :activate, :dropout, attribute: :dropout_enabled
+        #
+        # @example Define set of toggle commands an an attribute
+        #   command [:enable, :disable], :dropout
+        #
+        # @example Define publish command an published attribute
+        #   command :publish
+        #
+        def command(*args, **, &)
+          return handle_command_shortcut(*args, **, &) unless Dsl::CommandShortcutExpander.base_case?(*args, **, &)
+
+          name = args.first
           @commands ||= {}
           command_data = Dsl::CommandData.new(name, self, { context:, aggregate: })
           @commands[name] = command_data
@@ -173,6 +211,22 @@ module Yes
         # @return [Hash] The commands defined on this aggregate
         def commands
           @commands ||= {}
+        end
+
+        private
+
+        def handle_command_shortcut(...)
+          expanded = Dsl::CommandShortcutExpander.new(...).call
+
+          expanded.attributes.each do |specification|
+            next if attributes.key?(specification.name)
+
+            attribute(specification.name, specification.type, **specification.options)
+          end
+
+          expanded.commands.each do |specification|
+            command(specification.name, &specification.block)
+          end
         end
       end
 

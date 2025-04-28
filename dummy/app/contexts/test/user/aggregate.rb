@@ -39,6 +39,12 @@ module Test
       #     payload.location.name == 'London'
       #   end
       # end
+
+      command :change, :shortcut_description
+      command :change, :shortcuts_used, :integer
+      command :activate, :shorcut_usage, attribute: :shortcut_usage_enabled
+      command %i[enable disable], :shortcut_toggle
+      command :publish
     end
   end
 end
