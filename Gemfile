@@ -22,7 +22,7 @@ gem 'bootsnap', require: false
 source 'https://gem.fury.io/yousty-ag/' do
   gem 'jwt_token_auth_client_rails', '~> 3.3'
   gem 'yousty-api', '~> 1.4'
-  gem 'yousty-eventsourcing', '~> 12'
+  gem 'yousty-eventsourcing', '~> 14'
 end
 
 gem 'database_cleaner-active_record'
@@ -33,6 +33,6 @@ gem 'rubocop', '~> 1.21'
 gem 'rubocop-performance'
 gem 'rubocop-rails'
 
+gem 'yes-command-api', path: 'yes-command-api'
 gem 'yes-core', path: 'yes-core'
-gem 'yousty-command-api', path: 'yousty-command-api'
 gem 'yousty-read-api', path: 'yousty-read-api'

@@ -56,11 +56,13 @@ module Yes
                     next true if payload.empty?
 
                     has_changes = false
-                    payload.each do |attribute, new_value|
-                      current_value = public_send(attribute)
-                      if current_value != new_value
-                        has_changes = true
-                        break
+                    I18n.with_locale(payload.delete(:locale) || I18n.locale) do
+                      payload.each do |attribute, new_value|
+                        current_value = public_send(attribute)
+                        if current_value != new_value
+                          has_changes = true
+                          break
+                        end
                       end
                     end
 

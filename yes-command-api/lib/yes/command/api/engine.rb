@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-module Yousty
+module Yes
   module Command
     module Api
       class Engine < ::Rails::Engine
-        isolate_namespace Yousty::Command::Api
+        isolate_namespace Yes::Command::Api
         config.generators.api_only = true
 
         config.generators do |g|

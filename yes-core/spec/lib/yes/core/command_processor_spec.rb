@@ -17,8 +17,8 @@ RSpec.describe Yes::Core::CommandProcessor do
   let(:command_notifier) { instance_double('CommandNotifier') }
 
   before do
-    allow(Yousty::Eventsourcing.config).to receive(:command_notifier_class).
-      and_return(double(new: command_notifier))
+    allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).
+      and_return([double(new: command_notifier)])
   end
 
   describe '#perform' do
@@ -28,8 +28,8 @@ RSpec.describe Yes::Core::CommandProcessor do
 
     context 'with a single command' do
       it 'processes the command successfully' do
-        expect(command_notifier).to receive(:with_batch_notification).
-          with(processor.job_id, [kind_of(Test::User::Commands::ChangeName::Command)]).
+        expect(Yes::Core::CommandNotifier).to receive(:with_batch_notification).
+          with([command_notifier], processor.job_id, [kind_of(Test::User::Commands::ChangeName::Command)]).
           and_yield
 
         expect(command_notifier).to receive(:notify_command_response)
@@ -42,8 +42,8 @@ RSpec.describe Yes::Core::CommandProcessor do
       let(:commands) { [command, command.clone] }
 
       it 'processes all commands' do
-        expect(command_notifier).to receive(:with_batch_notification).
-          with(processor.job_id, kind_of(Array)).
+        expect(Yes::Core::CommandNotifier).to receive(:with_batch_notification).
+          with([command_notifier], processor.job_id, kind_of(Array)).
           and_yield
 
         expect(command_notifier).to receive(:notify_command_response).twice
@@ -66,7 +66,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
     context 'without command notifier configured' do
       before do
-        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_class).and_return(nil)
+        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
       end
 
       it 'processes commands without notifications' do

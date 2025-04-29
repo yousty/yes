@@ -58,7 +58,7 @@ module Yes
 
           # @return [Boolean] Whether the read model is public
           def read_model_public?
-            _read_model_public.nil? ? true : _read_model_public
+            _read_model_public.nil? || _read_model_public
           end
 
           private
@@ -96,7 +96,10 @@ module Yes
         # @return [Boolean] Returns true if the record is saved successfully
         # @raise [ActiveRecord::RecordInvalid] If the record is invalid
         def update_read_model(attributes)
-          read_model.update!(attributes)
+          locale = attributes.delete(:locale) || I18n.locale
+          I18n.with_locale(locale) do
+            read_model.update!(attributes)
+          end
         end
 
         # Retrieves or creates a read model instance for this aggregate

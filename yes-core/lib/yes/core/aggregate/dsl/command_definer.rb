@@ -27,6 +27,9 @@ module Yes
           # Error raised when attributes are used in the command that are not defined on the aggregate
           class UndefinedAttributeError < StandardError; end
 
+          # Error raised when event name cannot be resolved
+          class EventNameResolverError < StandardError; end
+
           # @return [CommandData] The data object containing command configuration
           attr_reader :command_data
           private :command_data
@@ -50,12 +53,26 @@ module Yes
           def call(&block)
             create_and_register_block_evaluator_classes
             evaluate_dsl_block(&block) if block
+            validate_event_name
             validate_accessed_attributes
             create_and_register_command_classes
             register_command_events
           end
 
           private
+
+          # Validates that the event name is present (either because it was specified explicitly or because it was
+          # resolved from the command name).
+          #
+          # @return [void]
+          # @raise [EventNameResolverError] If the event name is not specified explicitly
+          def validate_event_name
+            return if command_data.event_name
+
+            raise EventNameResolverError,
+                  "Event name for command #{command_data.context_name}::#{command_data.aggregate_name} " \
+                  "#{command_data.name} cannot be resolved, please specify explicitly."
+          end
 
           # Creates and registers the guard evaluator and state updater classes
           #
@@ -71,6 +88,7 @@ module Yes
           def create_and_register_command_classes
             @command_class = ClassResolvers::Command::Command.new(command_data).call
             @event_class = ClassResolvers::Command::Event.new(command_data).call
+
             MethodDefiners::Command::Command.new(command_data).call
             MethodDefiners::Command::CanCommand.new(command_data).call
           end
@@ -87,7 +105,7 @@ module Yes
               )
             else
               validate_attributes!(
-                command_data.payload_attributes.keys,
+                command_data.payload_attributes.keys.without(:locale),
                 'payload attributes'
               )
             end
@@ -172,12 +190,13 @@ module Yes
 
             # Defines how the state should be updated
             #
+            # @param custom [Boolean] Whether the state should be updated using a custom block
             # @yield Block defining how to update the state
             # @yieldreturn [void]
             # @return [void]
-            def update_state(&block)
+            def update_state(custom: false, &block)
               command_data.update_state_block = block
-              state_updater_class.update_state(&block)
+              state_updater_class.update_state(custom:, &block)
             end
 
             # Defines the event name for the command

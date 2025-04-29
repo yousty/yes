@@ -12,14 +12,18 @@ module Yes
 
           # Defines the update state block and analyzes it for attribute updates
           #
+          # @param custom [Boolean] Skip attribute analysis when true
           # @yield Block to evaluate for state updates
           # @yieldreturn [void]
           # @return [void]
-          def update_state(&block)
+          def update_state(custom: false, &block)
             @update_state_block = block
+            @custom_mode = custom
             @updated_attributes = []
 
-            # Create a temporary instance to analyze the block
+            # Only analyze the block if not in custom mode
+            return if custom
+
             analyzer = BlockAnalyzer.new
             analyzer.instance_eval(&block)
             @updated_attributes = analyzer.updated_attributes

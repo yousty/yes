@@ -11,7 +11,7 @@ module Yes
         #
         class AttributeData
           attr_reader :name, :type, :command_name, :event_name, :context_name,
-                      :aggregate_name, :aggregate_class, :define_command
+                      :aggregate_name, :aggregate_class, :define_command, :localized
 
           # @param name [Symbol] The name of the attribute
           # @param type [Symbol] The type of the attribute
@@ -19,6 +19,7 @@ module Yes
           # @param options [Hash] Additional options for the attribute
           # @option options [String] :context The context name for the attribute
           # @option options [String] :aggregate The aggregate name
+          # @option options [Boolean] :localized Whether the attribute is localized
           def initialize(name, type, aggregate_class, options = {})
             @name = name
             @type = type
@@ -28,6 +29,7 @@ module Yes
             @context_name = options.delete(:context)
             @aggregate_name = options.delete(:aggregate)
             @define_command = options.delete(:command) || false
+            @localized = options.delete(:localized) || false
           end
         end
       end

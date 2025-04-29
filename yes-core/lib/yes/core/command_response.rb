@@ -27,7 +27,7 @@ module Yes
         {
           message: error.message,
           type: error.message&.underscore&.tr(' ', '_'),
-          extra: error.extra
+          extra: (error.extra if error.respond_to?(:extra) && error.extra.present?)
         }.compact
       end
 

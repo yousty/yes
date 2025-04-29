@@ -67,7 +67,7 @@ module Yes
                  Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition,
                  Yousty::Eventsourcing::Command::Invalid => e
 
-            command_response_class(cmd).new(cmd:, error: e)
+            command_response_class(cmd).new(cmd:, error: e, extra: e.try(:extra), batch_id: cmd.batch_id)
           end
         end
 

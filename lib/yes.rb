@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'yes/core'
-require 'yousty/command/api'
+require 'yes/command/api'
 require 'yousty/read/api'
 
 module Yes

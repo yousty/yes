@@ -20,8 +20,8 @@ Gem::Specification.new do |spec|
   spec.files = Dir['{lib,sig}/**/*', 'LICENSE.txt', 'README.md', 'CHANGELOG.md']
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'yes-command-api' # , Yes::VERSION
   spec.add_dependency 'yes-core' # , Yes::VERSION
-  spec.add_dependency 'yousty-command-api' # , Yes::VERSION
   spec.add_dependency 'yousty-read-api' # , Yes::VERSION
 
   spec.metadata['rubygems_mfa_required'] = 'true'

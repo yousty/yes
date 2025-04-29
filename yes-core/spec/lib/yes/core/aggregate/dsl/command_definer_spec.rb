@@ -116,5 +116,13 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandDefiner do
         end
       end
     end
+
+    context 'when event name is not specified' do
+      let(:command_name) { :custom_command_name }
+
+      it 'raises an error' do
+        expect { subject }.to raise_error(Yes::Core::Aggregate::Dsl::CommandDefiner::EventNameResolverError)
+      end
+    end
   end
 end

@@ -21,10 +21,12 @@ module Yes
                   response = execute_command(cmd, guard_evaluator_class)
 
                   if response.success?
-                    state_updater = state_updater_class.new(payload: cmd.payload, aggregate: self)
+                    locale = payload.delete(:locale)
+                    state_updater = state_updater_class.new(payload:, aggregate: self)
                     update_read_model(
                       state_updater.call.merge(
-                        revision: response.event.stream_revision
+                        revision: response.event.stream_revision,
+                        locale:
                       )
                     )
                   end

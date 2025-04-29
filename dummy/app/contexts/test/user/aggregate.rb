@@ -23,6 +23,12 @@ module Test
         event :document_happily_approved
       end
 
+      command :some_custom_command do
+        payload another: :string
+
+        event :some_custom_event
+      end
+
       # uncomment for testing guard in console
       # attribute :location, :aggregate do
       #   guard :something do

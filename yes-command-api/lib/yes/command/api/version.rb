@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Yousty
+module Yes
   module Command
     module Api
       VERSION = '2.2.0'

@@ -1,4 +1,4 @@
-module Yousty
+module Yes
   module Command
     module Api
       class ApplicationController < ActionController::API

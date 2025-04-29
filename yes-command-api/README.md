@@ -1,6 +1,6 @@
-# Yousty Command API
+# Yes Command API
 
-The Yousty command API is a mountable rails engine providing an endpoint for calling API commands.
+The Yes command API is a mountable rails engine providing an endpoint for calling API commands.
 
 Commands represent the write side of CQRS in our eventsourced system.
 
@@ -47,7 +47,7 @@ Mount the command endpoint to your rails application in `config/routes.rb`:
 
 ```ruby
 Rails.application.routes.draw do
-  mount Yousty::Command::Api::Engine => '/v1/commands'
+  mount Yes::Command::Api::Engine => '/v1/commands'
 end
 ```
 

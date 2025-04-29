@@ -11,25 +11,26 @@ module Yes
       UnregisteredCommand = Class.new(Error)
 
       # @return [Object] The notifier for command processing events
-      attr_reader :command_notifier
-      private :command_notifier
+      attr_reader :command_notifiers, :custom_batch_id
+      private :command_notifiers, :custom_batch_id
 
       # Processes the given commands by running them through their respective handlers.
       # @param origin [String] a string identifying the origin of the commands
       # @param command_or_commands [Command, Array<Command>] the command or commands to process
       # @param notifier_options [Hash] options to pass to the command notifier
+      # @param custom_batch_id [String] Custom batch ID
       # @return [Array<CommandResponse>] the responses from the performed commands
       # @raise [UnregisteredCommand] if any command lacks a handler
-      def perform(origin, command_or_commands, notifier_options)
-        setup(notifier_options)
+      def perform(origin, command_or_commands, notifier_options, custom_batch_id = nil)
+        setup(notifier_options, custom_batch_id)
 
         commands = [*command_or_commands]
         ensure_guard_evaluators_exist?(commands)
 
         commands.map! { |cmd| cmd.class.new(cmd.to_h.merge(origin:, batch_id:)) }
 
-        if command_notifier
-          command_notifier.with_batch_notification(batch_id, commands) { run_commands(commands) }
+        if command_notifiers.any?
+          CommandNotifier.with_batch_notification(command_notifiers, batch_id, commands) { run_commands(commands) }
         else
           run_commands(commands)
         end
@@ -39,9 +40,13 @@ module Yes
 
       # Instantiates the command notifier from the config, using the given options.
       # @param notifier_options [Hash] the options to pass to the command notifier
+      # @param custom_batch_id [String] Custom batch ID
       # @return [void]
-      def setup(notifier_options)
-        @command_notifier = Yousty::Eventsourcing.config.command_notifier_class&.new(notifier_options)
+      def setup(notifier_options, custom_batch_id)
+        @command_notifiers = Yousty::Eventsourcing.config.command_notifier_classes&.map do |notifier_class|
+          notifier_class.new(notifier_options)
+        end || []
+        @custom_batch_id = custom_batch_id
       end
 
       # Runs the given commands through their respective aggregates.
@@ -50,7 +55,7 @@ module Yes
       def run_commands(commands)
         commands.map do |cmd|
           cmd_response = run_command(cmd)
-          command_notifier&.notify_command_response(cmd_response)
+          command_notifiers.each { _1.notify_command_response(cmd_response) }
           cmd_response
         end
       end
@@ -62,7 +67,7 @@ module Yes
         command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
         aggregate = aggregate_class(cmd).new(cmd.subject_id)
         I18n.with_locale(command_helper.command_locale) do
-          aggregate.public_send(command_helper.command_name, **cmd.payload)
+          aggregate.public_send(command_helper.command_name, **cmd.to_h)
         end
       end
 
@@ -102,7 +107,7 @@ module Yes
       # Returns the batch id of the current batch.
       # @return [String] the batch id
       def batch_id
-        job_id
+        custom_batch_id || job_id
       end
     end
   end

@@ -41,6 +41,14 @@ module Yes
 
         response
       end
+
+      def self.with_batch_notification(notifiers, batch_id, commands, transaction = nil)
+        notifiers.each { _1.notify_batch_started(batch_id, transaction, commands) }
+        response = yield
+        notifiers.each { _1.notify_batch_finished(batch_id, transaction, response) }
+
+        response
+      end
     end
   end
 end

@@ -13,7 +13,7 @@ module Yes
         @obj_type = obj_type
       end
 
-      def type_for
+      def type_for # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         return @type if basic_event_type?
 
         case @type
@@ -65,6 +65,8 @@ module Yes
           Yousty::Eventsourcing::Types::STANDARD_APPLICATION_DOCUMENT_TYPE
         when :datetime
           Yousty::Eventsourcing::Types::DATE_TIME
+        when :date_value
+          Yousty::Eventsourcing::Types::DateValue
         when :period
           Yousty::Eventsourcing::Types::PERIOD
         when :dimensions

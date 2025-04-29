@@ -36,6 +36,9 @@ module Yes
                   payload_attributes.each do |attr_name, attr_type|
                     attribute attr_name, Yes::Core::TypeLookup.type_for(attr_type, context)
                   end
+
+                  # TODO: Legacy: Change to :aggregate_id - requires chnage in yousty es in many places
+                  alias_method :subject_id, :"#{aggregate.underscore}_id"
                 end
               end
             end

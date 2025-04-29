@@ -10,10 +10,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
       context:,
       aggregate: aggregate_name,
       event_name:,
-      payload_attributes: {
-        document_ids: :string,
-        another: :string
-      }
+      payload_attributes:
     )
   end
 
@@ -21,18 +18,19 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
   let(:aggregate_name) { 'User' }
   let(:aggregate_class) { Test::User::Aggregate }
   let(:command_name) { :approve_documents }
-
   let(:aggregate) { aggregate_class.new }
   let(:event_name) { nil }
+  let(:payload_attributes) { { document_ids: :string, another: :string } }
 
   describe '#call' do
-    before do
-      aggregate_class.remove_method(command_name) if aggregate_class.method_defined?(command_name)
-
-      subject
-    end
-
     context 'command class' do
+      before do
+        # command method is already defined so remove it to test adding it
+        aggregate_class.remove_method(command_name) if aggregate_class.method_defined?(command_name)
+
+        subject
+      end
+
       it 'defines the command method' do
         expect(aggregate).to respond_to(command_name)
       end
@@ -70,17 +68,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
         end
 
         context 'with custom event name' do
-          let(:event_name) { :document_happily_approved }
-
-          let(:command_data) do
-            Yes::Core::Aggregate::Dsl::CommandData.new(
-              :approve_documents_with_custom_event,
-              aggregate_class,
-              context:,
-              aggregate: aggregate_name,
-              event_name:
-            )
-          end
+          let(:command_name) { :approve_documents_with_custom_event }
 
           before { aggregate.approve_documents_with_custom_event }
 

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Yousty::Command::Api::V1::CommandsController', type: :request do
+RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
   include_context :request_header_variables
 
   context 'execute' do

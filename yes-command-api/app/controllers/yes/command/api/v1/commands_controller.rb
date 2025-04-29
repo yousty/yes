@@ -2,7 +2,7 @@
 
 # rubocop:disable Rails/HttpStatus
 
-module Yousty
+module Yes
   module Command
     module Api
       module V1
