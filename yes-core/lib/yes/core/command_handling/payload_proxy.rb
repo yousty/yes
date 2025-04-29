@@ -18,9 +18,7 @@ module Yes
         #
         # @param key [Symbol, String] The key to access
         # @return [Object] The value for the given key
-        def [](key)
-          @raw_payload[key]
-        end
+        delegate :[], to: :@raw_payload
 
         private
 
@@ -66,7 +64,7 @@ module Yes
           aggregate_tracker&.track(
             attribute_name: method_name,
             id: instance.id,
-            revision: instance.revision,
+            revision: -> { instance.reload.revision },
             context:
           )
 

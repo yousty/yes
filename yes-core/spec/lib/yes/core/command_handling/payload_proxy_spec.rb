@@ -60,7 +60,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
         expect(aggregate_tracker).to have_received(:track).with(
           attribute_name: :user,
           id: 'user-123',
-          revision: -1,
+          revision: kind_of(Proc),
           context: context
         )
       end

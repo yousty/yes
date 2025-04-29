@@ -74,7 +74,7 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
             id: location_id,
             context: 'Test',
             name: 'Location',
-            revision: -1
+            revision: kind_of(Proc)
           )
         )
       end
@@ -104,7 +104,7 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
               id: location_id,
               context: 'Test',
               name: 'Location',
-              revision: -1
+              revision: kind_of(Proc)
             )
           )
         end

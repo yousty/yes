@@ -12,7 +12,7 @@ module Yes
               id: aggregate.id,
               context: aggregate.class.context,
               name: aggregate.class.name.split('::')[1],
-              revision: aggregate.revision
+              revision: -> { aggregate.reload.revision }
             )
           end
         end
@@ -61,7 +61,8 @@ module Yes
         #
         # @return [PgEventstore::Event] The published event
         def publish_event
-          expected_revision = aggregate_data.revision == -1 ? :no_stream : aggregate_data.revision
+          revision = aggregate_data.revision.call
+          expected_revision = revision == -1 ? :no_stream : revision
 
           PgEventstore.client.append_to_stream(
             command_utilities.build_stream,
@@ -82,12 +83,13 @@ module Yes
               id: aggregate_data[:id]
             )
             expected_revision = command_utilities.stream_revision(stream)
-            normalized_revision = aggregate_data[:revision] == -1 ? :no_stream : aggregate_data[:revision]
+            aggregate_revision = aggregate_data[:revision].call
+            normalized_revision = aggregate_revision == -1 ? :no_stream : aggregate_revision
 
             next if normalized_revision == expected_revision
 
             raise PgEventstore::WrongExpectedRevisionError.new(
-              revision: aggregate_data[:revision],
+              revision: aggregate_revision,
               expected_revision:,
               stream:
             )

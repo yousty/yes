@@ -187,6 +187,14 @@ module Yes
           aggregate_id: @id
         )
       end
+
+      # Reloads the aggregate and its read model
+      # @return [Yes::Core::Aggregate] The reloaded aggregate
+      def reload
+        read_model.reload
+
+        self
+      end
     end
   end
 end

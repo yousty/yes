@@ -35,7 +35,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
       id: location_id,
       context: 'Test',
       name: 'Location',
-      revision: -1
+      revision: -> { -1 }
     }]
   end
 
@@ -76,7 +76,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
           id: location_id,
           context: 'Test',
           name: 'Location',
-          revision: 0 # actual is :no_stream (-1)
+          revision: -> { 0 }
         }]
       end
 
