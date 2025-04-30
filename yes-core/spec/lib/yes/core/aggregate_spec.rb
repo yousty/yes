@@ -27,6 +27,83 @@ RSpec.describe Yes::Core::Aggregate do
     end
   end
 
+  describe '.removable' do
+    let(:default) { true }
+
+    subject { subject_class.removable(default:) }
+
+    context 'when removed_at attributeis undefined' do
+      it 'defines removed_at attribute as a datetime' do
+        expect { subject }.to change { subject_class.attributes[:removed_at] }.to(:datetime)
+      end
+    end
+
+    context 'when removed_at attribute is defined' do
+      before { subject_class.attribute(:removed_at, :year) }
+
+      it 'does not overwrite the attribute' do
+        expect { subject }.not_to change { subject_class.attributes[:removed_at] }
+      end
+    end
+
+    context 'when default is true' do
+      let(:expected_state_updater) { Test::User::Commands::Remove::StateUpdater }
+
+      it 'defines remove command with no_change guard' do
+        subject
+
+        expect(subject_class.commands[:remove].guard_names).to include(:no_change)
+      end
+
+      it 'defines remove command with state_updater' do
+        subject
+
+        aggregate_failures do
+          expect(expected_state_updater.update_state_block).to be_present
+          expect(expected_state_updater.updated_attributes).to eq([:removed_at])
+        end
+      end
+
+      context 'when block is given' do
+        subject do
+          subject_class.removable(default:) do
+            guard(:exists) { read_model.exists? }
+          end
+        end
+
+        it 'yields the block' do
+          subject
+
+          expect(subject_class.commands[:remove].guard_names).to include(:exists)
+        end
+      end
+    end
+
+    context 'when default is false' do
+      let(:default) { false }
+
+      it 'does not define default behaviour' do
+        subject
+
+        expect(subject_class.commands[:remove].guard_names).to be_empty
+      end
+
+      context 'when block is given' do
+        subject do
+          subject_class.removable(default:) do
+            guard(:exists) { read_model.exists? }
+          end
+        end
+
+        it 'yields the block' do
+          subject
+
+          expect(subject_class.commands[:remove].guard_names).to include(:exists)
+        end
+      end
+    end
+  end
+
   describe '.primary_context' do
     subject { subject_class.primary_context('TestContext') }
 
