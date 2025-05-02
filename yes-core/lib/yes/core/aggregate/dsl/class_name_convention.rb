@@ -58,6 +58,23 @@ module Yes
           def read_model_serializer_class_name(name)
             "ReadModels::#{name.to_s.camelize}::Serializers::#{name.to_s.camelize}"
           end
+
+          # Returns the conventional authorizer class name.
+          #
+          # If +name+ is nil, it refers to the aggregate-level authorizer:
+          #   <Context>::<Aggregate>::Commands::<Aggregate>Authorizer
+          # Otherwise it refers to a command-level authorizer:
+          #   <Context>::<Aggregate>::Commands::<CommandName>::Authorizer
+          #
+          # @param name [Symbol, String, nil] the command name (optional)
+          # @return [String]
+          def authorizer_class_name(name)
+            if name.nil? || name.to_s.empty?
+              "#{context}::#{aggregate}::Commands::#{aggregate}Authorizer"
+            else
+              "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::Authorizer"
+            end
+          end
         end
       end
     end

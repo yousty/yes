@@ -3,6 +3,10 @@
 module Test
   module User
     class Aggregate < Yes::Core::Aggregate
+      authorize do
+        command.user_id == auth_data[:user_id]
+      end
+
       attribute :name, :string, command: true
       attribute :email, :email, command: true
       attribute :age, :integer, command: true
@@ -13,6 +17,10 @@ module Test
 
       command :approve_documents do
         payload document_ids: :string, another: :string
+
+        authorize do
+          command.another == auth_data[:name]
+        end
 
         # guard :something do
         #   payload.another == 'John'

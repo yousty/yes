@@ -43,6 +43,7 @@ module Yes
       private :command_utilities
 
       include HasReadModel
+      include HasAuthorizer
       include CommandHandling
 
       class << self
@@ -61,6 +62,7 @@ module Yes
           TracePoint.new(:end) do |tp|
             if tp.self == subclass
               subclass.setup_read_model_classes
+              subclass.setup_authorizer_classes
               tp.disable
             end
           end.enable
