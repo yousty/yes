@@ -2,10 +2,11 @@
 
 RSpec.describe Yes::Core::Aggregate do
   describe 'HasAuthorizer concern' do
+    let(:resolved_class) { aggregate_class.authorizer_class }
+
     context 'for Test::User::Aggregate (uses CommandAuthorizer with block)' do
       let(:aggregate_class) { Test::User::Aggregate }
       let(:expected_base_class) { Yousty::Eventsourcing::CommandAuthorizer }
-      let(:resolved_class) { aggregate_class.authorizer_class }
 
       it 'sets the correct authorizer class after loading' do
         aggregate_failures do
