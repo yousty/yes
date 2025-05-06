@@ -69,11 +69,9 @@ module Yes
           # @param name [Symbol, String, nil] the command name (optional)
           # @return [String]
           def authorizer_class_name(name)
-            if name.nil? || name.to_s.empty?
-              "#{context}::#{aggregate}::Commands::#{aggregate}Authorizer"
-            else
-              "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::Authorizer"
-            end
+            return "#{context}::#{aggregate}::Commands::#{aggregate}Authorizer" if name.nil? || name.to_s.empty?
+
+            "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::Authorizer"
           end
         end
       end
