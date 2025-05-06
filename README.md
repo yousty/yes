@@ -63,13 +63,13 @@ module Users
       # Define attributes with types
       attribute :name, :string, command: true # this will generate a change_name command
       attribute :email, :email, command: true # this will generate a change_email command
-      
+
       attribute :company_id, :uuid # this will not generate a command, just an accessor
 
       # Define custom commands
       command :assign_to_company do
         payload company_id: :uuid # Payload keys need to match attributes
-        
+
         guard :company_exists do
           CompanyReadModel.exists?(payload.company_id)
         end
@@ -104,7 +104,7 @@ module Users
       # Basic attributes without commands
       attribute :name, :string
       attribute :email, :email
-      
+
       # Attributes with change commands
       attribute :age, :integer, command: true
       attribute :bio, :string, command: true
@@ -135,15 +135,15 @@ module Companies
     class Aggregate < Yes::Core::Aggregate
       # Define attributes that will be updated by the command
       attribute :user_ids, :uuids
-      
+
       command :assign_user do
         # Define payload attributes
         payload user_id: :uuid
-        
+
         guard :user_not_already_assigned do
           !user_ids.include?(payload.user_id)
         end
-        
+
         # Custom state update logic
         update_state do
           user_ids { (user_ids || []) + [payload.user_id] }
@@ -220,7 +220,7 @@ class Aggregate < Yes::Core::Aggregate
     # Base level authorization logic
     auth_data[:identity_id].present?
   end
-  
+
   # Then add command-specific refinements
   command :publish do
     payload user_id: :uuid
@@ -270,7 +270,7 @@ command :publish do
   guard :all_required_fields_present do
     title.present? && description.present?
   end
-  
+
   guard :not_already_published do
     !published
   end
@@ -296,7 +296,7 @@ Define exactly how state should change:
 ```ruby
 command :add_tag do
   payload tag: :string
-  
+
   update_state do
     tags { (tags || []) + [payload.tag] }
   end
@@ -329,7 +329,7 @@ module Companies
       # Define attributes that match the payload keys
       attribute :name, :string
       attribute :description, :string
-      
+
       command :update_details do
         # Payload keys must match attribute names
         payload name: :string,
@@ -361,10 +361,10 @@ module Articles
       attribute :title, :string
       attribute :tags, :array
       attribute :status, :string
-      
+
       command :publish do
         payload title: :string
-        
+
         update_state do
           # You can reference payload values
           title { payload.title }
@@ -438,7 +438,7 @@ command :publish do
   guard :all_required_fields_present do
     title.present? && description.present?
   end
-  
+
   guard :not_already_published do
     !published
   end
@@ -459,12 +459,12 @@ Guards have two distinct behaviors based on their name:
 ```ruby
 command :update_profile do
   payload bio: :string
-  
+
   # Will trigger a no-change transition error if bio hasn't changed
   guard :no_change do
     payload.bio == bio
   end
-  
+
   # Will trigger an invalid transition error if bio contains prohibited words
   guard :appropriate_content do
     !payload.bio.include?("prohibited content")
@@ -499,7 +499,7 @@ Each aggregate automatically gets a corresponding read model (ActiveRecord model
 
 ```ruby
 user = Users::User::Aggregate.new
-user.change_name("Jane Doe") 
+user.change_name("Jane Doe")
 user.name # => "Jane Doe" (reads from the read model)
 ```
 
@@ -523,7 +523,7 @@ module Users
     class Aggregate < Yes::Core::Aggregate
       # Use a custom read model name
       read_model 'custom_user', public: false
-      
+
       attribute :email, :email, command: true
       attribute :name, :string
     end
@@ -561,7 +561,7 @@ class UpdateReadModels < ActiveRecord::Migration[7.1]
       t.integer :revision, null: false, default: -1
       t.timestamps
     end
-    
+
     add_column :companies, :name, :string
     remove_column :companies, :old_field
   end
@@ -589,7 +589,7 @@ module Companies
   module Location
     class Aggregate < Yes::Core::Aggregate
       parent :company
-      
+
       attribute :name, :string, command: true
       attribute :address, :string, command: true
     end
@@ -606,7 +606,7 @@ module Users
   module User
     class Aggregate < Yes::Core::Aggregate
       primary_context :users
-      
+
       attribute :name, :string, command: true
     end
   end
@@ -629,7 +629,7 @@ module Users
       authorize do
         true
       end
-      
+
       attribute :name, :string, command: true
     end
   end
@@ -658,7 +658,7 @@ module Users
   module User
     class Aggregate < Yes::Core::Aggregate
       authorize cerbos: true
-      
+
       attribute :name, :string, command: true
     end
   end
@@ -675,10 +675,10 @@ module Companies
   module CompanySettings
     class Aggregate < Yes::Core::Aggregate
       # Custom read model and resource name
-      authorize cerbos: true, 
+      authorize cerbos: true,
                 read_model_class: CustomCompanySettings,
                 resource_name: 'company_settings'
-      
+
       attribute :name, :string, command: true
     end
   end
@@ -707,18 +707,18 @@ module Universe
     class Aggregate < Yes::Core::Aggregate
       # Base aggregate-level Cerbos authorization
       authorize cerbos: true
-      
+
       attribute :name, :string, command: true
-      
+
       # Command with customized Cerbos integration
       command :update_details do
         payload details: :string
-        
+
         # Command-level authorization with custom Cerbos integration
         authorize do
           # Override resource attributes sent to Cerbos
           resource_attributes { { owner_id: 'test-user-id' } }
-          
+
           # Override the entire Cerbos payload
           cerbos_payload { { principal: auth_data, resource_id: 'test-id' } }
         end
@@ -818,7 +818,7 @@ curl --location 'http://127.0.0.1:3000/commands' \
     "command": "ChangeName",
     "data": {
       "user_id": "47330036-7246-40b4-a3c7-7038df508774",
-      "name": "Judydoody Doodle"   
+      "name": "Judydoody Doodle"
     }
   }]
 }'
