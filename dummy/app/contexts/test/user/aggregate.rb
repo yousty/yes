@@ -40,7 +40,9 @@ module Test
       #   end
       # end
 
-      command :change, :shortcut_description
+      command :change, :shortcut_description do
+        guard(:test_guard) { payload.shortcut_description.size > 3 }
+      end
       command :change, :shortcuts_used, :integer
       command :activate, :shorcut_usage, attribute: :shortcut_usage_enabled
       command %i[enable disable], :shortcut_toggle

@@ -128,7 +128,7 @@ module Yes
         #   @yieldreturn [void]
         #
         # @overload command(publish)
-        #   @param publish [Symbol] passing :publish as a name will generate published atttribute and publish command
+        #   @param publish [Symbol] passing :publish as a name will generate published attribute and publish command
         #   @return [void]
         #
         # @overload command(change, attribute, **options)

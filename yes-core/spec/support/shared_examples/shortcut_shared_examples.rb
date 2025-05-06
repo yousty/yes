@@ -11,6 +11,8 @@ RSpec.shared_examples 'expanded shortcut' do
     comparison_class.instance_variable_set(:@commands, {})
   end
 
+  # this shared example compares outcome of using shortcut definition versus
+  # using full definition and passes if they are equivalent
   it 'properly expands shortcut' do
     subject
 

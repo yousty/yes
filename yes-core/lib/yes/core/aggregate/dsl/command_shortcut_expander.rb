@@ -59,8 +59,6 @@ module Yes
           # generate
           #
           def call
-            raise InvalidShortcut if block.present?
-
             case args
             in [[Symbol, Symbol], Symbol]
               handle_toggle_commands
@@ -78,6 +76,7 @@ module Yes
           def handle_toggle_commands # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
             attribute_name = args.second
             set_flag_command, unset_flag_command = args.first
+            additional_block = block # needs to be captured in a local variable to ensure proper closure in this scope
 
             attributes = [
               AttributeSpecification.new(
@@ -95,6 +94,7 @@ module Yes
                   update_state do
                     send(attribute_name) { true }
                   end
+                  instance_eval(&additional_block) if additional_block.present?
                 end
               ),
               CommandSpecification.new(
@@ -104,6 +104,7 @@ module Yes
                   update_state do
                     send(attribute_name) { false }
                   end
+                  instance_eval(&additional_block) if additional_block.present?
                 end
               )
             ]
@@ -117,6 +118,7 @@ module Yes
             attribute_name = args[1]
             attribute_type = args[2].presence || :string
             localized = kwargs[:localized] || false
+            additional_block = block
 
             payload_options = { attribute_name => attribute_type }
             payload_options[:locale] = :locale if localized
@@ -134,6 +136,7 @@ module Yes
                 name: :"change_#{attribute_name}",
                 block: proc do
                   payload(**payload_options)
+                  instance_eval(&additional_block) if additional_block.present?
                 end
               )
             ]
@@ -147,6 +150,7 @@ module Yes
             command_verb = args.first
             command_subject = args.second
             attribute_name = kwargs[:attribute].presence || command_subject
+            additional_block = block
 
             attributes = [
               AttributeSpecification.new(
@@ -164,6 +168,7 @@ module Yes
                   update_state do
                     send(attribute_name) { true }
                   end
+                  instance_eval(&additional_block) if additional_block.present?
                 end
               )
             ]
@@ -172,7 +177,7 @@ module Yes
           end
 
           def handle_publish_command
-            raise InvalidShortcut if args.size > 1 || kwargs.present?
+            raise InvalidShortcut if args.size > 1 || kwargs.present? || block.present?
 
             attributes = [
               AttributeSpecification.new(

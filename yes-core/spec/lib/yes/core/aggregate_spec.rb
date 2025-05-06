@@ -63,10 +63,10 @@ RSpec.describe Yes::Core::Aggregate do
       subject_class.instance_variable_set(:@commands, {})
     end
 
-    describe 'command shortcuts' do
+    context 'when defining shortcut' do
       let(:subject_class) { Test::Comparison::AggregateA }
 
-      describe 'publish shortcut' do
+      context 'when it is a publish shortcut' do
         subject { subject_class.command(:publish) }
 
         let(:expanded_code) do
@@ -82,7 +82,7 @@ RSpec.describe Yes::Core::Aggregate do
         it_behaves_like 'expanded shortcut'
       end
 
-      describe 'toggle shortcut' do
+      context 'when it is a toggle shortcut' do
         subject { subject_class.command(%i[enable disable], :dropout) }
 
         let(:expanded_code) do
@@ -104,7 +104,7 @@ RSpec.describe Yes::Core::Aggregate do
       end
     end
 
-    describe 'enable shortcut' do
+    context 'when it is a enable shortcut' do
       subject { subject_class.command(:enable, :dropout) }
 
       let(:expanded_code) do
@@ -136,7 +136,7 @@ RSpec.describe Yes::Core::Aggregate do
       end
     end
 
-    describe 'change shortcut' do
+    context 'when it is a change shortcut' do
       subject { subject_class.command(:change, :description) }
 
       let(:expanded_code) do
@@ -165,7 +165,27 @@ RSpec.describe Yes::Core::Aggregate do
         it_behaves_like 'expanded shortcut'
       end
 
-      xdescribe('localized versions', skip: 'disabled for now as localized attribute definition is not supported') do
+      context 'with custom block' do
+        subject do
+          subject_class.command :change, :age, :integer do
+            guard(:test) { true }
+          end
+        end
+
+        let(:expanded_code) do
+          proc do
+            attribute :age, :integer
+            command :change_age do
+              guard(:test) { true }
+              payload age: :integer
+            end
+          end
+        end
+
+        it_behaves_like 'expanded shortcut'
+      end
+
+      xcontext('when using localized versions', skip: 'disabled for now as localized attribute definition is not supported') do
         subject { subject_class.command(:change, :description, localized: true) }
 
         let(:expanded_code) do
