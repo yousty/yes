@@ -32,5 +32,10 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
     t.integer "revision", default: -1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "shortcut_description"
+    t.integer "shortcuts_used"
+    t.boolean "shortcut_usage_enabled"
+    t.boolean "shortcut_toggle"
+    t.boolean "published"
   end
 end

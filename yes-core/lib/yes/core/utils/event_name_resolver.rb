@@ -26,6 +26,7 @@ module Yes
           'Enable' => 'Enabled',
           'Fail' => 'Failed',
           'Open' => 'Opened',
+          'Publish' => 'Published',
           'Reactivate' => 'Reactivated',
           'Reject' => 'Rejected',
           'Remove' => 'Removed',
