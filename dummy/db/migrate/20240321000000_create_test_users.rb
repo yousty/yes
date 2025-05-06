@@ -11,6 +11,13 @@ class CreateTestUsers < ActiveRecord::Migration[7.1]
       t.string :another
       t.string :test_field # dynamically generated in specs
       t.uuid :location_id # dynamically generated in specs
+
+      t.string :shortcut_description
+      t.integer :shortcuts_used
+      t.boolean :shortcut_usage_enabled
+      t.boolean :shortcut_toggle
+      t.boolean :published
+
       t.integer :revision, null: false, default: -1
 
       t.timestamps
