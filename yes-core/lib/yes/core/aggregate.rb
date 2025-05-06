@@ -101,13 +101,19 @@ module Yes
         #       guard(:exists) { read_model.name.present? }
         #     end
         #   end
-        def removable(default: true, &)
-          attribute :removed_at, :datetime unless attributes.key?(:removed_at)
+        #
+        # @example Define default removal behaviour with a custom attribute name
+        #   class UserAggregate < Yes::Core::Aggregate
+        #     removable(attr_name: :deleted_at)
+        #   end
+        #
+        def removable(default: true, attr_name: :removed_at, &)
+          attribute attr_name, :datetime unless attributes.key?(attr_name)
 
           command :remove do
             if default
-              guard(:no_change) { !removed_at }
-              update_state { removed_at { Time.current } }
+              guard(:no_change) { !public_send(attr_name) }
+              update_state { method(attr_name).call { Time.current } }
             end
             instance_eval(&) if block_given?
           end
