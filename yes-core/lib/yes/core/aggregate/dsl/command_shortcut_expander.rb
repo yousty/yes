@@ -74,9 +74,10 @@ module Yes
           private
 
           def handle_toggle_commands # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+            raise InvalidShortcut if block.present?
+
             attribute_name = args.second
             set_flag_command, unset_flag_command = args.first
-            additional_block = block # needs to be captured in a local variable to ensure proper closure in this scope
 
             attributes = [
               AttributeSpecification.new(
@@ -94,7 +95,6 @@ module Yes
                   update_state do
                     send(attribute_name) { true }
                   end
-                  instance_eval(&additional_block) if additional_block.present?
                 end
               ),
               CommandSpecification.new(
@@ -104,7 +104,6 @@ module Yes
                   update_state do
                     send(attribute_name) { false }
                   end
-                  instance_eval(&additional_block) if additional_block.present?
                 end
               )
             ]
@@ -118,7 +117,7 @@ module Yes
             attribute_name = args[1]
             attribute_type = args[2].presence || :string
             localized = kwargs[:localized] || false
-            additional_block = block
+            additional_block = block # needs to be captured in a local variable to ensure proper closure in this scope
 
             payload_options = { attribute_name => attribute_type }
             payload_options[:locale] = :locale if localized
