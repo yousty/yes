@@ -13,6 +13,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Available Types](#available-types)
   - [Attribute Commands](#attribute-commands)
 - [Command Details](#command-details)
+  - [Command Authorization](#command-authorization)
   - [Command Configuration Options](#command-configuration-options)
   - [State Update Behavior](#state-update-behavior)
   - [Generated Command Methods](#generated-command-methods)
@@ -28,6 +29,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
 - [Additional Features](#additional-features)
   - [Parent Aggregates](#parent-aggregates)
   - [Primary Context](#primary-context)
+  - [Aggregate Authorization](#aggregate-authorization)
 - [Development](#development)
   - [Example Usage](#example-usage)
   - [Testing the APIs](#testing-the-apis)
@@ -207,9 +209,45 @@ user.email_change_error # Contains the error message
 
 Commands define operations that can be performed on your aggregate.
 
+### Command Authorization
+
+Commands can define per-command authorization that extends or overrides the [aggregate-level authorizer](#aggregate-authorization).
+
+```ruby
+# First define an aggregate level authorizer
+class Aggregate < Yes::Core::Aggregate
+  authorize do
+    # Base level authorization logic
+    auth_data[:identity_id].present?
+  end
+  
+  # Then add command-specific refinements
+  command :publish do
+    payload user_id: :uuid
+
+    # Command-specific authorization logic
+    authorize do
+      # Has access to the command and auth_data
+      command.user_id == auth_data[:user_id]
+    end
+  end
+end
+```
+
+When an aggregate has declared `authorize` at the class level, commands can define their own
+authorization logic that inherits from the aggregate-level authorizer. Each command with an
+`authorize` block automatically receives its own `Authorizer` subclass that inherits from
+the aggregate-level authorizer.
+
+Command authorizers are registered in the configuration and can be retrieved with:
+
+```ruby
+Yes::Core.configuration.aggregate_class('Context', 'Aggregate', :publish, :authorizer)
+```
+
 ### Command Configuration Options
 
-#### Payload Attributes
+#### Payload
 
 Define the input data for your command:
 
@@ -574,6 +612,132 @@ module Users
   end
 end
 ```
+
+### Aggregate Authorization
+
+To make aggregates available via the command API, you must define an authorization scheme at the aggregate level. This controls who can execute commands on the aggregate.
+
+#### Simple Authorization
+
+The simplest authorization simply allows all commands to be executed:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      # Allow all commands
+      authorize do
+        true
+      end
+      
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
+
+Inside the `authorize` block, you can access:
+- `command` - The command being executed
+- `auth_data` - The decoded data from the JWT authentication token
+
+This allows for custom authorization logic:
+
+```ruby
+authorize do
+  # Only allow commands if the authenticated identity matches the user
+  command.user_id == auth_data[:identity_id]
+end
+```
+
+#### Cerbos Authorization
+
+For more complex authorization needs, Yes integrates with [Cerbos](https://www.cerbos.dev/), a powerful authorization engine:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      authorize cerbos: true
+      
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
+
+When using Cerbos, you can specify additional parameters:
+
+- `read_model_class` - The class used to load the read model for authorization checks (defaults to the aggregate's read model)
+- `resource_name` - The resource name used in Cerbos policies (defaults to the underscored aggregate name)
+
+```ruby
+module Companies
+  module CompanySettings
+    class Aggregate < Yes::Core::Aggregate
+      # Custom read model and resource name
+      authorize cerbos: true, 
+                read_model_class: CustomCompanySettings,
+                resource_name: 'company_settings'
+      
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
+
+When using custom read models with Cerbos, the model must implement an `auth_attributes` method that returns a hash of attributes for authorization:
+
+```ruby
+class CustomCompanySettings < ApplicationRecord
+  def auth_attributes
+    { company_id: company_id || '' }
+  end
+end
+```
+
+These attributes are passed to Cerbos for making authorization decisions based on your policies.
+
+##### Customizing Cerbos Integration
+
+For advanced use cases, you can customize how Yes interacts with Cerbos by overriding the `resource_attributes` and `cerbos_payload` methods in your authorization block. Currently, this customization is only available within command-level authorization blocks, not at the aggregate level:
+
+```ruby
+module Universe
+  module Star
+    class Aggregate < Yes::Core::Aggregate
+      # Base aggregate-level Cerbos authorization
+      authorize cerbos: true
+      
+      attribute :name, :string, command: true
+      
+      # Command with customized Cerbos integration
+      command :update_details do
+        payload details: :string
+        
+        # Command-level authorization with custom Cerbos integration
+        authorize do
+          # Override resource attributes sent to Cerbos
+          resource_attributes { { owner_id: 'test-user-id' } }
+          
+          # Override the entire Cerbos payload
+          cerbos_payload { { principal: auth_data, resource_id: 'test-id' } }
+        end
+      end
+    end
+  end
+end
+```
+
+Inside the `resource_attributes` block, you can access:
+- `command` - The command being executed
+- `resource` - The read model instance for the aggregate
+
+Inside the `cerbos_payload` block, you can access:
+- `command` - The command being executed
+- `resource` - The read model instance for the aggregate
+- `auth_data` - The decoded data from the JWT authentication token
+
+These blocks allow you to precisely control what data is sent to Cerbos for authorization decisions on a per-command basis.
 
 ## Development
 

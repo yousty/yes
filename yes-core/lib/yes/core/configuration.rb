@@ -12,6 +12,7 @@ module Yes
     end
 
     class Configuration
+      # Initializes a new configuration instance with nested hashes for class storage.
       def initialize
         @registered_classes = Hash.new do |h, k|
           h[k] = Hash.new { |h2, k2| h2[k2] = {} }
@@ -86,20 +87,70 @@ module Yes
         register_aggregate_class(context_name, aggregate_name, command_name, :guard_evaluator, klass)
       end
 
+      # Register an aggregate authorizer class for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param klass [Class] The authorizer class to register
+      # @example
+      #   register_aggregate_authorizer_class(:authentication, :user, UserAuthorizer)
+      def register_aggregate_authorizer_class(context_name, aggregate_name, klass)
+        key = [context_name, aggregate_name]
+        @registered_classes[key][:aggregate_authorizer] = klass
+      end
+
+      # Register a command authorizer class for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param command_name [Symbol, String] The name of the command
+      # @param klass [Class] The authorizer class to register
+      # @example
+      #   register_command_authorizer_class(:sales, :user, :create, CreateUserAuthorizer)
+      def register_command_authorizer_class(context_name, aggregate_name, command_name, klass)
+        register_aggregate_class(context_name, aggregate_name, command_name, :authorizer, klass)
+      end
+
+      # Register the event(s) associated with a specific command
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param command_name [Symbol, String] The name of the command
+      # @param event_names [Array<Symbol, String>] An array of event names
+      # @example
+      #   register_command_events(:authentication, :user, :create, [:user_created, :welcome_email_sent])
       def register_command_events(context_name, aggregate_name, command_name, event_names)
         key = [context_name, aggregate_name]
-        @registered_classes[key][:command_event_mappings][command_name] = event_names
+        mappings = @registered_classes[key][:command_event_mappings] ||= {}
+        mappings[command_name] = event_names
       end
 
+      # Retrieve all command-to-event mappings for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @return [Hash] A hash where keys are command names and values are arrays of event names
+      # @example
+      #   mappings = command_event_mappings(:authentication, :user)
       def command_event_mappings(context_name, aggregate_name)
         key = [context_name, aggregate_name]
-        @registered_classes[key][:command_event_mappings]
+        @registered_classes[key][:command_event_mappings] || {}
       end
 
+      # Retrieve the event names associated with a specific command
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param command_name [Symbol, String] The name of the command
+      # @return [Array<Symbol, String>] An array of event names associated with the command, or an empty array if none
+      # @example
+      #   event_names = command_event_mapping(:authentication, :user, :create)
       def command_event_mapping(context_name, aggregate_name, command_name)
         command_event_mappings(context_name, aggregate_name)[command_name] || []
       end
 
+      # Retrieve the actual event classes associated with a specific command
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param command_name [Symbol, String] The name of the command
+      # @return [Array<Class>] An array of event classes associated with the command
+      # @example
+      #   event_classes = event_classes_for_command(:authentication, :user, :create)
       def event_classes_for_command(context_name, aggregate_name, command_name)
         command_event_mapping(context_name, aggregate_name, command_name).map do |event_name|
           aggregate_class(context_name, aggregate_name, event_name, :event)

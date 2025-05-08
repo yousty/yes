@@ -62,10 +62,9 @@ module Yes
               raise NotImplementedError, "#{self.class} must implement #class_type"
             end
 
-            # @abstract
             # @return [String] The name of the class to be generated
             def class_name
-              raise NotImplementedError, "#{self.class} must implement #class_name"
+              nil
             end
 
             # @abstract
