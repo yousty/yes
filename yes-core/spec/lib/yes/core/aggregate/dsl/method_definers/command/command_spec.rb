@@ -67,6 +67,71 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           end
         end
 
+        context 'with single payload attribute' do
+          let(:payload_attributes) { { another: :string } }
+          let(:payload) { another }
+
+          before { aggregate.some_custom_command(payload) }
+
+          it 'updates the read model with payload and revision' do
+            aggregate_failures do
+              expect(aggregate.revision).to eq(0)
+              expect(aggregate.another).to eq(another)
+            end
+          end
+
+          it 'publishes the event' do
+            aggregate_failures do
+              expect(latest_event.type).to eq('Test::UserSomeCustomEvent')
+              expect(latest_event.data).to eq({ user_id: aggregate.id, another: }.stringify_keys)
+            end
+          end
+        end
+
+        shared_examples 'a command that updates the single attribute: another' do
+          before { aggregate.some_custom_command(payload) }
+
+          it 'updates the read model with payload and revision' do
+            aggregate_failures do
+              expect(aggregate.revision).to eq(0)
+              expect(aggregate.another).to eq(another)
+            end
+          end
+
+          it 'publishes the event' do
+            aggregate_failures do
+              expect(latest_event.type).to eq('Test::UserSomeCustomEvent')
+              expect(latest_event.data).to eq({ user_id: aggregate.id, another: }.stringify_keys)
+            end
+          end
+        end
+
+        context 'when using hash payload' do
+          let(:payload) { { another: 'test_value' } }
+          let(:payload_attributes) { { another: :string } }
+
+          it_behaves_like 'a command that updates the single attribute: another'
+        end
+
+        context 'when using shorthand value payload' do
+          let(:payload) { another }
+
+          context 'when using a single payload attribute' do
+            let(:payload_attributes) { { another: :string } }
+
+            it_behaves_like 'a command that updates the single attribute: another'
+          end
+
+          context 'when command implements multiple payload attributes' do
+            let(:payload_attributes) { { another: :string, document_ids: :string } }
+
+            it 'raises an error' do
+              expect { aggregate.approve_documents(payload) }.
+                to raise_error('Payload attributes must be a Hash with a single key')
+            end
+          end
+        end
+
         context 'with custom event name' do
           let(:command_name) { :approve_documents_with_custom_event }
 
