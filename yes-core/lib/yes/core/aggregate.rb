@@ -84,37 +84,35 @@ module Yes
           @parent_aggregates ||= {}
         end
 
-        # Defines a default removal behaviour for the aggregate.
+        # Defines a default removal behavior for the aggregate.
         #
-        # @param default [Boolean] whether to apply the default removal behaviour
-        # @yield Block for defining guards and other removal configurations
-        # return [void]
+        # @param attr_name [Symbol] the attribute name to use for marking removal
+        # @yield Block for defining additional guards and other removal configurations
+        # @return [void]
         #
-        # @example Define a default removal behaviour
+        # @example Define a default removal behavior
         #   class UserAggregate < Yes::Core::Aggregate
         #     removable
         #   end
         #
-        # @example Define a custom removal behaviour
+        # @example Define a removal behavior with additional custom guards
         #   class UserAggregate < Yes::Core::Aggregate
-        #     removable(default: false) do
+        #     removable do
         #       guard(:exists) { read_model.name.present? }
         #     end
         #   end
         #
-        # @example Define default removal behaviour with a custom attribute name
+        # @example Define a removal behavior with a custom attribute name
         #   class UserAggregate < Yes::Core::Aggregate
         #     removable(attr_name: :deleted_at)
         #   end
         #
-        def removable(default: true, attr_name: :removed_at, &)
+        def removable(attr_name: :removed_at, &)
           attribute attr_name, :datetime unless attributes.key?(attr_name)
 
           command :remove do
-            if default
-              guard(:no_change) { !public_send(attr_name) }
-              update_state { method(attr_name).call { Time.current } }
-            end
+            guard(:no_change) { !public_send(attr_name) }
+            update_state { method(attr_name).call { Time.current } }
             instance_eval(&) if block_given?
           end
         end

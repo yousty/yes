@@ -742,7 +742,7 @@ These blocks allow you to precisely control what data is sent to Cerbos for auth
 
 ### Removable
 
-Define default removal behavior for an aggregate:
+Define a default removal behavior for an aggregate:
 
 ```ruby
 module Users
@@ -755,10 +755,10 @@ end
 ```
 
 It defines a `remove` command which works with the `removed_at` attribute by default and
-two default guards that can be overridden.
+applies a default removal behavior.
 
 The `removable` method accepts a custom name for an attribute which will also be used for
-the default removable behavior. You can see an example below.
+the removal behavior. You can see an example below.
 
 ```ruby
 module Users
@@ -770,14 +770,14 @@ module Users
 end
 ```
 
-Another option is the `default` param. When passed `default: false` it skips registration of the default behavior.
+You can also define additional guards or custom behavior:
 
 ```ruby
 module Users
   module User
     class Aggregate < Yes::Core::Aggregate
-      removable(default: false) do
-        update_state { removed_at { Time.current } }
+      removable do
+        guard(:published) { published? }
       end
     end
   end
