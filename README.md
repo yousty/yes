@@ -597,8 +597,8 @@ module Companies
 end
 ```
 
-The parent method defines assign command with it's attribute by default.
-For the above example it's gonna be `assign_company` with `company_id` attribute.
+The parent method defines assign command with its attribute by default.
+For the above example it will be `assign_company` with `company_id` attribute.
 
 ### Primary Context
 
