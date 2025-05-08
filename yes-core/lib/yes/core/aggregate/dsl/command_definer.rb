@@ -206,6 +206,15 @@ module Yes
             def event(name)
               command_data.event_name = name
             end
+
+            # Overwrites the authorizer for the command
+            #
+            # @yield The authorizer block
+            # @yieldreturn [void]
+            # @return [void]
+            def authorize(&block)
+              command_data.authorizer_block = block
+            end
           end
         end
       end
