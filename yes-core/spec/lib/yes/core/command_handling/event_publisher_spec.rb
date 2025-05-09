@@ -20,7 +20,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
       metadata: { 'test' => 'value' }
     }
   end
-  let(:command) { Test::User::Commands::ChangeLocation::Command.new(payload) }
+  let(:command) { Test::User::Commands::ChangeLocationId::Command.new(payload) }
 
   let(:aggregate) do
     Test::User::Aggregate.new(user_id)
@@ -42,7 +42,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
   before do
     PgEventstore::TestHelpers.clean_up_db
 
-    Test::User::Aggregate.attribute :location, :aggregate, command: true
+    Test::User::Aggregate.attribute :location_id, :uuid, command: true
   end
 
   after do
@@ -56,7 +56,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
       it 'publishes the event' do
         event = event_publisher.call
         expect(event).to be_a(PgEventstore::Event)
-        expect(event.type).to eq('Test::UserLocationChanged')
+        expect(event.type).to eq('Test::UserLocationIdChanged')
         expect(event.data).to eq(command.payload.stringify_keys)
       end
 

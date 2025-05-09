@@ -52,7 +52,7 @@ RSpec.describe Yes::Core::Aggregate do
 
       it 'updates read model after successful attribute change' do
         subject
-        expect(aggregate).to have_received(:update_read_model).with(name: 'New Name', revision: 0)
+        expect(aggregate).to have_received(:update_read_model).with(name: 'New Name', revision: 0, locale: nil)
       end
     end
 
