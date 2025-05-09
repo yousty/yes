@@ -37,6 +37,7 @@ module Yes
           'Stop' => 'Stopped',
           'Submit' => 'Submitted',
           'Unassign' => 'Unassigned',
+          'Unpublish' => 'Unpublished',
           'Update' => 'Updated'
         }.freeze
 

@@ -113,6 +113,11 @@ module Yes
           { attribute => payload }
         end
 
+        def command_name_from_event(event, aggregate_class)
+          event_name = event.type.split('::').last.sub(event.stream.stream_name, '').underscore
+          aggregate_class.commands.values.find { _1.event_name.to_s == event_name }.name
+        end
+
         private
 
         attr_reader :context, :aggregate, :aggregate_id

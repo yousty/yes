@@ -251,6 +251,12 @@ module Yes
 
         self
       end
+
+      # Returns the events for the aggregate
+      # @return [Enumerator<PgEventstore::Event>] The events for the aggregate
+      def events
+        PgEventstore.client.read_paginated(command_utilities.build_stream, options: { direction: 'Forwards' })
+      end
     end
   end
 end

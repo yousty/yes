@@ -19,8 +19,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
 
   let(:generated_class) { resolver.call }
   let(:instance) { generated_class.new }
-  let(:read_model_class) { nil }
-  let(:resource_name) { nil }
+  let(:read_model_class) { dummy_read_model_class }
+  let(:resource_name) { default_resource_name }
   let(:custom_call_logic) { nil }
 
   let(:authorizer_options) do
@@ -76,14 +76,6 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
           expect(subject.send(:context_name)).to eq(context_name)
           expect(subject.send(:aggregate_name)).to eq(aggregate_name)
           expect(subject.send(:custom_call_logic)).to be_nil # No block passed
-        end
-      end
-
-      context 'when default read model class does not exist' do
-        before { hide_const("Auth::Resources::#{aggregate_name}") }
-
-        it 'raises a NameError' do
-          expect { subject }.to raise_error(NameError)
         end
       end
     end

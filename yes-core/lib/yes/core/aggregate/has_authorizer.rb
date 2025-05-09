@@ -25,32 +25,27 @@ module Yes
 
         included do
           class << self
-            # @!attribute [rw] _authorizer_class
-            #   @return [Class] The internally stored authorizer class.
-            attr_accessor :_authorizer_class
+            # @!attribute [rw] authorizer_class
+            #   @return [Class] The resolved authorizer class used for command authorization.
+            #
+            # @!attribute [rw] authorizer_options
+            #   @return [AuthorizerOptions] Options used when building the authorizer.
+            attr_accessor :authorizer_class, :authorizer_options
           end
         end
 
-        class_methods do # rubocop:disable Metrics/BlockLength
-          # Returns the authorizer class associated with the current aggregate.
-          # This class is resolved and registered during the setup process.
-          #
-          # @return [Class] The authorizer class (inheriting from CommandCerbosAuthorizer)
-          # @raise [NameError] If the authorizer class cannot be found or generated.
-          def authorizer_class
-            _authorizer_class
-          end
-
+        class_methods do
           # Finds or generates the authorizer class using `ClassResolvers::Authorizer`,
           # passing the authorizer parameters.
           # Registers the authorizer in the configuration and stores the resolved class internally.
           # @return [Class] The resolved authorizer class.
           def setup_authorizer_classes
-            return unless @authorizer_options
+            return unless authorizer_options
 
-            @authorizer_options.read_model_class ||= read_model_class
+            authorizer_options.read_model_class ||= read_model_class
+            authorizer_options.resource_name ||= aggregate.underscore
 
-            self._authorizer_class = Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer.new(@authorizer_options).call
+            self.authorizer_class = Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer.new(authorizer_options).call
 
             commands.each_value do |command_data|
               Dsl::ClassResolvers::Command::AuthorizerFactory.create(command_data)&.call
@@ -66,12 +61,12 @@ module Yes
                                       Yousty::Eventsourcing::CommandAuthorizer
                                     end
 
-            @authorizer_options = AuthorizerOptions.new(
-              authorizer_base_class: authorizer_base_class,
-              context: context,
-              aggregate: aggregate,
-              read_model_class: read_model_class,
-              resource_name: resource_name,
+            self.authorizer_options = AuthorizerOptions.new(
+              authorizer_base_class:,
+              context:,
+              aggregate:,
+              read_model_class:,
+              resource_name:,
               authorizer_block: block
             )
           end
