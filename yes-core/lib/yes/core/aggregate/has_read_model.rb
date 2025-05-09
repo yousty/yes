@@ -112,6 +112,18 @@ module Yes
           @read_model ||= self.class.read_model_class.find_or_create_by(id:)
         end
 
+        # Removes the read model instance for this aggregate
+        def remove_read_model
+          read_model.destroy
+          @read_model = nil
+        end
+
+        # Rebuilds the read model by processing all events
+        # @return [void]
+        def rebuild_read_model
+          Yes::Core::Aggregate::ReadModelRebuilder.new(self).call
+        end
+
         delegate :revision, to: :read_model
       end
     end

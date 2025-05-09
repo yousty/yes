@@ -102,97 +102,47 @@ RSpec.describe Yes::Core::Aggregate do
 
         it_behaves_like 'expanded shortcut'
       end
-    end
 
-    context 'when it is a enable shortcut' do
-      subject { subject_class.command(:enable, :dropout) }
-
-      let(:expanded_code) do
-        proc do
-          attribute :dropout, :boolean
-          command :enable_dropout do
-            guard(:no_change) { !dropout }
-            update_state { dropout { true } }
-          end
-        end
-      end
-
-      it_behaves_like 'expanded shortcut'
-
-      context 'with custom naming' do
-        subject { subject_class.command(:activate, :dropout, attribute: :dropout_enabled) }
+      context 'when it is a enable shortcut' do
+        subject { subject_class.command(:enable, :dropout) }
 
         let(:expanded_code) do
           proc do
-            attribute :dropout_enabled, :boolean
-            command :activate_dropout do
-              guard(:no_change) { !dropout_enabled }
-              update_state { dropout_enabled { true } }
+            attribute :dropout, :boolean
+            command :enable_dropout do
+              guard(:no_change) { !dropout }
+              update_state { dropout { true } }
             end
           end
         end
 
         it_behaves_like 'expanded shortcut'
-      end
-    end
 
-    context 'when it is a change shortcut' do
-      subject { subject_class.command(:change, :description) }
+        context 'with custom naming' do
+          subject { subject_class.command(:activate, :dropout, attribute: :dropout_enabled) }
 
-      let(:expanded_code) do
-        proc do
-          attribute :description, :string
-          command :change_description do
-            payload description: :string
-          end
-        end
-      end
-
-      it_behaves_like 'expanded shortcut'
-
-      context 'with custom type' do
-        subject { subject_class.command(:change, :age, :integer) }
-
-        let(:expanded_code) do
-          proc do
-            attribute :age, :integer
-            command :change_age do
-              payload age: :integer
+          let(:expanded_code) do
+            proc do
+              attribute :dropout_enabled, :boolean
+              command :activate_dropout do
+                guard(:no_change) { !dropout_enabled }
+                update_state { dropout_enabled { true } }
+              end
             end
           end
-        end
 
-        it_behaves_like 'expanded shortcut'
+          it_behaves_like 'expanded shortcut'
+        end
       end
 
-      context 'with custom block' do
-        subject do
-          subject_class.command :change, :age, :integer do
-            guard(:test) { true }
-          end
-        end
+      context 'when it is a change shortcut' do
+        subject { subject_class.command(:change, :description) }
 
         let(:expanded_code) do
           proc do
-            attribute :age, :integer
-            command :change_age do
-              guard(:test) { true }
-              payload age: :integer
-            end
-          end
-        end
-
-        it_behaves_like 'expanded shortcut'
-      end
-
-      xcontext('when using localized versions', skip: 'disabled for now as localized attribute definition is not supported') do
-        subject { subject_class.command(:change, :description, localized: true) }
-
-        let(:expanded_code) do
-          proc do
-            attribute :description, :string, localized: true
+            attribute :description, :string
             command :change_description do
-              payload description: :string, locale: :locale
+              payload description: :string
             end
           end
         end
@@ -200,18 +150,69 @@ RSpec.describe Yes::Core::Aggregate do
         it_behaves_like 'expanded shortcut'
 
         context 'with custom type' do
-          subject { subject_class.command(:change, :age, :integer, localized: true) }
+          subject { subject_class.command(:change, :age, :integer) }
 
           let(:expanded_code) do
             proc do
-              attribute :age, :integer, localized: true
+              attribute :age, :integer
               command :change_age do
-                payload age: :integer, locale: :locale
+                payload age: :integer
               end
             end
           end
 
           it_behaves_like 'expanded shortcut'
+        end
+
+        context 'with custom block' do
+          subject do
+            subject_class.command :change, :age, :integer do
+              guard(:test) { true }
+            end
+          end
+
+          let(:expanded_code) do
+            proc do
+              attribute :age, :integer
+              command :change_age do
+                guard(:test) { true }
+                payload age: :integer
+              end
+            end
+          end
+
+          it_behaves_like 'expanded shortcut'
+        end
+
+        xcontext('when using localized versions',
+                 skip: 'disabled for now as localized attribute definition is not supported') do
+          subject { subject_class.command(:change, :description, localized: true) }
+
+          let(:expanded_code) do
+            proc do
+              attribute :description, :string, localized: true
+              command :change_description do
+                payload description: :string, locale: :locale
+              end
+            end
+          end
+
+          it_behaves_like 'expanded shortcut'
+
+          context 'with custom type' do
+            subject { subject_class.command(:change, :age, :integer, localized: true) }
+
+            let(:expanded_code) do
+              proc do
+                attribute :age, :integer, localized: true
+                command :change_age do
+                  payload age: :integer, locale: :locale
+                end
+              end
+            end
+
+            it_behaves_like 'expanded shortcut'
+          end
         end
       end
     end

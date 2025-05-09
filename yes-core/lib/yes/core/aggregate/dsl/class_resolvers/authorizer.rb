@@ -31,8 +31,8 @@ module Yes
             #   - authorizer_block [Proc, nil] An optional block defining the custom logic for the `call` method
             #     if `authorizer_base_class` is not `Yousty::Eventsourcing::CommandCerbosAuthorizer`.
             def initialize(options)
-              @resource_name = options.resource_name || options.aggregate.underscore
-              @read_model_class = options.read_model_class || "Auth::Resources::#{options.aggregate}".classify.constantize
+              @resource_name = options.resource_name
+              @read_model_class = options.read_model_class
               @authorizer_class = options.authorizer_base_class
               @custom_call_logic = options.authorizer_block
               # Base class expects context_name and aggregate_name parameters
