@@ -95,6 +95,39 @@ module Yes
           @parent_aggregates ||= {}
         end
 
+        # Defines a default removal behavior for the aggregate.
+        #
+        # @param attr_name [Symbol] the attribute name to use for marking removal
+        # @yield Block for defining additional guards and other removal configurations
+        # @return [void]
+        #
+        # @example Define a default removal behavior
+        #   class UserAggregate < Yes::Core::Aggregate
+        #     removable
+        #   end
+        #
+        # @example Define a removal behavior with additional custom guards
+        #   class UserAggregate < Yes::Core::Aggregate
+        #     removable do
+        #       guard(:exists) { read_model.name.present? }
+        #     end
+        #   end
+        #
+        # @example Define a removal behavior with a custom attribute name
+        #   class UserAggregate < Yes::Core::Aggregate
+        #     removable(attr_name: :deleted_at)
+        #   end
+        #
+        def removable(attr_name: :removed_at, &)
+          attribute attr_name, :datetime unless attributes.key?(attr_name)
+
+          command :remove do
+            guard(:no_change) { !public_send(attr_name) }
+            update_state { method(attr_name).call { Time.current } }
+            instance_eval(&) if block_given?
+          end
+        end
+
         # Sets the primary context for the aggregate.
         #
         # @param context [String] The primary context to set.

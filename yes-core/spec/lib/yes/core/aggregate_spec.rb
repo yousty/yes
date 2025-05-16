@@ -50,6 +50,69 @@ RSpec.describe Yes::Core::Aggregate do
     end
   end
 
+  describe '.removable' do
+    let(:attr_name) { :removed_at }
+    let(:expected_state_updater) { Test::User::Commands::Remove::StateUpdater }
+
+    subject { subject_class.removable(attr_name:) }
+
+    after do
+      subject_class.instance_variable_set(:@attributes, {})
+      subject_class.instance_variable_set(:@commands, {})
+    end
+
+    context 'when attribute is undefined' do
+      it 'defines default attribute removed_at as a datetime' do
+        expect { subject }.to change { subject_class.attributes[attr_name] }.to(:datetime)
+      end
+    end
+
+    context 'when attribute is defined' do
+      before { subject_class.attribute(:removed_at, :year) }
+
+      it 'does not overwrite the default removed_at attribute' do
+        expect { subject }.not_to change { subject_class.attributes[attr_name] }
+      end
+    end
+
+    context 'when given custom attribute name' do
+      let(:attr_name) { :deleted_at }
+
+      it 'defines the custom attribute' do
+        expect { subject }.to change { subject_class.attributes[attr_name] }.to(:datetime)
+      end
+    end
+
+    it 'defines remove command with no_change guard' do
+      subject
+
+      expect(subject_class.commands[:remove].guard_names).to include(:no_change)
+    end
+
+    it 'defines remove command with state_updater' do
+      subject
+
+      aggregate_failures do
+        expect(expected_state_updater.update_state_block).to be_present
+        expect(expected_state_updater.updated_attributes).to eq([attr_name])
+      end
+    end
+
+    context 'when block is given' do
+      subject do
+        subject_class.removable do
+          guard(:exists) { read_model.exists? }
+        end
+      end
+
+      it 'yields the block' do
+        subject
+
+        expect(subject_class.commands[:remove].guard_names).to include(:exists)
+      end
+    end
+  end
+
   describe '.primary_context' do
     subject { subject_class.primary_context('TestContext') }
 
