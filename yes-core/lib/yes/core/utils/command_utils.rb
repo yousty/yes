@@ -122,8 +122,9 @@ module Yes
         #
         # @param command_name [Symbol] The command name
         # @param payload [Hash] The command payload
+        # @param aggregate_class [Class] The aggregate class
         # @return [Hash] The prepared payload
-        def prepare_command_payload(command_name, payload)
+        def prepare_command_payload(command_name, payload, aggregate_class)
           return payload if payload.is_a?(Hash)
 
           payload_attributes = aggregate_class.commands[command_name].payload_attributes
@@ -135,14 +136,6 @@ module Yes
         private
 
         attr_reader :context, :aggregate, :aggregate_id
-
-        # Fetches the aggregate class
-        #
-        # @return [Class] The aggregate class
-        def aggregate_class
-          "#{context}::#{aggregate}::Aggregate".constantize
-        end
-
 
         # Fetches a class based on the command name and type
         #
