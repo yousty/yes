@@ -18,7 +18,10 @@ module Yes
     #
     # @example Define an aggregate with a parent
     #   class ProfileAggregate < Yes::Core::Aggregate
-    #     parent :user
+    #     parent :user do
+    #       guard(:user_exists) { payload.user.present? }
+    #       guard(:not_removed) { trashed_at.blank? }
+    #     end
     #     attribute :bio, :string
     #   end
     #
@@ -68,13 +71,21 @@ module Yes
           end.enable
         end
 
-        # Defines a parent aggregate.
+        # Defines a parent aggregate and automatically registers a corresponding Assign command
+        # together with a corresponding attribute.
         #
         # @param name [Symbol] The name of the parent.
         # @param options [Hash] Options for configuring the parent.
+        # @yield Block for defining guards and other attribute configurations.
         # @return [void]
-        def parent(name, options = {})
+        def parent(name, **options, &)
           parent_aggregates[name] = options
+
+          attribute :"#{name}_id", :uuid
+          command :"assign_#{name}" do
+            payload :"#{name}_id" => :uuid
+            instance_eval(&) if block_given?
+          end
         end
 
         # Retrieves or initializes the parent_aggregates hash.
