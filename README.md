@@ -30,6 +30,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Parent Aggregates](#parent-aggregates)
   - [Primary Context](#primary-context)
   - [Aggregate Authorization](#aggregate-authorization)
+  - [Removable](#removable)
 - [Development](#development)
   - [Example Usage](#example-usage)
   - [Testing the APIs](#testing-the-apis)
@@ -741,6 +742,50 @@ Inside the `cerbos_payload` block, you can access:
 - `auth_data` - The decoded data from the JWT authentication token
 
 These blocks allow you to precisely control what data is sent to Cerbos for authorization decisions on a per-command basis.
+
+### Removable
+
+Define a default removal behavior for an aggregate:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      removable
+    end
+  end
+end
+```
+
+It defines a `remove` command which works with the `removed_at` attribute by default and
+applies a default removal behavior.
+
+The `removable` method accepts a custom name for an attribute which will also be used for
+the removal behavior. You can see an example below.
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      removable(attr_name: :deleted_at)
+    end
+  end
+end
+```
+
+You can also define additional guards or custom behavior:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      removable do
+        guard(:published) { published? }
+      end
+    end
+  end
+end
+```
 
 ## Development
 
