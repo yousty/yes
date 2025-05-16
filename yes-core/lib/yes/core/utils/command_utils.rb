@@ -104,6 +104,21 @@ module Yes
           { attribute => payload }
         end
 
+        def prepare_assign_command_payload(aggregate, command_name, payload)
+          return payload unless command_name.to_s.starts_with?('assign_')
+
+          aggregate.class.attributes.select { _2 == :aggregate }.each_key do |attribute_name|
+            name_with_id = :"#{attribute_name}_id"
+            key = payload.key?(attribute_name) ? attribute_name : name_with_id
+
+            next unless payload[key].is_a?(Yes::Core::Aggregate)
+
+            payload[name_with_id] = payload.delete(key).id
+          end
+
+          payload
+        end
+
         def command_name_from_event(event, aggregate_class)
           event_name = event.type.split('::').last.sub(event.stream.stream_name, '').underscore
           aggregate_class.commands.values.find { _1.event_name.to_s == event_name }.name

@@ -37,7 +37,11 @@ module Test
         event :some_custom_event
       end
 
+      # uncomment for testing aggregate in console
       # attribute :location, :aggregate
+      # command :assign_location do
+      #   payload location_id: :uuid
+      # end
 
       command :change, :shortcut_description do
         guard(:test_guard) { payload.shortcut_description.size > 3 }

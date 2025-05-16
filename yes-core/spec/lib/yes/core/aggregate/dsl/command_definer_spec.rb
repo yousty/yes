@@ -73,6 +73,25 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandDefiner do
         it 'raises an error' do
           expect { subject }.to raise_error(Yes::Core::Aggregate::Dsl::CommandDefiner::UndefinedAttributeError)
         end
+
+        context 'when attribute is defined as aggregate type' do
+          subject do
+            described_class.new(command_data).call do
+              payload location_id: :uuid
+            end
+          end
+
+          before do
+            aggregate_class.instance_eval do
+              attribute :location, :aggregate
+              command :assign_location do
+                payload location_id: :uuid
+              end
+            end
+          end
+
+          it_behaves_like 'a command'
+        end
       end
 
       context 'when attribute is defined on the aggregate' do

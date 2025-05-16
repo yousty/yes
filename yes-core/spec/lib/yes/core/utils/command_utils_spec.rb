@@ -242,4 +242,26 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
       end
     end
   end
+
+  describe '#prepare_command_payload' do
+    subject { instance.prepare_assign_command_payload(aggregate, command_name, payload) }
+    let(:command_name) { :assign_location }
+    let(:location) { Test::Location::Aggregate.new }
+    let(:location_id) { location.id }
+    let(:payload) { { location: } }
+    let(:aggregate_class) { Test::User::Aggregate }
+    let(:aggregate) { aggregate_class.new }
+
+    before do
+      aggregate_class.attribute :location, :aggregate
+    end
+
+    after do
+      aggregate_class.instance_variable_set(:@attributes, aggregate_class.attributes.except(:location))
+    end
+
+    it 'converts payload with aggregate to payload with UUID' do
+      expect(subject).to eq({ location_id: })
+    end
+  end
 end
