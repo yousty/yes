@@ -64,7 +64,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
       let(:payload_attributes) { { another: :string } }
 
       it 'returns true' do
-        expect(aggregate.can_some_custom_command?(payload)).to be_truthy
+        expect(aggregate.can_some_custom_command?(payload)).to be(true)
       end
     end
 
@@ -76,7 +76,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
         let(:payload_attributes) { { another: :string } }
 
         it 'returns true' do
-          expect(aggregate.can_some_custom_command?(payload)).to be_truthy
+          expect(aggregate.can_some_custom_command?(payload)).to be(true)
         end
       end
 
