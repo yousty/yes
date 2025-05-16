@@ -121,8 +121,10 @@ module Yes
             return if attributes.empty?
 
             aggregate_attributes = command_data.aggregate_class.attributes
+            aggregate_type_aggregate_attributes = aggregate_attributes.select { _2 == :aggregate }
             undefined_attributes = attributes.reject do |attr_name|
-              aggregate_attributes.key?(attr_name)
+              aggregate_attributes.key?(attr_name) ||
+                aggregate_type_aggregate_attributes.key?(attr_name.to_s.delete_suffix('_id').to_sym)
             end
 
             return if undefined_attributes.empty?
