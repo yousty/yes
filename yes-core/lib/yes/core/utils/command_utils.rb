@@ -118,6 +118,21 @@ module Yes
           aggregate_class.commands.values.find { _1.event_name.to_s == event_name }.name
         end
 
+        # Prepares the payload for a command
+        #
+        # @param command_name [Symbol] The command name
+        # @param payload [Hash] The command payload
+        # @param aggregate_class [Class] The aggregate class
+        # @return [Hash] The prepared payload
+        def prepare_command_payload(command_name, payload, aggregate_class)
+          return payload if payload.is_a?(Hash)
+
+          payload_attributes = aggregate_class.commands[command_name].payload_attributes
+          raise "Payload attributes must be a Hash with a single key" if payload_attributes.length > 1
+
+          { payload_attributes.keys.first => payload }
+        end
+
         private
 
         attr_reader :context, :aggregate, :aggregate_id

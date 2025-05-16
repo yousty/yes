@@ -3,21 +3,20 @@
 RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
   subject { described_class.new(command_data).call }
 
+  let(:payload_attributes) { { document_ids: :string, another: :string } }
   let(:command_data) do
     Yes::Core::Aggregate::Dsl::CommandData.new(
       command_name,
       aggregate_class,
       context: 'Test',
       aggregate: 'User',
-      payload_attributes: {
-        document_ids: :string,
-        another: :string
-      }
+      payload_attributes:
     )
   end
 
   let(:aggregate_class) { Test::User::Aggregate }
   let(:command_name) { :approve_documents }
+  let(:another) { 'test_value' }
 
   let(:aggregate) { aggregate_class.new }
 
@@ -46,7 +45,6 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
       let(:guard_evaluator_class) { Test::User::Commands::ApproveDocuments::GuardEvaluator }
       let(:guard_evaluator) { instance_double(guard_evaluator_class) }
       let(:document_ids) { SecureRandom.uuid }
-      let(:another) { 'test_value' }
       let(:payload) { { document_ids:, another: } }
 
       before do
@@ -57,6 +55,36 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
 
       it 'calls the guard evaluator' do
         expect(guard_evaluator).to have_received(:call)
+      end
+    end
+
+
+    context 'when using Hash payload' do
+      let(:payload) { { another: 'test_value' } }
+      let(:payload_attributes) { { another: :string } }
+
+      it 'returns true' do
+        expect(aggregate.can_some_custom_command?(payload)).to be(true)
+      end
+    end
+
+    context 'when using shorthand value payload' do
+      let(:payload) { another }
+      let(:command_name) { :some_custom_command }
+
+      context 'when using a single payload attribute' do
+        let(:payload_attributes) { { another: :string } }
+
+        it 'returns true' do
+          expect(aggregate.can_some_custom_command?(payload)).to be(true)
+        end
+      end
+
+      context 'when using multiple payload attributes' do
+        it 'raises an error' do
+          expect { aggregate.can_approve_documents?(payload) }.
+            to raise_error('Payload attributes must be a Hash with a single key')
+        end
       end
     end
   end
