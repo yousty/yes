@@ -57,8 +57,8 @@ RSpec.describe Yes::Core::Aggregate do
     subject { subject_class.removable(attr_name:) }
 
     after do
-      subject_class.instance_variable_set(:@attributes, {})
-      subject_class.instance_variable_set(:@commands, {})
+      subject_class.instance_variable_set(:@attributes, subject_class.attributes.except(attr_name))
+      subject_class.instance_variable_set(:@commands, subject_class.commands.except(:remove))
     end
 
     context 'when attribute is undefined' do
