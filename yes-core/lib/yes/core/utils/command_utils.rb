@@ -99,7 +99,7 @@ module Yes
         end
 
         def prepare_payload(attribute, payload)
-          return payload.except(:batch_id, :command_id, :origin) if payload.is_a?(Hash)
+          return payload if payload.is_a?(Hash)
 
           { attribute => payload }
         end
