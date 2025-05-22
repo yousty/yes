@@ -8,6 +8,8 @@ module Yes
       # @since 0.1.0
       # @api private
       class CommandUtils
+        ASSIGN_COMMAND_PREFIX = 'assign_'.freeze
+
         # @param context [String] The context namespace
         # @param aggregate [String] The aggregate name
         # @param aggregate_id [String] The ID of the aggregate
@@ -102,6 +104,19 @@ module Yes
           return payload if payload.is_a?(Hash)
 
           { attribute => payload }
+        end
+
+        def prepare_assign_command_payload(command_name, payload)
+          return payload unless command_name.to_s.starts_with?(ASSIGN_COMMAND_PREFIX)
+
+          attribute_name = command_name.to_s.split(ASSIGN_COMMAND_PREFIX).last.to_sym
+          name_with_id = :"#{attribute_name}_id"
+          key = payload.key?(attribute_name) ? attribute_name : name_with_id
+
+          return payload unless payload[key].is_a?(Yes::Core::Aggregate)
+
+          payload[name_with_id] = payload.delete(key).id
+          payload
         end
 
         def command_name_from_event(event, aggregate_class)
