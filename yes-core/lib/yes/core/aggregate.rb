@@ -81,7 +81,7 @@ module Yes
         def parent(name, **options, &)
           parent_aggregates[name] = options
 
-          attribute :"#{name}_id", :uuid
+          attribute name, :aggregate
           command :"assign_#{name}" do
             payload :"#{name}_id" => :uuid
             instance_eval(&) if block_given?

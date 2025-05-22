@@ -14,6 +14,7 @@ module Yes
 
                 aggregate_class.define_method(command_name) do |payload = {}|
                   payload = command_utilities.prepare_command_payload(command_name, payload, self.class)
+                  payload = command_utilities.prepare_assign_command_payload(command_name, payload)
                   cmd = command_utilities.build_command(command_name, payload)
                   guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
                   state_updater_class = command_utilities.fetch_state_updater_class(command_name)
