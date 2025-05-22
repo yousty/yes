@@ -67,7 +67,7 @@ module Yes
         command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
         aggregate = aggregate_class(cmd).new(cmd.subject_id)
         I18n.with_locale(command_helper.command_locale) do
-          aggregate.public_send(command_helper.command_name, **cmd.payload)
+          aggregate.public_send(command_helper.command_name, **cmd.to_h)
         end
       end
 
