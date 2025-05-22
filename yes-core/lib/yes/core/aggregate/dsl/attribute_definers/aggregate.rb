@@ -6,38 +6,27 @@ module Yes
       module Dsl
         module AttributeDefiners
           # Handles the definition and generation of aggregate attribute-related classes and methods
-          class Aggregate < Base
-            private
+          class Aggregate
+            # @return [AttributeData] the data object containing attribute configuration
+            attr_reader :attribute_data, :guard_evaluator_class
 
-            # Defines methods for aggregate type attributes
-            # For aggregates, we define:
-            # - A change command that accepts an aggregate instance
-            # - A change command for the ID
-            # - Can change commands for both the aggregate and ID
-            # - Accessors for both the aggregate and ID
+            private :attribute_data, :guard_evaluator_class
+
+            # Initializes a new Base instance
             #
-            # @return [void]
-            def define_methods
-              MethodDefiners::Attribute::AggregateAccessor.new(attribute_data).call
-
-              return unless define_command?
-
-              MethodDefiners::Attribute::ChangeAggregateCommand.new(attribute_data).call
-              define_aggregate_id_methods
-              MethodDefiners::Attribute::CanChangeAggregateCommand.new(attribute_data).call
+            # @param attribute_data [AttributeData] the data object containing attribute configuration
+            # @return [Base] a new instance of Base
+            def initialize(attribute_data)
+              @attribute_data = attribute_data
             end
 
-            # Defines methods specifically for the aggregate ID
-            # This creates separate commands that use the _id suffix
+            # Generates and registers all necessary classes for the attribute.
             #
+            # @yield Block for defining guards and other attribute configurations
+            # @yieldreturn [void]
             # @return [void]
-            def define_aggregate_id_methods
-              id_attribute_data = attribute_data.dup
-              id_attribute_data.define_singleton_method(:name) { :"#{super()}_id" }
-              id_attribute_data.define_singleton_method(:type) { :uuid }
-
-              MethodDefiners::Attribute::ChangeCommand.new(id_attribute_data).call
-              MethodDefiners::Attribute::CanChangeCommand.new(id_attribute_data).call
+            def call
+              MethodDefiners::Attribute::AggregateAccessor.new(attribute_data).call
             end
           end
         end

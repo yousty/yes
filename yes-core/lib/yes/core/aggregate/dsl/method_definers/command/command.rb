@@ -22,7 +22,10 @@ module Yes
 
                   if response.success?
                     locale = payload.delete(:locale)
-                    state_updater = state_updater_class.new(payload:, aggregate: self)
+                    state_updater = state_updater_class.new(
+                      payload: payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS),
+                      aggregate: self
+                    )
                     update_read_model(
                       state_updater.call.merge(
                         revision: response.event.stream_revision,

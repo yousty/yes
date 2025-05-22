@@ -10,14 +10,14 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
   let(:aggregate) { Test::User::Aggregate.new }
 
   before do
-    Test::User::Aggregate.attribute :location, :aggregate, command: true
+    Test::User::Aggregate.attribute :location_id, :uuid, command: true
     aggregate.change_location_id(location_id:)
   end
 
   after do
     # Clean up location attribute and guards
     Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
-                                                                Test::User::Aggregate.attributes.except(:location))
+                                                                Test::User::Aggregate.attributes.except(:location_id))
     described_class.instance_variable_set(:@guards, [])
   end
 
@@ -61,25 +61,6 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
   end
 
   describe 'guard evaluation context' do
-    context 'when accessing via aggregate attribute' do
-      before do
-        described_class.guard(:test) { location.id == location_id }
-      end
-
-      it 'tracks the accessed aggregate' do
-        guard_evaluator.call
-
-        expect(guard_evaluator.accessed_external_aggregates).to include(
-          hash_including(
-            id: location_id,
-            context: 'Test',
-            name: 'Location',
-            revision: kind_of(Proc)
-          )
-        )
-      end
-    end
-
     context 'when accessing payload methods' do
       context 'when accessing via payload hash' do
         before do

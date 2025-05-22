@@ -147,23 +147,32 @@ module Yes
         # @example Define a string attribute (without command)
         #   attribute :name, :string
         #
+        # @example Define an aggregate attribute (without command)
+        #   attribute :location, :aggregate
+        #
         # @example Define an email attribute with command
         #   attribute :email, :email, command: true
         #
-        # @example Define an attribute with guards
-        #   attribute :location, :aggregate, command: true do
+        # @example Define an attribute with command and guards
+        #   attribute :first_name, :string, command: true do
         #     guard :something do
-        #       name == 'John'
+        #       first_name == 'John'
         #     end
         #   end
         def attribute(name, type, **options, &)
+          if type == :aggregate && options[:command]
+            raise 'Aggregate attribute definition with command: true is not allowed'
+          end
+
           @attributes ||= {}
           @attributes[name] = type
 
           options = options.merge(context:, aggregate:)
           Dsl::AttributeDefiner.new(
             Dsl::AttributeData.new(name, type, self, options)
-          ).call(&)
+          ).call
+
+          command(:change, name, type, &) if options[:command]
         end
 
         # Defines a command on the aggregate which creates corresponding command and event classes
@@ -261,6 +270,16 @@ module Yes
 
         private
 
+        #
+        # Takes all parameters passed to command invocation, forwards them to the command shortcut expander
+        # and then defines commands and attributes
+        #
+        # @param [Array<Object>] *args
+        # @param [Hash<Object, Object>] **kwargs
+        # @param [Proc] &block
+        #
+        # @return [void]
+        #
         def handle_command_shortcut(...)
           expanded = Dsl::CommandShortcutExpander.new(...).call
 
