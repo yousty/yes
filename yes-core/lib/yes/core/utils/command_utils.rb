@@ -24,7 +24,7 @@ module Yes
         # @return [Yes::Core::Command] The instantiated command
         # @raise [RuntimeError] If the command class cannot be found
         def build_attribute_command(attribute, payload)
-          build_command(:"change_#{command_name(attribute)}", payload)
+          build_command(:"change_#{attribute}", payload)
         end
 
         # Builds a command instance for the given command name and payload
@@ -36,15 +36,6 @@ module Yes
         def build_command(command_name, payload)
           command_class = fetch_class(command_name, :command)
           command_class.new("#{aggregate.underscore}_id": aggregate_id, **payload)
-        end
-
-        # Fetches the guard evaluator class for a given attribute name
-        #
-        # @param name [Symbol] The attribute name
-        # @return [Class] The guard evaluator class
-        # @raise [RuntimeError] If the guard evaluator class cannot be found
-        def fetch_attribute_guard_evaluator_class(name)
-          fetch_guard_evaluator_class(:"change_#{command_name(name)}")
         end
 
         # Fetches the guard evaluator class for a given command name

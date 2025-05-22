@@ -9,7 +9,7 @@ RSpec.describe Yes::Core::CommandHandling::StateUpdater do
   let(:aggregate) { Test::User::Aggregate.new }
 
   before do
-    Test::User::Aggregate.attribute :location, :aggregate, command: true
+    Test::User::Aggregate.attribute :location_id, :uuid, command: true
     Test::User::Aggregate.attribute :name, :string, command: true
     aggregate.change_location_id(location_id:)
   end
@@ -17,7 +17,7 @@ RSpec.describe Yes::Core::CommandHandling::StateUpdater do
   after do
     # Clean up attributes and state update blocks
     Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
-                                                                Test::User::Aggregate.attributes.except(:location,
+                                                                Test::User::Aggregate.attributes.except(:location_id,
                                                                                                         :name))
     described_class.instance_variable_set(:@update_state_block, nil)
     described_class.instance_variable_set(:@updated_attributes, [])

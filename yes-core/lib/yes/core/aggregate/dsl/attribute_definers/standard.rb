@@ -6,19 +6,27 @@ module Yes
       module Dsl
         module AttributeDefiners
           # Handles the definition and generation of standard attribute-related classes and methods
-          class Standard < Base
-            private
+          class Standard
+            # @return [AttributeData] the data object containing attribute configuration
+            attr_reader :attribute_data, :guard_evaluator_class
 
-            # Defines methods for standard attributes
+            private :attribute_data, :guard_evaluator_class
+
+            # Initializes a new Base instance
             #
+            # @param attribute_data [AttributeData] the data object containing attribute configuration
+            # @return [Base] a new instance of Base
+            def initialize(attribute_data)
+              @attribute_data = attribute_data
+            end
+
+            # Generates and registers all necessary classes for the attribute.
+            #
+            # @yield Block for defining guards and other attribute configurations
+            # @yieldreturn [void]
             # @return [void]
-            def define_methods
+            def call
               MethodDefiners::Attribute::Accessor.new(attribute_data).call
-
-              return unless define_command?
-
-              MethodDefiners::Attribute::ChangeCommand.new(attribute_data).call
-              MethodDefiners::Attribute::CanChangeCommand.new(attribute_data).call
             end
           end
         end

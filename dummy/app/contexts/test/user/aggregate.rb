@@ -37,16 +37,7 @@ module Test
         event :some_custom_event
       end
 
-      # uncomment for testing guard in console
-      # attribute :location, :aggregate do
-      #   guard :something do
-      #     name == 'John'
-      #   end
-
-      #   guard :something2 do
-      #     payload.location.name == 'London'
-      #   end
-      # end
+      # attribute :location, :aggregate
 
       command :change, :shortcut_description do
         guard(:test_guard) { payload.shortcut_description.size > 3 }

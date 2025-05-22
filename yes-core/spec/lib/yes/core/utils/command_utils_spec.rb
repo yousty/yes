@@ -68,17 +68,17 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
       let(:attribute_name) { :location_id }
       let(:location_id) { SecureRandom.uuid }
       let(:payload) { { location_id: location_id } }
-      let(:command_class) { Test::User::Commands::ChangeLocation::Command }
+      let(:command_class) { Test::User::Commands::ChangeLocationId::Command }
 
       before do
         # Add location attribute to the aggregate
-        Test::User::Aggregate.attribute :location, :aggregate, command: true
+        Test::User::Aggregate.attribute :location_id, :uuid, command: true
       end
 
       after do
         # Clean up location attribute
         Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
-                                                                    Test::User::Aggregate.attributes.except(:location))
+                                                                    Test::User::Aggregate.attributes.except(:location_id))
       end
 
       it 'builds a command with the correct payload using the base command name' do
@@ -87,56 +87,6 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
           expect(subject.user_id).to eq(aggregate_id)
           expect(subject.location_id).to eq(location_id)
         end
-      end
-    end
-  end
-
-  describe '#fetch_attribute_guard_evaluator_class' do
-    subject { instance.fetch_attribute_guard_evaluator_class(attribute_name) }
-
-    let(:attribute_name) { :test_field }
-    let(:guard_evaluator_class) { Test::User::Commands::ChangeTestField::GuardEvaluator }
-
-    before do
-      # Add test_field attribute to the aggregate
-      Test::User::Aggregate.attribute :test_field, :string, command: true
-    end
-
-    after do
-      # Clean up test_field attribute
-      Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
-                                                                  Test::User::Aggregate.attributes.except(:test_field))
-    end
-
-    it 'returns the correct guard evaluator class' do
-      expect(subject).to eq(guard_evaluator_class)
-    end
-
-    context 'when guard evaluator class is not found' do
-      let(:attribute_name) { :nonexistent }
-
-      it 'raises an error' do
-        expect { subject }.to raise_error(RuntimeError, 'Guard evaluator class not found for change_nonexistent')
-      end
-    end
-
-    context 'with aggregate attribute id' do
-      let(:attribute_name) { :location_id }
-      let(:guard_evaluator_class) { Test::User::Commands::ChangeLocation::GuardEvaluator }
-
-      before do
-        # Add location attribute to the aggregate
-        Test::User::Aggregate.attribute :location, :aggregate, context: 'Test', aggregate: 'Location', command: true
-      end
-
-      after do
-        # Clean up location attribute
-        Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
-                                                                    Test::User::Aggregate.attributes.except(:location))
-      end
-
-      it 'returns the correct guard evaluator class using the base command name' do
-        expect(subject).to eq(guard_evaluator_class)
       end
     end
   end
