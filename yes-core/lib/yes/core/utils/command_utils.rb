@@ -131,12 +131,13 @@ module Yes
         # @param aggregate_class [Class] The aggregate class
         # @return [Hash] The prepared payload
         def prepare_command_payload(command_name, payload, aggregate_class)
-          return payload if payload.is_a?(Hash)
+          return append_locale_param(command_name, payload, aggregate_class) if payload.is_a?(Hash)
 
-          payload_attributes = aggregate_class.commands[command_name].payload_attributes
-          raise "Payload attributes must be a Hash with a single key" if payload_attributes.length > 1
-
-          { payload_attributes.keys.first => payload }
+          payload_attributes = aggregate_class.commands[command_name].payload_attributes.except(:locale)
+          if payload_attributes.length > 1
+            raise "Payload attributes must be a Hash with a single key (not including locale key)"
+          end
+          append_locale_param(command_name, { payload_attributes.keys.first => payload }, aggregate_class)
         end
 
         private
@@ -166,6 +167,22 @@ module Yes
         #   command_name(:name) # => "name"
         def command_name(attribute)
           attribute.to_s.sub('_id', '')
+        end
+
+        # Adds locale param to payload if required and not present
+        #
+        # @param command_name [Symbol] The command name
+        # @param payload [Hash] The command payload
+        # @param aggregate_class [Class] The aggregate class
+        # @return [Hash] The prepared payload
+        def append_locale_param(command_name, payload, aggregate_class)
+          return payload if payload.key?(:locale)
+
+          if aggregate_class.commands[command_name].payload_attributes.key?(:locale)
+            payload.merge(locale: I18n.locale.to_s)
+          else
+            payload
+          end
         end
       end
     end
