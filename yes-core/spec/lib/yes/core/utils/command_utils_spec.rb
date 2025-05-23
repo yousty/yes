@@ -243,7 +243,7 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
     end
   end
 
-  describe '#prepare_command_payload' do
+  describe '#prepare_assign_command_payload' do
     subject { instance.prepare_assign_command_payload(command_name, payload) }
     let(:command_name) { :assign_location }
     let(:location) { Test::Location::Aggregate.new }

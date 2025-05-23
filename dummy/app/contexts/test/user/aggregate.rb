@@ -50,6 +50,13 @@ module Test
       command :activate, :shorcut_usage, attribute: :shortcut_usage_enabled
       command %i[enable disable], :shortcut_toggle
       command :publish
+
+      command :test_command_with_locale do
+        payload test: :string, locale: :locale
+
+        update_state { shortcut_description { payload.test } }
+        event :shortcut_description_changed_with_locale
+      end
     end
   end
 end
