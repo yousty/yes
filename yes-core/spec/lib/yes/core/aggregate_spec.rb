@@ -40,6 +40,37 @@ RSpec.describe Yes::Core::Aggregate do
           to match_array(%i[unassigned not_removed])
       end
     end
+
+    context 'when command option is set to false' do
+      subject { subject_class.parent(:test_parent_2, command: false) }
+
+      after do
+        # reset to not mess with further specs
+        subject_class.instance_variable_set(:@parent_aggregates, {})
+      end
+
+      it 'does not define an assign command' do
+        subject
+
+        expect(subject_class.commands[:assign_test_parent_2]).to be_nil
+      end
+    end
+
+    context 'when command option is set to true' do
+      subject { subject_class.parent(:test_parent_3, command: true) }
+
+      after do
+        # reset to not mess with further specs
+        subject_class.instance_variable_set(:@parent_aggregates, {})
+      end
+
+      it 'defines an assign command with proper payload to assign a parent' do
+        subject
+
+        expect(subject_class.commands[:assign_test_parent_3].payload_attributes).
+          to eq(test_parent_3_id: :uuid)
+      end
+    end
   end
 
   describe '.parent_aggregates' do
