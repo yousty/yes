@@ -7,37 +7,39 @@ RSpec.describe Yes::Core::Aggregate do
   let(:subject_class) { Test::User::Aggregate }
 
   describe '.parent' do
-    subject { subject_class.parent(:test_parent, option: 'value') }
+    context 'when command option is not provided' do
+      subject { subject_class.parent(:test_parent, option: 'value') }
 
-    after do
-      # reset to not mess with further specs
-      subject_class.instance_variable_set(:@parent_aggregates, {})
-    end
-
-    it 'adds parent to parent_aggregates' do
-      expect { subject }.to change { subject_class.parent_aggregates[:test_parent] }.to(option: 'value')
-    end
-
-    it 'defines a command with proper payload to assign a parent' do
-      subject
-
-      expect(subject_class.commands[:assign_test_parent].payload_attributes).
-        to eq(test_parent_id: :uuid)
-    end
-
-    context 'when a block is given' do
-      subject do
-        subject_class.parent(:test_parent, option: 'value') do
-          guard(:unassigned) { test_parent_id.blank? }
-          guard(:not_removed) { trashed_at.blank? }
-        end
+      after do
+        # reset to not mess with further specs
+        subject_class.instance_variable_set(:@parent_aggregates, {})
       end
 
-      it 'yields the block' do
+      it 'adds parent to parent_aggregates' do
+        expect { subject }.to change { subject_class.parent_aggregates[:test_parent] }.to(option: 'value')
+      end
+
+      it 'defines a command with proper payload to assign a parent' do
         subject
 
-        expect(subject_class.commands[:assign_test_parent].guard_names).
-          to match_array(%i[unassigned not_removed])
+        expect(subject_class.commands[:assign_test_parent].payload_attributes).
+          to eq(test_parent_id: :uuid)
+      end
+
+      context 'when a block is given' do
+        subject do
+          subject_class.parent(:test_parent, option: 'value') do
+            guard(:unassigned) { test_parent_id.blank? }
+            guard(:not_removed) { trashed_at.blank? }
+          end
+        end
+
+        it 'yields the block' do
+          subject
+
+          expect(subject_class.commands[:assign_test_parent].guard_names).
+            to match_array(%i[unassigned not_removed])
+        end
       end
     end
 

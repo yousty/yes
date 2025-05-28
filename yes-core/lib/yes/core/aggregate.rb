@@ -83,11 +83,11 @@ module Yes
 
           attribute name, :aggregate
 
-          if options.fetch(:command, true)
-            command :"assign_#{name}" do
-              payload :"#{name}_id" => :uuid
-              instance_eval(&) if block_given?
-            end
+          return unless options.fetch(:command, true)
+
+          command :"assign_#{name}" do
+            payload :"#{name}_id" => :uuid
+            instance_eval(&) if block_given?
           end
         end
 
