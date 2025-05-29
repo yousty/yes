@@ -677,6 +677,14 @@ end
 The parent method defines an assign command with its attribute by default.
 For the above example it will be `assign_company` with `company_id` attribute.
 
+#### command option
+
+Set parent command option to false to skip defining assign command:
+
+```ruby
+parent :company, command: false
+```
+
 ### Primary Context
 
 Specify the main context:

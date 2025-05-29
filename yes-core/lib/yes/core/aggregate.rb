@@ -82,6 +82,9 @@ module Yes
           parent_aggregates[name] = options
 
           attribute name, :aggregate
+
+          return unless options.fetch(:command, true)
+
           command :"assign_#{name}" do
             payload :"#{name}_id" => :uuid
             instance_eval(&) if block_given?
