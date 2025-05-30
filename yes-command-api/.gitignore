@@ -28,4 +28,4 @@ Gemfile.lock
 certs/
 .rspec_status
 
-yousty-command-api-*.gem
+yes-command-api-*.gem
