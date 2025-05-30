@@ -33,7 +33,6 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
       # Clean up any existing read models
       SharedProfileReadModel.where(id: profile_id).destroy_all
 
-      # Create real events by executing commands on aggregates
       personal_info = Test::PersonalInfo::Aggregate.new(profile_id)
       personal_info.change_name(
         first_name: 'John',
@@ -45,7 +44,6 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
       )
 
       contact_info = Test::ContactInfo::Aggregate.new(profile_id)
-      # Split into individual commands to avoid revision conflicts
       contact_info.change_city(city: 'New York')
       contact_info.change_address(
         address: '123 Main St',
@@ -59,8 +57,7 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
       # Create an initial read model
       SharedProfileReadModel.create!(
         id: profile_id,
-        first_name: 'Old',
-        revision: 0
+        first_name: 'Old'
       )
 
       subject
@@ -88,7 +85,8 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
         expect(read_model.country).to eq('USA')
 
         # Revision should reflect the number of events
-        expect(read_model.revision).to be >= 4
+        expect(read_model.test_personal_info_revision).to eq(2)
+        expect(read_model.test_contact_info_revision).to eq(2)
       end
     end
 
@@ -213,8 +211,7 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
         before do
           SharedProfileReadModel.create!(
             id: profile_id,
-            first_name: 'Existing',
-            revision: 0
+            first_name: 'Existing'
           )
         end
 
@@ -291,7 +288,7 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
           hash_including(
             'first_name' => 'John',
             'last_name' => 'Doe',
-            :revision => event.stream_revision,
+            :test_personal_info_revision => event.stream_revision,
             :locale => nil
           )
         )
