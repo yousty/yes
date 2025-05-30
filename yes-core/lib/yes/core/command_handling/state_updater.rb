@@ -18,7 +18,6 @@ module Yes
           # @return [void]
           def update_state(custom: false, &block)
             @update_state_block = block
-            @custom_mode = custom
             @updated_attributes = []
 
             # Only analyze the block if not in custom mode
@@ -43,7 +42,7 @@ module Yes
           # @yield Optional block to evaluate for attribute value
           # @yieldreturn [void]
           # @return [void]
-          def method_missing(method_name, *args, &block)
+          def method_missing(method_name, *_args, &block)
             @updated_attributes << method_name if block
           end
 
@@ -54,12 +53,15 @@ module Yes
 
         # @param payload [Hash] The command payload
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance
-        def initialize(payload:, aggregate:)
+        # @param event [Event, nil] The event instance (optional)
+        def initialize(payload:, aggregate:, event: nil)
           @raw_payload = payload
           @aggregate = aggregate
+          @event = event
           @payload = PayloadProxy.new(
             raw_payload:,
-            context: aggregate.class.context
+            context: aggregate.class.context,
+            parent_aggregates: aggregate.class.parent_aggregates
           )
         end
 
@@ -79,7 +81,7 @@ module Yes
 
         private
 
-        attr_reader :raw_payload, :payload, :aggregate
+        attr_reader :raw_payload, :payload, :aggregate, :event
 
         # Handles method missing to delegate attribute calls to the current aggregate
         #

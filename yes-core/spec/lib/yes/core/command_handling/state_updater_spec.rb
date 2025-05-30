@@ -119,5 +119,25 @@ RSpec.describe Yes::Core::CommandHandling::StateUpdater do
         expect(state_updater.call).to eq(name: 'John Doe Jr.')
       end
     end
+
+    context 'when accessing event metadata' do
+      subject(:state_updater) { described_class.new(payload:, aggregate:, event:) }
+
+      let(:event) { double('Event', metadata: { 'creator' => 'admin', 'timestamp' => '2023-10-15' }) }
+
+      before do
+        described_class.update_state do
+          name { event.metadata['creator'] }
+          created_at { event.metadata['timestamp'] }
+        end
+      end
+
+      it 'can access event metadata in the update block' do
+        expect(state_updater.call).to eq(
+          name: 'admin',
+          created_at: '2023-10-15'
+        )
+      end
+    end
   end
 end

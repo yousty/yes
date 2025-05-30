@@ -36,7 +36,8 @@ module Yes
           @payload = PayloadProxy.new(
             raw_payload:,
             context: aggregate.class.context,
-            aggregate_tracker:
+            aggregate_tracker:,
+            parent_aggregates: aggregate.class.parent_aggregates
           )
         end
 
@@ -65,7 +66,7 @@ module Yes
         # @raise [InvalidTransition] When the guard fails with an invalid transition
         # @raise [NoChangeTransition] When the guard fails with a no change transition
         def evaluate_guard(guard)
-          result = instance_eval(&guard[:block])
+          result = evaluate_with_locale(&guard[:block])
           return if result
 
           error_class = guard[:name] == :no_change ? NoChangeTransition : InvalidTransition
@@ -130,6 +131,18 @@ module Yes
             revision: -> { instance.reload.revision },
             context: aggregate.class.context
           )
+        end
+
+        # Evaluates a block with the locale from payload if present
+        #
+        # @yield Block to be evaluated
+        # @return [Object] Result of block evaluation
+        def evaluate_with_locale(&block)
+          if raw_payload[:locale].present?
+            I18n.with_locale(raw_payload[:locale]) { instance_eval(&block) }
+          else
+            instance_eval(&block)
+          end
         end
       end
     end

@@ -101,6 +101,29 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
         expect(aggregate).to receive(:name).and_return('John Doe')
         expect { guard_evaluator.call }.not_to raise_error
       end
+
+      context 'with locale in payload' do
+        let(:payload) { { location_id:, locale: 'fr-CH' } }
+        let(:locale_capturer) { Class.new { attr_accessor :value }.new }
+
+        before do
+          described_class.instance_variable_set(:@guards, [])
+
+          # Allow method to capture the locale when called
+          allow(aggregate).to receive(:capture_locale) { locale_capturer.value = I18n.locale.to_s }
+
+          # Define a guard that calls the method we're using to capture the locale
+          described_class.guard(:test) { capture_locale }
+
+          # Run the guard evaluator
+          guard_evaluator.call
+        end
+
+        it 'uses the locale from payload when evaluating guards' do
+          # Verify the locale was correct during guard evaluation
+          expect(locale_capturer.value).to eq('fr-CH')
+        end
+      end
     end
   end
 
