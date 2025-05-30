@@ -136,9 +136,18 @@ module Yes
             aggregate: aggregate
           )
 
+          # Determine which revision column to use
+          context_revision_column =
+            "#{aggregate.class.context.underscore}_#{aggregate.class.aggregate.underscore}_revision"
+          revision_column = if aggregate.read_model.class.column_names.include?(context_revision_column)
+                              context_revision_column.to_sym
+                            else
+                              :revision
+                            end
+
           aggregate.update_read_model(
             state_updater.call.merge(
-              revision: event_with_aggregate.event.stream_revision,
+              revision_column => event_with_aggregate.event.stream_revision,
               locale: locale
             )
           )

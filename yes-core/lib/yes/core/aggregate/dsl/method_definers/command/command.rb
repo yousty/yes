@@ -26,7 +26,8 @@ module Yes
                     locale = payload.delete(:locale)
 
                     # Determine which revision column to use
-                    context_revision_column = "#{self.class.context.underscore}_revision"
+                    context_revision_column =
+                      "#{self.class.context.underscore}_#{self.class.aggregate.underscore}_revision"
                     revision_column = if read_model.class.column_names.include?(context_revision_column)
                                         context_revision_column.to_sym
                                       else
