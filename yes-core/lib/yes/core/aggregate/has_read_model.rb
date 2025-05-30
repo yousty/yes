@@ -124,7 +124,16 @@ module Yes
           Yes::Core::Aggregate::ReadModelRebuilder.new(self).call
         end
 
-        delegate :revision, to: :read_model
+        def revision_column
+          aggregate_revision_column = "#{self.class.context.underscore}_#{self.class.aggregate.underscore}_revision"
+          return aggregate_revision_column.to_sym if read_model.class.column_names.include?(aggregate_revision_column)
+
+          :revision
+        end
+
+        def revision
+          read_model.send(revision_column)
+        end
       end
     end
   end

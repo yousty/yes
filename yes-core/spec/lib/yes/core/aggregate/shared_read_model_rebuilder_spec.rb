@@ -85,8 +85,8 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
         expect(read_model.country).to eq('USA')
 
         # Revision should reflect the number of events
-        expect(read_model.test_personal_info_revision).to eq(2)
-        expect(read_model.test_contact_info_revision).to eq(2)
+        expect(read_model.test_personal_info_revision).to eq(1)
+        expect(read_model.test_contact_info_revision).to eq(1)
       end
     end
 

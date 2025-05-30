@@ -15,18 +15,23 @@ require 'rspec/rails'
 
 # Add additional requires below this line. Rails is not loaded until this point!
 
-# Load test aggregate and read model definitions
-require 'support/shared_profile_read_model'
-require 'support/test_aggregates'
-
 # Requires supporting ruby files with custom matchers and macros, etc, in
 # spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
 # run as spec files by default. This means that files in spec/support that end
 # in _spec.rb will both be required and run as specs, causing the specs to be
 # run twice. It is recommended that you do not name files matching this glob to
-# end with _spec.rb. If you do, you can add `--tag ~type:controller` to your
-# command line to not run those specs.
-Dir[Rails.root.join('spec/support/**/*.rb')].sort.each { |f| require f unless f.end_with?('_spec.rb') }
+# end with _spec.rb. You can configure this pattern with the --pattern
+# option on the command line or in ~/.rspec, .rspec or `.rspec-local`.
+#
+# The following line is provided for convenience purposes. It has the downside
+# of increasing the boot-up time by auto-requiring all files in the support
+# directory. Alternatively, in the individual `*_spec.rb` files, manually
+# require only the support files necessary.
+#
+# Require support files
+Dir['spec/support/**/*.rb'].each do |f|
+  load f
+end
 
 # Checks for pending migrations and applies them before tests are run.
 # If you are not using ActiveRecord, you can remove these lines.
@@ -42,14 +47,6 @@ RSpec.configure do |config|
   # examples within a transaction, remove the following line or assign false
   # instead of true.
   config.use_transactional_fixtures = true
-
-  config.before(:suite) do
-    # Run the test migration to create the test table
-    ActiveRecord::Migration.suppress_messages do
-      load File.join(File.dirname(__FILE__), 'support/migrations/create_shared_profile_read_models.rb')
-      CreateSharedProfileReadModels.new.change
-    end
-  end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
