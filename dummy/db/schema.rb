@@ -24,7 +24,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000002) do
     t.string "city"
     t.string "country"
     t.string "postal_code"
-    t.integer "revision", default: -1, null: false
+    t.integer "test_personal_info_revision", default: -1, null: false
+    t.integer "test_contact_info_revision", default: -1, null: false
     t.string "locale"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
