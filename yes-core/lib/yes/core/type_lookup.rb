@@ -89,9 +89,9 @@ module Yes
       end
 
       def lookup_type(value)
-        return "#{@context}::Types::#{value}" if Object.const_defined?("#{@context}::Types::#{value}")
+        return "#{@context}::Types::#{value}".constantize if Object.const_defined?("#{@context}::Types::#{value}")
 
-        "Yousty::Eventsourcing::Types::#{value}"
+        "Yousty::Eventsourcing::Types::#{value}".constantize
       end
     end
   end

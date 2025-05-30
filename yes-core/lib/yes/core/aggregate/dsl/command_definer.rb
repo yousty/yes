@@ -105,10 +105,17 @@ module Yes
               )
             else
               validate_attributes!(
-                command_data.payload_attributes.keys.without(:locale),
+                extract_payload_attribute_names,
                 'payload attributes'
               )
             end
+          end
+
+          # Extract attribute names from payload_attributes, handling the new format for optional attributes
+          #
+          # @return [Array<Symbol>] The attribute names
+          def extract_payload_attribute_names
+            command_data.payload_attributes.keys.without(:locale)
           end
 
           # Validates that all given attributes are defined on the aggregate

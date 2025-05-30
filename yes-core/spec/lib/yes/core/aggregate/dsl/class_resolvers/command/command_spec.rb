@@ -2,16 +2,19 @@
 
 RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
   let(:aggregate_class) { Class.new }
+  let(:payload_attributes) do
+    {
+      email: :string,
+      name: :string
+    }
+  end
   let(:command_data) do
     Yes::Core::Aggregate::Dsl::CommandData.new(
       :create_user,
       aggregate_class,
       context: 'UserManagement',
       aggregate: 'User',
-      payload_attributes: {
-        email: :string,
-        name: :string
-      }
+      payload_attributes: payload_attributes
     )
   end
 
@@ -55,6 +58,61 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
 
         it 'raises an error' do
           expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+        end
+      end
+    end
+
+    context 'with optional attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: true },
+          age: { type: :integer, optional: true }
+        }
+      end
+
+      it 'resolves command class with optional attributes' do
+        command_class = subject
+
+        aggregate_failures do
+          expect(command_class.superclass).to eq(Yes::Core::Command)
+          expect(command_class.schema.key?(:email)).to be true
+          expect(command_class.schema.key?(:name)).to be true
+          expect(command_class.schema.key?(:phone)).to be true
+          expect(command_class.schema.key?(:age)).to be true
+        end
+      end
+
+      context 'command instance with optional attributes' do
+        subject { super().new(payload) }
+
+        context 'when optional attributes are provided' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:payload) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+
+          it 'handles optional attributes when provided' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.phone).to eq('123456789')
+              expect(command.age).to eq(30)
+            end
+          end
+        end
+
+        context 'when optional attributes are not provided' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:payload) { { user_id:, email:, name: } }
+
+          it 'allows omitting optional attributes' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.phone).to be_nil
+              expect(command.age).to be_nil
+            end
+          end
         end
       end
     end

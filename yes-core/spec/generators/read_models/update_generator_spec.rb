@@ -13,7 +13,11 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
   after do
     # Clean up generated migration files while preserving create_test_aggregates
     Dir[File.join(destination_root, 'db/migrate/*')].each do |file|
-      next if file.include?('create_test_users') || file.include?('create_test_locations')
+      if file.include?('create_test_users') ||
+         file.include?('create_test_locations') ||
+         file.include?('create_shared_profile_read_model')
+        next
+      end
 
       FileUtils.rm_f(file)
     end

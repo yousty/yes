@@ -8,9 +8,10 @@ module Yes
         # @param raw_payload [Hash] The raw command payload
         # @param context [String] The context name
         # @param aggregate_tracker [AggregateTracker, nil] The tracker instance (optional)
-        def initialize(raw_payload:, context:, aggregate_tracker: nil)
+        def initialize(raw_payload:, context:, parent_aggregates:, aggregate_tracker: nil)
           @raw_payload = raw_payload
           @context = context
+          @parent_aggregates = parent_aggregates
           @aggregate_tracker = aggregate_tracker
         end
 
@@ -22,7 +23,7 @@ module Yes
 
         private
 
-        attr_reader :raw_payload, :context, :aggregate_tracker
+        attr_reader :raw_payload, :context, :parent_aggregates, :aggregate_tracker
 
         # Handles dynamic method calls to access payload values or resolve aggregates
         #
@@ -58,6 +59,7 @@ module Yes
         # @return [Object] The resolved aggregate instance
         def resolve_aggregate(method_name)
           id = raw_payload[:"#{method_name}_id"]
+          context = aggregate_context(method_name)
           aggregate_class = "#{context}::#{method_name.to_s.camelize}::Aggregate".constantize
           instance = aggregate_class.new(id)
 
@@ -69,6 +71,10 @@ module Yes
           )
 
           instance
+        end
+
+        def aggregate_context(aggregate_name)
+          parent_aggregates.with_indifferent_access.dig(aggregate_name, :context) || context
         end
       end
     end

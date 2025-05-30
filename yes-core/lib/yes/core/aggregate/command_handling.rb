@@ -60,6 +60,7 @@ module Yes
             command_response_class(cmd).new(cmd:, event:)
           rescue PgEventstore::WrongExpectedRevisionError => e
             retries += 1
+
             retry if retries < MAX_RETRIES
 
             command_response_class(cmd).new(cmd:, error: e)

@@ -10,9 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_03_21_000001) do
+ActiveRecord::Schema[7.2].define(version: 2024_03_21_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "shared_profile_read_models", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "first_name"
+    t.string "last_name"
+    t.string "email"
+    t.string "birth_date"
+    t.string "phone_number"
+    t.string "address"
+    t.string "city"
+    t.string "country"
+    t.string "postal_code"
+    t.integer "revision", default: -1, null: false
+    t.string "locale"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_shared_profile_read_models_on_email"
+  end
 
   create_table "test_locations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.integer "revision", default: -1, null: false

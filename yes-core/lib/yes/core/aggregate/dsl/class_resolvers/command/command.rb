@@ -34,7 +34,11 @@ module Yes
 
                   # Define payload attributes if any
                   payload_attributes.each do |attr_name, attr_type|
-                    attribute attr_name, Yes::Core::TypeLookup.type_for(attr_type, context)
+                    if attr_type.is_a?(Hash) && attr_type[:optional]
+                      attribute? attr_name, Yes::Core::TypeLookup.type_for(attr_type[:type], context).optional
+                    else
+                      attribute attr_name, Yes::Core::TypeLookup.type_for(attr_type, context)
+                    end
                   end
 
                   # TODO: Legacy: Change to :aggregate_id - requires chnage in yousty es in many places

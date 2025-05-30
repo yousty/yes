@@ -22,6 +22,6 @@ group :development, :test do
   gem 'rspec', '~> 3.0'
   gem 'rspec-rails', '~> 7.1'
   gem 'rubocop', '~> 1.21'
-  gem 'yousty-command-api', path: '../yousty-command-api'
+  gem 'yes-command-api', path: '../yes-command-api'
   gem 'yousty-read-api', path: '../yousty-read-api'
 end

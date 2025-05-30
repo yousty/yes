@@ -15,5 +15,7 @@ module Dummy
     # Add database configuration
     config.paths['config/database'] = ['config/database.yml']
     config.paths.add 'db/migrate', with: 'db/migrate'
+
+    config.i18n.available_locales = %w[de-CH fr-CH en]
   end
 end
