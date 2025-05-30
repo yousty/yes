@@ -54,11 +54,7 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
     end
 
     it 'removes existing read models and rebuilds them' do
-      # Create an initial read model
-      SharedProfileReadModel.create!(
-        id: profile_id,
-        first_name: 'Old'
-      )
+      SharedProfileReadModel.find(profile_id).update(first_name: 'Old')
 
       subject
 
@@ -258,8 +254,8 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
         aggregate_failures do
           expect(result.size).to eq(2)
           expect(result.map(&:event).map(&:type)).to include(
-            'Test::PersonalInfo::NameChanged',
-            'Test::ContactInfo::CityChanged'
+            'Test::PersonalInfoNameChanged',
+            'Test::ContactInfoCityChanged'
           )
           expect(result.map(&:aggregate)).to include(personal_info_aggregate, contact_info_aggregate)
         end
@@ -288,8 +284,8 @@ RSpec.describe Yes::Core::Aggregate::SharedReadModelRebuilder do
           hash_including(
             'first_name' => 'John',
             'last_name' => 'Doe',
-            :test_personal_info_revision => event.stream_revision,
-            :locale => nil
+            'test_personal_info_revision' => event.stream_revision,
+            'locale' => nil
           )
         )
       end
