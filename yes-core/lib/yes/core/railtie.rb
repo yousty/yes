@@ -9,8 +9,8 @@ module Yes
           klass = "#{context.camelize}::#{aggregate.camelize}::Aggregate".constantize
 
           if klass.read_model_public?
-            app.config.yousty_read_api.read_models ||= []
-            app.config.yousty_read_api.read_models << klass.read_model_name.pluralize
+            app.config.yes_read_api.read_models ||= []
+            app.config.yes_read_api.read_models << klass.read_model_name.pluralize
           end
         end
       end

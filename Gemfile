@@ -35,4 +35,4 @@ gem 'rubocop-rails'
 
 gem 'yes-command-api', path: 'yes-command-api'
 gem 'yes-core', path: 'yes-core'
-gem 'yousty-read-api', path: 'yousty-read-api'
+gem 'yes-read-api', path: 'yes-read-api'
