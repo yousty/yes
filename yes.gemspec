@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'yes-command-api' # , Yes::VERSION
   spec.add_dependency 'yes-core' # , Yes::VERSION
-  spec.add_dependency 'yousty-read-api' # , Yes::VERSION
+  spec.add_dependency 'yes-read-api' # , Yes::VERSION
 
   spec.metadata['rubygems_mfa_required'] = 'true'
 end

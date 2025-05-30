@@ -2,7 +2,7 @@
 
 require 'yes/core'
 require 'yes/command/api'
-require 'yousty/read/api'
+require 'yes/read/api'
 
 module Yes
   class Error < StandardError; end
