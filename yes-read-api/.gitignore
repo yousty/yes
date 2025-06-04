@@ -3,11 +3,11 @@
 /log/*.log
 /pkg/
 /tmp/
-/spec/dummy/db/*.sqlite3
-/spec/dummy/db/*.sqlite3-*
-/spec/dummy/log/*.log
-/spec/dummy/storage/
-/spec/dummy/tmp/
+dummy_app/db/*.sqlite3
+dummy_app/db/*.sqlite3-*
+dummy_app/log/*.log
+dummy_app/storage/
+dummy_app/tmp/
 spec/examples.txt
 
 # rspec failure tracking
@@ -28,4 +28,4 @@ Gemfile.lock
 certs/
 .rspec_status
 
-yes-command-api-*.gem
+yes-read-api-*.gem

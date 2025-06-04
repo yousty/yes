@@ -8,7 +8,7 @@ Commands represent the write side of CQRS in our eventsourced system.
 Add this line to your application's Gemfile:
 
 ```ruby
-gem "yousty-command-api"
+gem "yes-command-api"
 ```
 
 And then execute:
@@ -18,7 +18,7 @@ $ bundle
 
 Or install it yourself as:
 ```bash
-$ gem install yousty-command-api
+$ gem install yes-command-api
 ```
 
 ## Usage
