@@ -18,6 +18,11 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
     )
   end
 
+  after do
+    # Clean up constants to ensure test isolation
+    Object.send(:remove_const, 'UserManagement') if Object.const_defined?(:UserManagement)
+  end
+
   describe '#call' do
     subject { described_class.new(command_data).call }
 
@@ -89,20 +94,26 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
 
         context 'when optional attributes are provided' do
           let(:user_id) { SecureRandom.uuid }
-          let(:payload) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:phone) { '123456789' }
+          let(:age) { 30 }
+          let(:payload) { { user_id:, email:, name:, phone:, age: } }
 
           it 'handles optional attributes when provided' do
             command = subject
 
             aggregate_failures do
-              expect(command.phone).to eq('123456789')
-              expect(command.age).to eq(30)
+              expect(command.phone).to eq(phone)
+              expect(command.age).to eq(age)
             end
           end
         end
 
         context 'when optional attributes are not provided' do
           let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
           let(:payload) { { user_id:, email:, name: } }
 
           it 'allows omitting optional attributes' do

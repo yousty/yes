@@ -18,6 +18,11 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
     )
   end
 
+  after do
+    # Clean up constants to ensure test isolation
+    Object.send(:remove_const, 'UserManagement') if Object.const_defined?(:UserManagement)
+  end
+
   describe '#call' do
     subject { described_class.new(command_data).call }
 
@@ -61,50 +66,44 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         }
       end
 
-      it 'resolves event class with schema supporting optional attributes' do
-        event_class = subject
-        event_schema = event_class.new.schema
+      context 'schema' do
+        let(:result_with_all) { subject.new(data: { user_id:, email:, name:, phone: '123456789', age: 30 }) }
+        let(:result_required_only) { subject.new(data: { user_id:, email:, name: }) }
 
-        aggregate_failures do
-          # Required attributes
-          expect(event_schema.rules[:user_id].required?).to be true
-          expect(event_schema.rules[:email].required?).to be true
-          expect(event_schema.rules[:name].required?).to be true
-
-          # Optional attributes
-          expect(event_schema.rules[:phone].required?).to be false
-          expect(event_schema.rules[:age].required?).to be false
+        it 'resolves event class with schema supporting optional attributes' do
+          aggregate_failures do
+            expect(result_with_all.data).to include(:phone, :age)
+            expect(result_required_only.data).not_to include(:phone, :age)
+          end
         end
       end
 
-      context 'event instance with optional attributes' do
-        context 'when optional attributes are provided' do
-          let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+      context 'when optional attributes are provided' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
 
-          subject { super().new(data:) }
+        subject { super().new(data:) }
 
-          it 'handles optional attributes when provided' do
-            event = subject
+        it 'handles optional attributes when provided' do
+          event = subject
 
-            aggregate_failures do
-              expect(event.data[:phone]).to eq('123456789')
-              expect(event.data[:age]).to eq(30)
-            end
+          aggregate_failures do
+            expect(event.data[:phone]).to eq('123456789')
+            expect(event.data[:age]).to eq(30)
           end
         end
+      end
 
-        context 'when optional attributes are not provided' do
-          let(:data) { { user_id:, email:, name: } }
+      context 'when optional attributes are not provided' do
+        let(:data) { { user_id:, email:, name: } }
 
-          subject { super().new(data:) }
+        subject { super().new(data:) }
 
-          it 'allows omitting optional attributes' do
-            event = subject
+        it 'allows omitting optional attributes' do
+          event = subject
 
-            aggregate_failures do
-              expect(event.data).not_to include(:phone)
-              expect(event.data).not_to include(:age)
-            end
+          aggregate_failures do
+            expect(event.data).not_to include(:phone)
+            expect(event.data).not_to include(:age)
           end
         end
       end

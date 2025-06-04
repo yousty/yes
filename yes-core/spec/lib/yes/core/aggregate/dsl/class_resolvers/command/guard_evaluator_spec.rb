@@ -20,6 +20,11 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
   let(:context) { 'UserManagement' }
   let(:aggregate) { 'User' }
 
+  after do
+    # Clean up constants to ensure test isolation
+    Object.send(:remove_const, 'UserManagement') if Object.const_defined?(:UserManagement)
+  end
+
   describe '#class_type' do
     it 'returns :guard_evaluator' do
       expect(subject.send(:class_type)).to eq(:guard_evaluator)

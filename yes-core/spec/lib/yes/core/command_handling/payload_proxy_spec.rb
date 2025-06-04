@@ -5,6 +5,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
     described_class.new(
       raw_payload:,
       context:,
+      parent_aggregates:,
       aggregate_tracker:
     )
   end
@@ -18,6 +19,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
   end
 
   let(:context) { 'TestContext' }
+  let(:parent_aggregates) { {} }
   let(:aggregate_tracker) { instance_double('Yes::Core::CommandHandling::AggregateTracker') }
 
   describe '#[]' do
@@ -48,6 +50,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
       before do
         stub_const('TestContext::User::Aggregate', user_aggregate_class)
         allow(aggregate_tracker).to receive(:track)
+        allow(user_aggregate).to receive(:reload).and_return(user_aggregate)
       end
 
       it 'resolves aggregate when _id field exists' do
@@ -68,6 +71,31 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
       it 'instantiates aggregate with correct ID' do
         payload_proxy.user
         expect(user_aggregate_class).to have_received(:new).with('user-123')
+      end
+
+      context 'when parent_aggregates specifies different context' do
+        let(:parent_aggregates) { { user: { context: 'CustomContext' } } }
+        let(:custom_user_aggregate_class) { class_double('CustomContext::User::Aggregate', new: user_aggregate) }
+
+        before do
+          stub_const('CustomContext::User::Aggregate', custom_user_aggregate_class)
+        end
+
+        it 'uses context from parent_aggregates' do
+          payload_proxy.user
+          expect(custom_user_aggregate_class).to have_received(:new).with('user-123')
+        end
+
+        it 'tracks with custom context' do
+          payload_proxy.user
+
+          expect(aggregate_tracker).to have_received(:track).with(
+            attribute_name: :user,
+            id: 'user-123',
+            revision: kind_of(Proc),
+            context: 'CustomContext'
+          )
+        end
       end
     end
   end
