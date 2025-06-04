@@ -6,28 +6,39 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
   let(:read_model) { instance_double('ReadModel', revision: current_revision) }
   let(:current_revision) { 10 }
   let(:expected_revision) { 11 }
-  let(:logger) { instance_double('Logger', info: nil, error: nil, debug: nil, debug?: false) }
+  let(:retrier) { instance_double(Yes::Core::Utils::ExponentialRetrier) }
 
   before do
     allow(read_model).to receive(:reload).and_return(read_model)
-    # Stub Rails.logger to use our test double
-    allow(Rails).to receive(:logger).and_return(logger) if defined?(Rails)
+    allow(Yes::Core::Utils::ExponentialRetrier).to receive(:new).and_return(retrier)
   end
 
   describe '.call' do
+    before do
+      allow(retrier).to receive(:call).and_yield
+    end
+
     it 'delegates to instance method' do
       block_called = false
-      block = -> { block_called = true }
+      result = described_class.call(read_model, expected_revision) do
+        block_called = true
+        'success'
+      end
 
-      described_class.call(read_model, expected_revision, &block)
-
-      expect(block_called).to be true
+      aggregate_failures do
+        expect(block_called).to be true
+        expect(result).to eq('success')
+      end
     end
   end
 
   describe '#call' do
-    context 'when revision matches on first attempt' do
-      it 'executes the block immediately' do
+    context 'when revision matches' do
+      before do
+        allow(retrier).to receive(:call).and_yield
+      end
+
+      it 'executes the block and returns result' do
         block_called = false
 
         result = guard.call do
@@ -38,157 +49,64 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
         aggregate_failures do
           expect(block_called).to be true
           expect(result).to eq('success')
-          expect(read_model).not_to have_received(:reload)
         end
       end
 
-      it 'does not log when successful on first attempt' do
+      it 'creates retrier with correct configuration' do
         guard.call { 'success' }
 
-        expect(logger).not_to have_received(:info)
+        expect(Yes::Core::Utils::ExponentialRetrier).to have_received(:new).with(
+          max_retries: 6,
+          base_sleep_time: 0.1,
+          max_sleep_time: 5.0,
+          jitter_factor: 0.1,
+          timeout: 30,
+          logger: an_instance_of(described_class::ContextualLogger)
+        )
+      end
+
+      it 'passes correct parameters to retrier' do
+        guard.call { 'success' }
+
+        expect(retrier).to have_received(:call).with(
+          condition_check: an_instance_of(Proc),
+          failure_message: an_instance_of(String),
+          timeout_message: an_instance_of(String)
+        )
       end
     end
 
-    context 'when revision does not match initially' do
-      let(:expected_revision) { 15 }
-
+    context 'when retrier raises RetryFailedError' do
       before do
-        allow(guard).to receive(:sleep)
+        allow(retrier).to receive(:call).and_raise(
+          Yes::Core::Utils::ExponentialRetrier::RetryFailedError, 'Retrier failed'
+        )
       end
 
-      context 'and matches after retry' do
-        before do
-          # Each iteration calls revision twice: in check_revision_status! and revision_matches?
-          # Iteration 1: 10, 10 (no match, retry)
-          # Iteration 2: 10, 10 (no match, retry)
-          # Iteration 3: 14, 14 (match!)
-          revision_sequence = [10, 10, 10, 10, 14, 14]
-          revision_index = 0
+      it 'converts to RevisionMismatchError' do
+        expect do
+          guard.call { 'should not execute' }
+        end.to raise_error(
+          described_class::RevisionMismatchError,
+          'Retrier failed'
+        )
+      end
+    end
 
-          allow(read_model).to receive(:revision) do
-            current_value = revision_sequence[revision_index]
-            revision_index += 1 if revision_index < revision_sequence.length - 1
-            current_value
-          end
-        end
-
-        it 'retries and executes the block when revision matches' do
-          block_called = false
-
-          result = guard.call do
-            block_called = true
-            'success'
-          end
-
-          aggregate_failures do
-            expect(block_called).to be true
-            expect(result).to eq('success')
-            expect(read_model).to have_received(:reload).twice
-            expect(guard).to have_received(:sleep).twice
-          end
-        end
-
-        it 'logs success when revision matches after retries' do
-          guard.call { 'success' }
-
-          expect(logger).to have_received(:info).with(/succeeded after 2 attempts/)
-        end
-
-        it 'uses exponential backoff with jitter for sleep times' do
-          guard.call { 'success' }
-
-          aggregate_failures do
-            # First sleep should be around 0.1s ± 10%
-            expect(guard).to have_received(:sleep).with(a_value_between(0.09, 0.11)).ordered
-            # Second sleep should be around 0.2s ± 10%
-            expect(guard).to have_received(:sleep).with(a_value_between(0.18, 0.22)).ordered
-          end
-        end
+    context 'when retrier raises TimeoutError' do
+      before do
+        allow(retrier).to receive(:call).and_raise(
+          Yes::Core::Utils::ExponentialRetrier::TimeoutError, 'Timeout occurred'
+        )
       end
 
-      context 'and never matches' do
-        it 'raises RevisionMismatchError after maximum retries' do
-          expect do
-            guard.call { 'should not execute' }
-          end.to raise_error(
-            described_class::RevisionMismatchError,
-            /Revision mismatch after 7 attempts/
-          )
-        end
-
-        it 'logs error when failing after maximum retries' do
-          expect { guard.call { 'should not execute' } }.to raise_error(described_class::RevisionMismatchError)
-
-          expect(logger).to have_received(:error).with(/failed after 7 attempts/)
-        end
-
-        it 'includes current and expected revisions in error message' do
-          expect do
-            guard.call { 'should not execute' }
-          end.to raise_error(
-            described_class::RevisionMismatchError,
-            /Expected revision 15, but read model has revision 10/
-          )
-        end
-
-        it 'performs exactly MAX_RETRIES attempts' do
-          expect { guard.call { 'should not execute' } }.to raise_error(described_class::RevisionMismatchError)
-
-          expect(read_model).to have_received(:reload).exactly(6).times
-        end
-
-        it 'respects maximum sleep time cap' do
-          # Even with many retries, sleep time should never exceed MAX_SLEEP_TIME
-          expect { guard.call { 'should not execute' } }.to raise_error(described_class::RevisionMismatchError)
-
-          aggregate_failures do
-            # The last few sleeps should be capped at MAX_SLEEP_TIME (5.0) ± jitter
-            expect(guard).to have_received(:sleep).with(a_value_between(0.09, 0.11)).ordered  # ~0.1
-            expect(guard).to have_received(:sleep).with(a_value_between(0.18, 0.22)).ordered  # ~0.2
-            expect(guard).to have_received(:sleep).with(a_value_between(0.36, 0.44)).ordered  # ~0.4
-            expect(guard).to have_received(:sleep).with(a_value_between(0.72, 0.88)).ordered  # ~0.8
-            expect(guard).to have_received(:sleep).with(a_value_between(1.44, 1.76)).ordered  # ~1.6
-            expect(guard).to have_received(:sleep).with(a_value_between(2.88, 3.52)).ordered  # ~3.2
-          end
-        end
-      end
-
-      context 'with timeout' do
-        before do
-          # Simulate timeout by stubbing Time.current
-          start_time = Time.current
-          allow(Time).to receive(:current).and_return(
-            start_time,
-            start_time + 31.seconds
-          )
-        end
-
-        it 'raises TimeoutError when timeout is exceeded' do
-          expect do
-            guard.call { 'should not execute' }
-          end.to raise_error(
-            described_class::TimeoutError,
-            /Timeout after 31.0s waiting for revision 15/
-          )
-        end
-      end
-
-      context 'with many retries to test sleep time cap' do
-        before do
-          # Stub calculate_sleep_time to test the cap behavior
-          allow(guard).to receive(:calculate_sleep_time).and_call_original
-        end
-
-        it 'caps sleep time at MAX_SLEEP_TIME even for high attempt numbers' do
-          # Test that the 7th attempt would be capped
-          sleep_time = guard.send(:calculate_sleep_time, 7)
-
-          aggregate_failures do
-            # 7th attempt would be 0.1 * 2^6 = 6.4s without cap, but should be capped at 5.0
-            expect(sleep_time).to be <= described_class::MAX_SLEEP_TIME
-            expect(sleep_time).to be >= described_class::MAX_SLEEP_TIME * 0.9 # Account for negative jitter
-          end
-        end
+      it 'converts to guard TimeoutError' do
+        expect do
+          guard.call { 'should not execute' }
+        end.to raise_error(
+          described_class::TimeoutError,
+          'Timeout occurred'
+        )
       end
     end
 
@@ -197,7 +115,9 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
       let(:expected_revision) { 15 }
 
       before do
-        allow(guard).to receive(:sleep)
+        allow(retrier).to receive(:call) do |condition_check:, **|
+          condition_check.call
+        end
       end
 
       it 'raises RevisionAlreadyAppliedError' do
@@ -214,6 +134,12 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
       let(:current_revision) { 15 }
       let(:expected_revision) { 15 }
 
+      before do
+        allow(retrier).to receive(:call) do |condition_check:, **|
+          condition_check.call
+        end
+      end
+
       it 'raises RevisionAlreadyAppliedError' do
         expect do
           guard.call { 'should not execute' }
@@ -225,6 +151,10 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
     end
 
     context 'when block raises an error' do
+      before do
+        allow(retrier).to receive(:call).and_yield
+      end
+
       it 'propagates the error' do
         custom_error = Class.new(StandardError)
 
@@ -233,72 +163,75 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
         end.to raise_error(custom_error, 'Something went wrong')
       end
     end
-
-    context 'with debug logging enabled' do
-      before do
-        allow(logger).to receive(:debug?).and_return(true)
-
-        revision_sequence = [10, 10, 10, 10, 10, 10, 14, 14]
-        revision_index = 0
-
-        allow(read_model).to receive(:revision) do
-          current_value = revision_sequence[revision_index]
-          revision_index += 1 if revision_index < revision_sequence.length - 1
-          current_value
-        end
-
-        # Capture debug messages
-        @debug_messages = []
-        allow(logger).to receive(:debug) do |&block|
-          @debug_messages << block.call if block
-        end
-      end
-
-      let(:expected_revision) { 15 }
-
-      it 'logs retry attempts when debug is enabled' do
-        guard.call { 'success' }
-
-        expect(@debug_messages.size).to eq(2)
-        expect(@debug_messages[0]).to match(%r{retry 1/6})
-        expect(@debug_messages[1]).to match(%r{retry 2/6})
-      end
-    end
   end
 
-  describe 'constants' do
-    it 'has MAX_RETRIES set to 6' do
-      expect(described_class::MAX_RETRIES).to eq(6)
-    end
-
-    it 'has BASE_SLEEP_TIME set to 0.1' do
-      expect(described_class::BASE_SLEEP_TIME).to eq(0.1)
-    end
-
-    it 'has MAX_SLEEP_TIME set to 5.0' do
-      expect(described_class::MAX_SLEEP_TIME).to eq(5.0)
-    end
-
-    it 'has JITTER_FACTOR set to 0.1' do
-      expect(described_class::JITTER_FACTOR).to eq(0.1)
-    end
-
-    it 'has TIMEOUT set to 30' do
-      expect(described_class::TIMEOUT).to eq(30)
-    end
-  end
-
-  describe '#calculate_sleep_time' do
-    it 'adds jitter to prevent thundering herd' do
-      # Run multiple times to verify randomness
-      sleep_times = Array.new(10) { guard.send(:calculate_sleep_time, 1) }
+  describe '#check_revision_and_return_match_status' do
+    it 'reloads read model and checks revision match' do
+      result = guard.send(:check_revision_and_return_match_status)
 
       aggregate_failures do
-        # All should be within ±10% of base time (0.1s)
-        expect(sleep_times).to all(be_between(0.09, 0.11))
-        # But they should not all be the same (jitter is working)
-        expect(sleep_times.uniq.size).to be > 1
+        expect(read_model).to have_received(:reload)
+        expect(result).to be true
       end
+    end
+
+    context 'when revision does not match' do
+      let(:expected_revision) { 15 }
+
+      it 'returns false' do
+        result = guard.send(:check_revision_and_return_match_status)
+
+        expect(result).to be false
+      end
+    end
+
+    context 'when revision is already applied' do
+      let(:current_revision) { 15 }
+      let(:expected_revision) { 10 }
+
+      it 'raises RevisionAlreadyAppliedError' do
+        expect do
+          guard.send(:check_revision_and_return_match_status)
+        end.to raise_error(described_class::RevisionAlreadyAppliedError)
+      end
+    end
+  end
+
+  describe '#revision_matches?' do
+    context 'when current revision + 1 equals expected revision' do
+      it 'returns true' do
+        expect(guard.send(:revision_matches?)).to be true
+      end
+    end
+
+    context 'when revisions do not match' do
+      let(:expected_revision) { 15 }
+
+      it 'returns false' do
+        expect(guard.send(:revision_matches?)).to be false
+      end
+    end
+  end
+
+  describe 'error messages' do
+    let(:expected_revision) { 15 }
+
+    it 'generates detailed revision mismatch message' do
+      message = guard.send(:revision_mismatch_message)
+
+      expect(message).to eq(
+        'Revision mismatch. ' \
+        'Expected revision 15, but read model has revision 10. ' \
+        'Expected: read_model.revision (10) + 1 = 15'
+      )
+    end
+
+    it 'generates timeout message with revision context' do
+      message = guard.send(:timeout_message)
+
+      expect(message).to eq(
+        'Timeout waiting for revision 15. Current revision: 10'
+      )
     end
   end
 
@@ -307,34 +240,33 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
 
     let(:read_model) { instance_double('ReadModel', users_revision: current_revision, revision: nil) }
 
-    context 'when using a custom revision column' do
-      it 'uses the specified column for revision checks' do
-        block_called = false
+    before do
+      allow(retrier).to receive(:call).and_yield
+    end
 
-        result = guard.call do
-          block_called = true
-          'success'
-        end
+    it 'uses the specified column for revision checks' do
+      block_called = false
 
-        aggregate_failures do
-          expect(block_called).to be true
-          expect(result).to eq('success')
-          expect(read_model).to have_received(:users_revision).at_least(:once)
-          expect(read_model).not_to have_received(:revision)
-        end
+      result = guard.call do
+        block_called = true
+        'success'
       end
 
-      context 'when revision mismatch occurs' do
-        let(:expected_revision) { 15 }
+      aggregate_failures do
+        expect(block_called).to be true
+        expect(result).to eq('success')
+        expect(read_model).to have_received(:users_revision).at_least(:once)
+        expect(read_model).not_to have_received(:revision)
+      end
+    end
 
-        it 'includes the custom column name in error message' do
-          expect do
-            guard.call { 'should not execute' }
-          end.to raise_error(
-            described_class::RevisionMismatchError,
-            /Expected: read_model.users_revision \(10\) \+ 1 = 15/
-          )
-        end
+    context 'when revision mismatch occurs' do
+      let(:expected_revision) { 15 }
+
+      it 'includes the custom column name in error message' do
+        message = guard.send(:revision_mismatch_message)
+
+        expect(message).to include('read_model.users_revision (10) + 1 = 15')
       end
     end
 
@@ -353,6 +285,75 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
           expect(read_model).to have_received(:users_revision).at_least(:once)
         end
       end
+    end
+  end
+
+  describe 'ContextualLogger' do
+    let(:base_logger) { instance_double('Logger', info: nil, error: nil, debug: nil, debug?: false) }
+    let(:contextual_logger) { described_class::ContextualLogger.new(base_logger, guard) }
+
+    describe '#info' do
+      it 'adds revision context to info messages' do
+        contextual_logger.info('Test message')
+
+        expect(base_logger).to have_received(:info).with('Test message for revision 11')
+      end
+
+      context 'when base logger is nil' do
+        let(:base_logger) { nil }
+
+        it 'does not raise error' do
+          expect { contextual_logger.info('Test message') }.not_to raise_error
+        end
+      end
+    end
+
+    describe '#error' do
+      it 'adds revision and current revision context to error messages' do
+        contextual_logger.error('Test error')
+
+        expect(base_logger).to have_received(:error).with(
+          'Test error for revision 11. Current revision: 10'
+        )
+      end
+    end
+
+    describe '#debug' do
+      context 'when debug is enabled' do
+        before do
+          allow(base_logger).to receive(:debug?).and_return(true)
+        end
+
+        it 'adds revision context to debug messages' do
+          contextual_logger.debug('Test debug')
+
+          expect(base_logger).to have_received(:debug).with(
+            'Test debug for revision 11 (current: 10)'
+          )
+        end
+      end
+
+      context 'when debug is disabled' do
+        it 'does not call base logger debug' do
+          contextual_logger.debug('Test debug')
+
+          expect(base_logger).not_to have_received(:debug)
+        end
+      end
+    end
+  end
+
+  describe 'error class inheritance' do
+    it 'RevisionMismatchError inherits from ExponentialRetrier::RetryFailedError' do
+      expect(described_class::RevisionMismatchError).to be < Yes::Core::Utils::ExponentialRetrier::RetryFailedError
+    end
+
+    it 'TimeoutError inherits from ExponentialRetrier::TimeoutError' do
+      expect(described_class::TimeoutError).to be < Yes::Core::Utils::ExponentialRetrier::TimeoutError
+    end
+
+    it 'RevisionAlreadyAppliedError inherits from StandardError' do
+      expect(described_class::RevisionAlreadyAppliedError).to be < StandardError
     end
   end
 end
