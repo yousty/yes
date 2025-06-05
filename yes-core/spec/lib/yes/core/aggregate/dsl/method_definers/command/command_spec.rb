@@ -91,15 +91,15 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
 
           context 'when command takes locale param' do
             let(:payload) { 'new description' }
-            let(:payload_attributes) { { test: :string, locale: :locale } }
+            let(:payload_attributes) { { locale_test: :string, locale: :locale } }
 
             it 'publishes the event with correct locale' do
               aggregate.test_command_with_locale(payload)
 
               aggregate_failures do
-                expect(latest_event.type).to eq('Test::UserShortcutDescriptionChangedWithLocale')
+                expect(latest_event.type).to eq('Test::UserLocaleTestChanged')
                 expect(latest_event.data).
-                  to eq({ user_id: aggregate.id, test: payload, locale: 'de-CH' }.stringify_keys)
+                  to eq({ user_id: aggregate.id, locale_test: payload, locale: 'de-CH' }.stringify_keys)
               end
             end
           end
@@ -130,16 +130,16 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           it_behaves_like 'a command that updates the single attribute: another'
 
           context 'when command takes locale param' do
-            let(:payload) { { test: 'new description' } }
-            let(:payload_attributes) { { test: :string, locale: :locale } }
+            let(:payload) { { locale_test: 'new description' } }
+            let(:payload_attributes) { { locale_test: :string, locale: :locale } }
 
             it 'publishes the event with correct locale' do
               aggregate.test_command_with_locale(payload)
 
               aggregate_failures do
-                expect(latest_event.type).to eq('Test::UserShortcutDescriptionChangedWithLocale')
+                expect(latest_event.type).to eq('Test::UserLocaleTestChanged')
                 expect(latest_event.data).
-                  to eq({ user_id: aggregate.id, test: payload[:test], locale: 'de-CH' }.stringify_keys)
+                  to eq({ user_id: aggregate.id, locale_test: payload[:locale_test], locale: 'de-CH' }.stringify_keys)
               end
             end
           end

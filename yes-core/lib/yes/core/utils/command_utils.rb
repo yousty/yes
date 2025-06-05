@@ -8,7 +8,7 @@ module Yes
       # @since 0.1.0
       # @api private
       class CommandUtils
-        ASSIGN_COMMAND_PREFIX = 'assign_'.freeze
+        ASSIGN_COMMAND_PREFIX = 'assign_'
 
         # @param context [String] The context namespace
         # @param aggregate [String] The aggregate name
@@ -135,8 +135,9 @@ module Yes
 
           payload_attributes = aggregate_class.commands[command_name].payload_attributes.except(:locale)
           if payload_attributes.length > 1
-            raise "Payload attributes must be a Hash with a single key (not including locale key)"
+            raise 'Payload attributes must be a Hash with a single key (not including locale key)'
           end
+
           append_locale_param(command_name, { payload_attributes.keys.first => payload }, aggregate_class)
         end
 
@@ -177,12 +178,9 @@ module Yes
         # @return [Hash] The prepared payload
         def append_locale_param(command_name, payload, aggregate_class)
           return payload if payload.key?(:locale)
+          return payload unless aggregate_class.commands[command_name].payload_attributes.key?(:locale)
 
-          if aggregate_class.commands[command_name].payload_attributes.key?(:locale)
-            payload.merge(locale: I18n.locale.to_s)
-          else
-            payload
-          end
+          payload.merge(locale: I18n.locale.to_s)
         end
       end
     end

@@ -17,6 +17,7 @@ class CreateTestUsers < ActiveRecord::Migration[7.1]
       t.boolean :shortcut_usage_enabled
       t.boolean :shortcut_toggle
       t.boolean :published
+      t.string :locale_test
 
       t.integer :revision, null: false, default: -1
 
