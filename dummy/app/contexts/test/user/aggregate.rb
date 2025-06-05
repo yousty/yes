@@ -11,6 +11,7 @@ module Test
       attribute :email, :email, command: true
       attribute :age, :integer, command: true
       attribute :active, :boolean, command: true
+      attribute :locale_test, :string, localized: true
 
       attribute :document_ids, :string
       attribute :another, :string
@@ -52,10 +53,9 @@ module Test
       command :publish
 
       command :test_command_with_locale do
-        payload test: :string, locale: :locale
+        payload locale_test: :string, locale: :locale
 
-        update_state { shortcut_description { payload.test } }
-        event :shortcut_description_changed_with_locale
+        event :locale_test_changed
       end
     end
   end

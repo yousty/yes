@@ -67,8 +67,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
       end
 
       context 'when command takes locale param' do
-        let(:payload) { { test: 'new description' } }
-        let(:payload_attributes) { { test: :string, locale: :locale } }
+        let(:payload) { { locale_test: 'new description' } }
+        let(:payload_attributes) { { locale_test: :string, locale: :locale } }
 
         it 'returns true' do
           expect(aggregate.can_test_command_with_locale?(payload)).to be(true)
@@ -89,7 +89,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
 
         context 'when command takes locale param' do
           let(:payload) { 'new description' }
-          let(:payload_attributes) { { test: :string, locale: :locale } }
+          let(:payload_attributes) { { locale_test: :string, locale: :locale } }
 
           it 'returns true' do
             expect(aggregate.can_test_command_with_locale?(payload)).to be(true)
