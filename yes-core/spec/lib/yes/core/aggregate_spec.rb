@@ -186,14 +186,14 @@ RSpec.describe Yes::Core::Aggregate do
       let(:subject_class) { Test::Comparison::AggregateA }
 
       context 'when it is a publish shortcut' do
-        subject { subject_class.command(:publish) }
+        subject { subject_class.command(:publish, attribute: :article_published) }
 
         let(:expanded_code) do
           proc do
-            attribute :published, :boolean
+            attribute :article_published, :boolean
             command :publish do
-              guard(:no_change) { !published }
-              update_state { published { true } }
+              guard(:no_change) { !article_published }
+              update_state { article_published { true } }
             end
           end
         end
@@ -255,13 +255,13 @@ RSpec.describe Yes::Core::Aggregate do
       end
 
       context 'when it is a change shortcut' do
-        subject { subject_class.command(:change, :description) }
+        subject { subject_class.command(:change, :description, attribute: :article_description) }
 
         let(:expanded_code) do
           proc do
-            attribute :description, :string
+            attribute :article_description, :string
             command :change_description do
-              payload description: :string
+              payload article_description: :string
             end
           end
         end
@@ -303,8 +303,19 @@ RSpec.describe Yes::Core::Aggregate do
           it_behaves_like 'expanded shortcut'
         end
 
-        xcontext('when using localized versions',
-                 skip: 'disabled for now as localized attribute definition is not supported') do
+        context 'when attribute is set to false' do
+          subject { subject_class.command(:change, :description, attribute: false) }
+
+          let(:expanded_code) do
+            proc do
+              command :change_description do
+                payload description: :string
+              end
+            end
+          end
+        end
+
+        context 'when using localized versions' do
           subject { subject_class.command(:change, :description, localized: true) }
 
           let(:expanded_code) do

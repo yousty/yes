@@ -76,20 +76,27 @@ module Yes
           def handle_toggle_commands # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
             raise InvalidShortcut if block.present?
 
-            attribute_name = args.second
+            command_subject = args.second
+            attribute_name = kwargs[:attribute].presence || command_subject
+
             set_flag_command, unset_flag_command = args.first
 
-            attributes = [
-              AttributeSpecification.new(
-                name: attribute_name,
-                type: :boolean,
-                options: {}
-              )
-            ]
+            attributes =
+              if kwargs[:attribute] == false
+                []
+              else
+                [
+                  AttributeSpecification.new(
+                    name: attribute_name,
+                    type: :boolean,
+                    options: {}
+                  )
+                ]
+              end
 
             commands = [
               CommandSpecification.new(
-                name: :"#{set_flag_command}_#{attribute_name}",
+                name: :"#{set_flag_command}_#{command_subject}",
                 block: proc do
                   guard(:no_change) { !send(attribute_name) }
                   update_state do
@@ -98,7 +105,7 @@ module Yes
                 end
               ),
               CommandSpecification.new(
-                name: :"#{unset_flag_command}_#{attribute_name}",
+                name: :"#{unset_flag_command}_#{command_subject}",
                 block: proc do
                   guard(:no_change) { send(attribute_name) }
                   update_state do
@@ -114,7 +121,8 @@ module Yes
           def handle_change_command # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
             raise InvalidShortcut if args.size > 3
 
-            attribute_name = args[1]
+            command_subject = args[1]
+            attribute_name = kwargs[:attribute].presence || command_subject
             attribute_type = args[2].presence || :string
             localized = kwargs[:localized] || false
             additional_block = block # needs to be captured in a local variable to ensure proper closure in this scope
@@ -122,17 +130,22 @@ module Yes
             payload_options = { attribute_name => attribute_type }
             payload_options[:locale] = :locale if localized
 
-            attributes = [
-              AttributeSpecification.new(
-                name: attribute_name,
-                type: attribute_type,
-                options: { localized: }
-              )
-            ]
+            attributes =
+              if kwargs[:attribute] == false
+                []
+              else
+                [
+                  AttributeSpecification.new(
+                    name: attribute_name,
+                    type: attribute_type,
+                    options: { localized: }
+                  )
+                ]
+              end
 
             commands = [
               CommandSpecification.new(
-                name: :"change_#{attribute_name}",
+                name: :"change_#{command_subject}",
                 block: proc do
                   payload(**payload_options)
                   instance_eval(&additional_block) if additional_block.present?
@@ -151,13 +164,18 @@ module Yes
             attribute_name = kwargs[:attribute].presence || command_subject
             additional_block = block
 
-            attributes = [
-              AttributeSpecification.new(
-                name: attribute_name,
-                type: :boolean,
-                options: {}
-              )
-            ]
+            attributes =
+              if kwargs[:attribute] == false
+                []
+              else
+                [
+                  AttributeSpecification.new(
+                    name: attribute_name,
+                    type: :boolean,
+                    options: {}
+                  )
+                ]
+              end
 
             commands = [
               CommandSpecification.new(
@@ -176,22 +194,29 @@ module Yes
           end
 
           def handle_publish_command
-            raise InvalidShortcut if args.size > 1 || kwargs.present? || block.present?
+            raise InvalidShortcut if args.size > 1 || block.present?
 
-            attributes = [
-              AttributeSpecification.new(
-                name: :published,
-                type: :boolean,
-                options: {}
-              )
-            ]
+            attribute_name = kwargs[:attribute].presence || :published
+
+            attributes =
+              if kwargs[:attribute] == false
+                []
+              else
+                [
+                  AttributeSpecification.new(
+                    name: attribute_name,
+                    type: :boolean,
+                    options: {}
+                  )
+                ]
+              end
 
             commands = [
               CommandSpecification.new(
                 name: :publish,
                 block: proc do
-                  guard(:no_change) { !published }
-                  update_state { published { true } }
+                  guard(:no_change) { !send(attribute_name) }
+                  update_state { send(attribute_name) { true } }
                 end
               )
             ]
