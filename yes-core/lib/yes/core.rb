@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'bundler/setup'
-require 'rails/all'
 require 'yousty/eventsourcing'
 require 'zeitwerk'
 require 'yousty/api' # for serializers
