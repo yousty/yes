@@ -71,9 +71,9 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           let(:payload_attributes) { { another: :string } }
           let(:payload) { another }
 
-          before { aggregate.some_custom_command(payload) }
-
           it 'updates the read model with payload and revision' do
+            aggregate.some_custom_command(payload)
+
             aggregate_failures do
               expect(aggregate.revision).to eq(0)
               expect(aggregate.another).to eq(another)
@@ -81,9 +81,26 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           end
 
           it 'publishes the event' do
+            aggregate.some_custom_command(payload)
+
             aggregate_failures do
               expect(latest_event.type).to eq('Test::UserSomeCustomEvent')
               expect(latest_event.data).to eq({ user_id: aggregate.id, another: }.stringify_keys)
+            end
+          end
+
+          context 'when command takes locale param' do
+            let(:payload) { 'new description' }
+            let(:payload_attributes) { { locale_test: :string, locale: :locale } }
+
+            it 'publishes the event with correct locale' do
+              aggregate.test_command_with_locale(payload)
+
+              aggregate_failures do
+                expect(latest_event.type).to eq('Test::UserLocaleTestChanged')
+                expect(latest_event.data).
+                  to eq({ user_id: aggregate.id, locale_test: payload, locale: 'de-CH' }.stringify_keys)
+              end
             end
           end
         end
@@ -111,6 +128,21 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           let(:payload_attributes) { { another: :string } }
 
           it_behaves_like 'a command that updates the single attribute: another'
+
+          context 'when command takes locale param' do
+            let(:payload) { { locale_test: 'new description' } }
+            let(:payload_attributes) { { locale_test: :string, locale: :locale } }
+
+            it 'publishes the event with correct locale' do
+              aggregate.test_command_with_locale(payload)
+
+              aggregate_failures do
+                expect(latest_event.type).to eq('Test::UserLocaleTestChanged')
+                expect(latest_event.data).
+                  to eq({ user_id: aggregate.id, locale_test: payload[:locale_test], locale: 'de-CH' }.stringify_keys)
+              end
+            end
+          end
         end
 
         context 'when using shorthand value payload' do
@@ -127,7 +159,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
 
             it 'raises an error' do
               expect { aggregate.approve_documents(payload) }.
-                to raise_error('Payload attributes must be a Hash with a single key')
+                to raise_error('Payload attributes must be a Hash with a single key (not including locale key)')
             end
           end
         end

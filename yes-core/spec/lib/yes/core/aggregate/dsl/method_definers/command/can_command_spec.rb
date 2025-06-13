@@ -58,13 +58,21 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
       end
     end
 
-
     context 'when using Hash payload' do
       let(:payload) { { another: 'test_value' } }
       let(:payload_attributes) { { another: :string } }
 
       it 'returns true' do
         expect(aggregate.can_some_custom_command?(payload)).to be(true)
+      end
+
+      context 'when command takes locale param' do
+        let(:payload) { { locale_test: 'new description' } }
+        let(:payload_attributes) { { locale_test: :string, locale: :locale } }
+
+        it 'returns true' do
+          expect(aggregate.can_test_command_with_locale?(payload)).to be(true)
+        end
       end
     end
 
@@ -78,12 +86,21 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
         it 'returns true' do
           expect(aggregate.can_some_custom_command?(payload)).to be(true)
         end
+
+        context 'when command takes locale param' do
+          let(:payload) { 'new description' }
+          let(:payload_attributes) { { locale_test: :string, locale: :locale } }
+
+          it 'returns true' do
+            expect(aggregate.can_test_command_with_locale?(payload)).to be(true)
+          end
+        end
       end
 
       context 'when using multiple payload attributes' do
         it 'raises an error' do
           expect { aggregate.can_approve_documents?(payload) }.
-            to raise_error('Payload attributes must be a Hash with a single key')
+            to raise_error('Payload attributes must be a Hash with a single key (not including locale key)')
         end
       end
     end

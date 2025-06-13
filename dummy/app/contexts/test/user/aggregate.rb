@@ -11,6 +11,7 @@ module Test
       attribute :email, :email, command: true
       attribute :age, :integer, command: true
       attribute :active, :boolean, command: true
+      attribute :locale_test, :string, localized: true
 
       attribute :document_ids, :string
       attribute :another, :string
@@ -50,6 +51,12 @@ module Test
       command :activate, :shorcut_usage, attribute: :shortcut_usage_enabled
       command %i[enable disable], :shortcut_toggle
       command :publish
+
+      command :test_command_with_locale do
+        payload locale_test: :string, locale: :locale
+
+        event :locale_test_changed
+      end
     end
   end
 end

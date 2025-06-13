@@ -52,6 +52,7 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000002) do
     t.boolean "shortcut_usage_enabled"
     t.boolean "shortcut_toggle"
     t.boolean "published"
+    t.string "locale_test"
     t.integer "revision", default: -1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
