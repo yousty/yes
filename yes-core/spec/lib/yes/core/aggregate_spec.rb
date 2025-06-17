@@ -38,7 +38,7 @@ RSpec.describe Yes::Core::Aggregate do
           subject
 
           expect(subject_class.commands[:assign_test_parent].guard_names).
-            to match_array(%i[unassigned not_removed])
+            to match_array(%i[unassigned not_removed no_change])
         end
       end
     end
@@ -104,7 +104,7 @@ RSpec.describe Yes::Core::Aggregate do
       before { subject_class.attribute(:removed_at, :year) }
 
       it 'does not overwrite the default removed_at attribute' do
-        expect { subject }.not_to change { subject_class.attributes[attr_name] }
+        expect { subject }.not_to(change { subject_class.attributes[attr_name] })
       end
     end
 
@@ -303,8 +303,7 @@ RSpec.describe Yes::Core::Aggregate do
           it_behaves_like 'expanded shortcut'
         end
 
-        xcontext('when using localized versions',
-                 skip: 'disabled for now as localized attribute definition is not supported') do
+        context('when using localized versions') do
           subject { subject_class.command(:change, :description, localized: true) }
 
           let(:expanded_code) do
