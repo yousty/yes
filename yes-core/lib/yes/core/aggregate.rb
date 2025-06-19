@@ -86,7 +86,10 @@ module Yes
           return unless options.fetch(:command, true)
 
           command :"assign_#{name}" do
-            payload :"#{name}_id" => :uuid
+            payload "#{name}_id": :uuid
+
+            guard(:no_change) { public_send(:"#{name}_id") != payload.public_send(:"#{name}_id") }
+
             instance_eval(&) if block_given?
           end
         end
