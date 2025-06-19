@@ -26,4 +26,6 @@ Gemfile.lock
 
 /db/postgresql/data
 
+/yes-read-api/dummy_app/log/*.log
+
 /prompts/*
