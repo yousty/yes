@@ -65,7 +65,8 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
         expect(event.metadata).to include(
           'origin' => 'test',
           'batch_id' => '123',
-          'test' => 'value'
+          'test' => 'value',
+          'yes-dsl' => true
         )
       end
     end

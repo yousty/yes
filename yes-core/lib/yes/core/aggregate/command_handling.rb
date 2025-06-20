@@ -11,6 +11,25 @@ module Yes
 
         EventPublicationData = Yes::Core::CommandHandling::EventPublisher::AggregateEventPublicationData
 
+        def update_read_model_with_revision_guard(
+          event, command_payload, command_name = command_utilities.command_name_from_event(event, self.class)
+        )
+          locale = command_payload.delete(:locale)
+
+          state_updater_class = command_utilities.fetch_state_updater_class(command_name)
+
+          Yes::Core::CommandHandling::ReadModelRevisionGuard.call(
+            read_model, event.stream_revision, revision_column:
+          ) do
+            state_updater = state_updater_class.new(
+              payload: command_payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS),
+              aggregate: self,
+              event: event
+            )
+            update_read_model(state_updater.call.merge(revision_column => event.stream_revision, locale:))
+          end
+        end
+
         private
 
         # Handles a command using the specified guard evaluator class
@@ -70,6 +89,19 @@ module Yes
 
             command_response_class(cmd).new(cmd:, error: e, extra: e.try(:extra), batch_id: cmd.batch_id)
           end
+        end
+
+        def execute_command_and_update_state(command_name, payload)
+          payload = command_utilities.prepare_command_payload(command_name, payload.clone, self.class)
+          payload = command_utilities.prepare_assign_command_payload(command_name, payload)
+          cmd = command_utilities.build_command(command_name, payload)
+          guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
+
+          response = execute_command(cmd, guard_evaluator_class)
+
+          update_read_model_with_revision_guard(response.event, payload, command_name) if response.success?
+
+          response
         end
 
         def command_response_class(cmd)

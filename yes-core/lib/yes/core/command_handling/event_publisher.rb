@@ -114,6 +114,7 @@ module Yes
           meta = {}
           meta['origin'] = origin if origin.present?
           meta['batch_id'] = batch_id if batch_id.present?
+          meta['yes-dsl'] = true
           meta.merge!(metadata) if metadata.present?
           meta
         end
