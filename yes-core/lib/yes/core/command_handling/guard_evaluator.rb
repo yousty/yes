@@ -10,9 +10,9 @@ module Yes
         class NoChangeTransition < TransitionError; end
 
         class << self
-          # @return [Array<Hash>] List of registered guards with their blocks and names
+          # @return [Hash<Symbol, Proc>] Hash of registered guards with names as keys and blocks as values
           def guards
-            @guards ||= []
+            @guards ||= {}
           end
 
           # Defines a new guard with a name and evaluation block
@@ -22,19 +22,23 @@ module Yes
           # @yieldreturn [Boolean] True if the guard passes, false otherwise
           # @return [void]
           def guard(name, &block)
-            guards << { name:, block: }
+            guards[name] = block
           end
         end
 
         # @param payload [Hash] The command payload
+        # @param metadata [Hash] The command metadata
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance
-        def initialize(payload:, aggregate:, command_name:)
+        # @param command_name [Symbol] The command name
+        def initialize(payload:, metadata:, aggregate:, command_name:)
           @raw_payload = payload
+          @raw_metadata = metadata
           @aggregate = aggregate
           @aggregate_tracker = AggregateTracker.new
           @command_name = command_name
           @payload = PayloadProxy.new(
             raw_payload:,
+            raw_metadata:,
             context: aggregate.class.context,
             aggregate_tracker:,
             parent_aggregates: aggregate.class.parent_aggregates
@@ -47,8 +51,8 @@ module Yes
         # @raise [InvalidTransition] When a guard fails with an invalid transition
         # @raise [NoChangeTransition] When a guard fails with a no change transition
         def call
-          self.class.guards.each do |guard|
-            evaluate_guard(guard)
+          self.class.guards.each do |name, block|
+            evaluate_guard(name, block)
           end
         end
 
@@ -57,20 +61,27 @@ module Yes
 
         private
 
-        attr_reader :raw_payload, :payload, :aggregate, :aggregate_tracker, :command_name
+        attr_reader :raw_payload, :raw_metadata, :payload, :aggregate, :aggregate_tracker, :command_name
 
         # Evaluates a single guard and raises appropriate error if it fails
         #
-        # @param guard [Hash] The guard to evaluate with its name and block
+        # @param name [Symbol] The name of the guard
+        # @param block [Proc] The guard block to evaluate
         # @return [void]
         # @raise [InvalidTransition] When the guard fails with an invalid transition
         # @raise [NoChangeTransition] When the guard fails with a no change transition
-        def evaluate_guard(guard)
-          result = evaluate_with_locale(&guard[:block])
+        def evaluate_guard(name, block)
+          result = evaluate_with_locale(&block)
           return if result
 
-          error_class = guard[:name] == :no_change ? NoChangeTransition : InvalidTransition
-          raise error_class, error_message(guard[:name])
+          error_class = name == :no_change ? NoChangeTransition : InvalidTransition
+          raise error_class, error_message(name)
+        end
+
+        def value_changed?(val1, val2)
+          return val1 != val2 unless val1.is_a?(Hash) && val2.is_a?(Hash)
+
+          val1.with_indifferent_access != val2.with_indifferent_access 
         end
 
         # Looks up the error message for a guard from I18n translations
@@ -81,7 +92,7 @@ module Yes
           context_name = aggregate.class.context
           aggregate_name = aggregate.class.aggregate
 
-          Yes::Core::ErrorMessages.guard_error(context_name, aggregate_name, command_name.to_s.classify, guard_name)
+          Yes::Core::ErrorMessages.guard_error(context_name, aggregate_name, command_name.to_s, guard_name)
         end
 
         # Handles method missing to delegate attribute calls to the current aggregate

@@ -45,14 +45,14 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
     end
 
     it 'includes a no_change guard' do
-      expect(generated_class.guards.pluck(:name)).to include(:no_change)
+      expect(generated_class.guards.keys).to include(:no_change)
     end
 
     context 'no change guard evaluation' do
       let(:payload) { { document_ids: '123,456', another: 'John' } }
       let(:aggregate) { Test::User::Aggregate.new }
-      let(:instance) { generated_class.new(payload:, aggregate:, command_name: :approve_documents) }
-      let(:guard) { generated_class.guards.find { |g| g[:name] == :no_change } }
+      let(:instance) { generated_class.new(payload:, metadata: {}, aggregate:, command_name: :approve_documents) }
+      let(:guard_block) { generated_class.guards[:no_change] }
 
       let(:command_data) do
         Yes::Core::Aggregate::Dsl::CommandData.new(
@@ -74,7 +74,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
 
       context 'when the command changes the state' do
         it 'passes the guard evaluation' do
-          expect { instance.send(:evaluate_guard, guard) }.not_to raise_error
+          expect { instance.send(:evaluate_guard, :no_change, guard_block) }.not_to raise_error
         end
       end
 
@@ -84,7 +84,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
         end
 
         it 'raises a NoChangeTransition error' do
-          expect { instance.send(:evaluate_guard, guard) }.to(
+          expect { instance.send(:evaluate_guard, :no_change, guard_block) }.to(
             raise_error(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
           )
         end

@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
-  subject(:guard_evaluator) { guard_evaluator_class.new(payload:, aggregate:, command_name: :test_command) }
+  subject(:guard_evaluator) { guard_evaluator_class.new(payload:, metadata:, aggregate:, command_name: :test_command) }
 
   let(:guard_evaluator_class) { described_class }
   let(:payload) { { location_id: } }
+  let(:metadata) { {} }
   let(:location_id) { SecureRandom.uuid }
   let(:location) { Test::Location::Aggregate.new(location_id) }
   let(:aggregate) { Test::User::Aggregate.new }
@@ -18,13 +19,13 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
     # Clean up location attribute and guards
     Test::User::Aggregate.singleton_class.instance_variable_set(:@attributes,
                                                                 Test::User::Aggregate.attributes.except(:location_id))
-    described_class.instance_variable_set(:@guards, [])
+    described_class.instance_variable_set(:@guards, {})
   end
 
   describe '.guard' do
     it 'registers a new guard' do
       described_class.guard(:test) { true }
-      expect(described_class.guards.last[:name]).to eq(:test)
+      expect(described_class.guards).to have_key(:test)
     end
   end
 
@@ -107,7 +108,7 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
         let(:locale_capturer) { Class.new { attr_accessor :value }.new }
 
         before do
-          described_class.instance_variable_set(:@guards, [])
+          described_class.instance_variable_set(:@guards, {})
 
           # Allow method to capture the locale when called
           allow(aggregate).to receive(:capture_locale) { locale_capturer.value = I18n.locale.to_s }
@@ -125,6 +126,107 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
         end
       end
     end
+
+    context 'when accessing metadata' do
+      let(:metadata) { { user_agent: 'TestAgent/1.0', request_id: 'req-123' } }
+
+      context 'via hash-style access' do
+        before do
+          described_class.guard(:test) { payload.metadata[:user_agent] == 'TestAgent/1.0' }
+        end
+
+        it 'has access to metadata values' do
+          expect { guard_evaluator.call }.not_to raise_error
+        end
+      end
+
+      context 'via method-style access' do
+        before do
+          described_class.guard(:test) { payload.metadata.request_id == 'req-123' }
+        end
+
+        it 'has access to metadata values' do
+          expect { guard_evaluator.call }.not_to raise_error
+        end
+      end
+
+      context 'when metadata is nil' do
+        let(:metadata) { nil }
+
+        before do
+          described_class.guard(:test) { payload.metadata[:some_key].nil? }
+        end
+
+        it 'handles nil metadata gracefully' do
+          expect { guard_evaluator.call }.not_to raise_error
+        end
+      end
+    end
+  end
+
+  describe '#value_changed?' do
+    # Make value_changed? accessible for testing
+    let(:evaluator_instance) { guard_evaluator }
+
+    context 'with non-hash values' do
+      it 'returns true when values are different' do
+        expect(evaluator_instance.send(:value_changed?, 'old', 'new')).to be true
+        expect(evaluator_instance.send(:value_changed?, 123, 456)).to be true
+        expect(evaluator_instance.send(:value_changed?, true, false)).to be true
+        expect(evaluator_instance.send(:value_changed?, nil, 'value')).to be true
+      end
+
+      it 'returns false when values are the same' do
+        expect(evaluator_instance.send(:value_changed?, 'same', 'same')).to be false
+        expect(evaluator_instance.send(:value_changed?, 123, 123)).to be false
+        expect(evaluator_instance.send(:value_changed?, true, true)).to be false
+        expect(evaluator_instance.send(:value_changed?, nil, nil)).to be false
+      end
+    end
+
+    context 'with hash values' do
+      it 'returns false when hashes are equal with string keys' do
+        hash1 = { 'key' => 'value', 'nested' => { 'inner' => 'data' } }
+        hash2 = { 'key' => 'value', 'nested' => { 'inner' => 'data' } }
+        expect(evaluator_instance.send(:value_changed?, hash1, hash2)).to be false
+      end
+
+      it 'returns false when hashes are equal with symbol keys' do
+        hash1 = { key: 'value', nested: { inner: 'data' } }
+        hash2 = { key: 'value', nested: { inner: 'data' } }
+        expect(evaluator_instance.send(:value_changed?, hash1, hash2)).to be false
+      end
+
+      it 'returns false when hashes are equal with mixed string/symbol keys' do
+        hash1 = { 'key' => 'value', nested: { 'inner' => 'data' } }
+        hash2 = { key: 'value', 'nested' => { inner: 'data' } }
+        expect(evaluator_instance.send(:value_changed?, hash1, hash2)).to be false
+      end
+
+      it 'returns true when hash values differ' do
+        hash1 = { key: 'value1' }
+        hash2 = { key: 'value2' }
+        expect(evaluator_instance.send(:value_changed?, hash1, hash2)).to be true
+      end
+
+      it 'returns true when hash keys differ' do
+        hash1 = { key1: 'value' }
+        hash2 = { key2: 'value' }
+        expect(evaluator_instance.send(:value_changed?, hash1, hash2)).to be true
+      end
+    end
+
+    context 'with mixed types' do
+      it 'returns true when comparing hash with non-hash' do
+        expect(evaluator_instance.send(:value_changed?, { key: 'value' }, 'string')).to be true
+        expect(evaluator_instance.send(:value_changed?, 'string', { key: 'value' })).to be true
+      end
+
+      it 'handles one hash and one nil' do
+        expect(evaluator_instance.send(:value_changed?, { key: 'value' }, nil)).to be true
+        expect(evaluator_instance.send(:value_changed?, nil, { key: 'value' })).to be true
+      end
+    end
   end
 
   describe '#error_message' do
@@ -140,7 +242,7 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
     it 'generates the correct error message using ErrorMessages' do
       aggregate_failures do
         expect(Yes::Core::ErrorMessages).to receive(:guard_error).
-          with('Test', 'User', 'TestCommand', guard_name).
+          with('Test', 'User', 'test_command', guard_name).
           and_return('Error message')
 
         # Call the private method using send

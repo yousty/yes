@@ -147,6 +147,7 @@ module Yes
               CommandSpecification.new(
                 name: :"change_#{command_subject}",
                 block: proc do
+                  guard(:no_change) { value_changed?(send(attribute_name), payload.send(attribute_name)) }
                   payload(**payload_options)
                   instance_eval(&additional_block) if additional_block.present?
                 end

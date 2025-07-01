@@ -4,6 +4,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
   subject(:payload_proxy) do
     described_class.new(
       raw_payload:,
+      raw_metadata:,
       context:,
       parent_aggregates:,
       aggregate_tracker:
@@ -18,6 +19,7 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
     }
   end
 
+  let(:raw_metadata) { nil }
   let(:context) { 'TestContext' }
   let(:parent_aggregates) { {} }
   let(:aggregate_tracker) { instance_double('Yes::Core::CommandHandling::AggregateTracker') }
@@ -111,6 +113,42 @@ RSpec.describe Yes::Core::CommandHandling::PayloadProxy do
 
     it 'returns false for non-existent methods' do
       expect(payload_proxy.respond_to?(:non_existent)).to be false
+    end
+  end
+
+  describe '#metadata' do
+    context 'when metadata is nil' do
+      let(:raw_metadata) { nil }
+
+      it 'returns a metadata proxy' do
+        expect(payload_proxy.metadata).to be_an_instance_of(Yes::Core::CommandHandling::MetadataProxy)
+      end
+
+      it 'returns empty hash when accessing non-existent keys' do
+        expect(payload_proxy.metadata[:foo]).to be_nil
+      end
+    end
+
+    context 'when metadata has values' do
+      let(:raw_metadata) { { user_agent: 'TestAgent/1.0', request_id: 'req-123' } }
+
+      it 'returns metadata values via hash access' do
+        expect(payload_proxy.metadata[:user_agent]).to eq('TestAgent/1.0')
+      end
+
+      it 'returns metadata values via method access' do
+        expect(payload_proxy.metadata.request_id).to eq('req-123')
+      end
+
+      it 'allows setting metadata values via hash access' do
+        payload_proxy.metadata[:new_key] = 'new_value'
+        expect(payload_proxy.metadata[:new_key]).to eq('new_value')
+      end
+
+      it 'allows setting metadata values via method access' do
+        payload_proxy.metadata.another_key = 'another_value'
+        expect(payload_proxy.metadata.another_key).to eq('another_value')
+      end
     end
   end
 end

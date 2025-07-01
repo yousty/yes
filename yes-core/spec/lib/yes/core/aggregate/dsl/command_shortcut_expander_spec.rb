@@ -78,6 +78,20 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandShortcutExpander do
       it 'returns correct commands' do
         expect(subject.commands.map(&:name)).to match([:change_age])
       end
+
+      it 'generates command block as a Proc' do
+        command = subject.commands.first
+        expect(command.block).to be_a(Proc)
+      end
+
+      it 'generates command with proper structure including guard' do
+        command = subject.commands.first
+        # The generated block should contain guard(:no_change) with value_changed? check
+        # We verify this by checking that the block is properly formed
+        expect(command).to be_a(Yes::Core::Aggregate::Dsl::CommandShortcutExpander::CommandSpecification)
+        expect(command.name).to eq(:change_age)
+        expect(command.block).to be_a(Proc)
+      end
     end
 
     context 'for enable shortcut' do

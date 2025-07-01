@@ -44,6 +44,7 @@ module Yes
 
           evaluator = guard_evaluator_class.new(
             payload: cmd.payload,
+            metadata: cmd.metadata,
             aggregate: self,
             command_name: command_helper.command_name
           )

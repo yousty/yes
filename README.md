@@ -427,8 +427,17 @@ is expanded to
   attribute :age, :integer, localized: true
   command :change_age do
     payload age: :integer, locale: :locale
-    # no change guard is added automatically
+    guard(:no_change) { value_changed?(send(attribute_name), payload.send(attribute_name)) }
   end
+```
+
+You can overwrite the default no change guard by providing a custom one:
+
+```ruby
+command :change, :age, :integer do
+  payload fantastic_new_age: :integer
+  guard(:no_change) { age != payload.fantastic_new_age }
+end
 ```
 
 #### Boolean attribute command
@@ -523,8 +532,35 @@ end
 ```
 
 Inside any guard block you can access:
-- `payload` - The command payload
+- `payload` - The command payload with access to both data and metadata
 - Any aggregate attribute directly by name
+
+#### Accessing Metadata in Guards
+
+The payload object in guards provides access to command metadata alongside the regular payload data. This metadata can contain useful contextual information like user information, or tracking data.
+
+You can access metadata in two ways:
+
+```ruby
+command :update_status do
+  payload status: :string
+
+  guard :valid_response do
+    # Method-style access
+    payload.metadata.response_id.present?
+    
+    # Hash-style access
+    payload.metadata[:response_id].present?
+  end
+  
+  guard :authorized_user do
+    # If a metadata key doesn't exist, nil is returned
+    payload.metadata.user_role == 'admin' # returns nil if user_role is not in metadata
+  end
+end
+```
+
+This allows guards to make decisions based on both the command's data payload and any additional contextual metadata that was provided when the command was issued.
 
 ### Guard Error Types
 
