@@ -26,20 +26,20 @@ Gem::Specification.new do |spec|
   end
 
   spec.add_dependency 'api-pagination', '~> 5.0'
-  spec.add_dependency 'pagy', '~> 6.0'
-  spec.add_dependency 'rails', '>= 7.0.4.3'
-  spec.add_dependency 'yousty-eventsourcing', '>= 7'
   spec.add_dependency 'jwt_token_auth_client_rails', '~> 3.3'
+  spec.add_dependency 'pagy', '~> 6.0'
+  spec.add_dependency 'rails', '>= 7.1'
+  spec.add_dependency 'yousty-eventsourcing', '>= 7'
 
   spec.add_development_dependency 'dotenv-rails', '~> 2.8'
-  spec.add_development_dependency 'rspec', '~> 3.0'
+  spec.add_development_dependency 'factory_bot', '~> 6.0'
+  spec.add_development_dependency 'pg', '~> 1.5'
   spec.add_development_dependency 'rake', '~> 13.0'
-  spec.add_development_dependency 'rspec-rails',  '~> 6.0.2'
+  spec.add_development_dependency 'rspec', '~> 3.0'
+  spec.add_development_dependency 'rspec-rails', '~> 6.0.2'
   spec.add_development_dependency 'simplecov', '~> 0.21'
   spec.add_development_dependency 'simplecov-formatter-badge', '~> 0.1'
   spec.add_development_dependency 'yousty_dev_tools', '~> 0.1'
-  spec.add_development_dependency 'pg', '~> 1.5'
-  spec.add_development_dependency 'factory_bot', '~> 6.0'
 
   spec.metadata['rubygems_mfa_required'] = 'true'
 end
