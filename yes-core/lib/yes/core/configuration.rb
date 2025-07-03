@@ -187,7 +187,7 @@ module Yes
       # @example
       #   evaluator = guard_evaluator_class(:authentication, :user, :create)
       def guard_evaluator_class(context_name, aggregate_name, command_name)
-        aggregate_class(context_name, aggregate_name, command_name.underscore.to_sym, :guard_evaluator)
+        aggregate_class(context_name, aggregate_name, command_name.to_s.underscore.to_sym, :guard_evaluator)
       end
 
       # List all registered classes across all aggregates and contexts

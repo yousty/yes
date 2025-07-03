@@ -3,11 +3,15 @@
 module Yes
   module Core
     class CommandBus
-      attr_reader :command_processor
-      private :command_processor
+      attr_reader :command_processor, :perform_inline
+      private :command_processor, :perform_inline
 
-      def initialize(command_processor: CommandProcessor)
+      def initialize(
+        command_processor: CommandProcessor,
+        perform_inline: Yousty::Eventsourcing.config.process_commands_inline
+      )
         @command_processor = command_processor
+        @perform_inline = perform_inline
       end
 
       # Passees commands on to the command processor, in case origin is not provided,
@@ -27,13 +31,6 @@ module Yes
         command_processor.public_send(
           perform_method, origin, command_or_commands, notifier_options
         )
-      end
-
-      private
-
-      # @return [Boolean] whether to perform commands inline or not
-      def perform_inline
-        Yousty::Eventsourcing.config.process_commands_inline
       end
     end
   end

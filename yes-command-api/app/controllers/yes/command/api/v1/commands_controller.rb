@@ -48,7 +48,7 @@ module Yes
 
             Yousty::Eventsourcing::CommandsAuthorizer.call(expanded_commands, auth_data)
             Yousty::Eventsourcing::CommandsValidator.call(expanded_commands)
-            cmd_bus_response = Yes::Core::CommandBus.new.call(
+            cmd_bus_response = command_bus.call(
               add_identity_id_to_command_metadata(deserialize_commands),
               notifier_options: { channel: @channel }
             )
@@ -63,14 +63,16 @@ module Yes
           end
 
           def perform_inline?
-            (inline_processing_supported? && params[:async] && params[:async] != 'true') ||
-              Yousty::Eventsourcing.config.process_commands_inline
+            return false if params[:async] == 'true'
+            return true if inline_processing_supported? && params[:async] == 'false'
+
+            Yousty::Eventsourcing.config.process_commands_inline
           end
 
           def command_bus
-            return Yousty::Eventsourcing::CommandBus.new unless perform_inline?
+            return Yes::Core::CommandBus.new unless perform_inline?
 
-            Yousty::Eventsourcing::CommandBus.new(perform_inline: perform_inline?)
+            Yes::Core::CommandBus.new(perform_inline: perform_inline?)
           end
 
           def too_many_inline_commands
@@ -90,14 +92,6 @@ module Yes
                 command.to_h.merge(metadata: (command.metadata || {}).merge(identity_id: auth_data[:identity_id]))
               )
             end
-          end
-
-          def transaction_details
-            Yousty::Eventsourcing::TransactionDetails.new(
-              name: params['transaction_name'] || 'Command batch processing',
-              caller_id: auth_data[:identity_id],
-              caller_type: 'User'
-            )
           end
 
           def success_response_data(cmd_bus_response)

@@ -8,9 +8,9 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 gemspec
 
 source 'https://gem.fury.io/yousty-ag/' do
-  gem 'yousty-eventsourcing', '~> 7.4', '>= 7.6'
   gem 'jwt_token_auth_client_rails', '~> 3.3'
   gem 'yousty_dev_tools', '~> 0.1'
+  gem 'yousty-eventsourcing', '~> 14'
 end
 
 instance_eval(File.read(File.expand_path('dummy_app/Gemfile', __dir__)))
