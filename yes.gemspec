@@ -13,6 +13,8 @@ Gem::Specification.new do |spec|
   spec.homepage = 'https://github.com/yousty/yes'
   spec.required_ruby_version = '>= 3.2.0'
 
+  spec.metadata['allowed_push_host'] = "https://#{ENV.fetch('GEM_FURY_PUSH_TOKEN', nil)}@push.fury.io/yousty-ag/"
+
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = spec.homepage
   spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/master/CHANGELOG.md"
