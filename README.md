@@ -1007,7 +1007,13 @@ curl --location 'http://127.0.0.1:3000/queries/users' \
 To run specs for any of the Yes gems:
 
 ```shell
-rspec <gem-directory>
+bundle exec rspec <gem-directory>/spec
+```
+
+Example:
+
+```shell
+bundle exec rspec yes-core/spec
 ```
 
 ### Gem Installation and Release

@@ -29,3 +29,5 @@ Gemfile.lock
 /yes-read-api/dummy_app/log/*.log
 
 /prompts/*
+
+.claude/
