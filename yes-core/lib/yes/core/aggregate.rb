@@ -41,11 +41,12 @@ module Yes
     # @since 0.1.0
     # @author Nico Ritsche
     class Aggregate
-      attr_reader :id, :command_utilities
+      attr_reader :id, :command_utilities, :draft
 
-      private :command_utilities
+      private :command_utilities, :draft
 
       include HasReadModel
+      include HasDraftable
       include HasAuthorizer
       include CommandHandling
 
@@ -205,7 +206,7 @@ module Yes
         #   @return [void]
         #
         # @overload command(toggle_names, attribute)
-        #  @param toggle_names [Array<Symbol>] names of set flag to true/false command that will be generated
+        #  @param toggle_names [Array<Symbol>] toggle command names to be generated
         #  @param attribute [Symbol] attribute name
         #  @return [void]
         #
@@ -302,15 +303,26 @@ module Yes
       end
 
       # Initializes a new aggregate instance
-      # @param id [String] The aggregate ID.
+      # @param id [String] The aggregate ID (optional, defaults to SecureRandom.uuid)
+      # @param draft [Boolean] Whether this instance is being edited as a draft (default: false)
       # @return [Yes::Core::Aggregate] A new aggregate instance
-      def initialize(id = SecureRandom.uuid)
+      #
+      # @example Backwards compatibility - single ID parameter
+      #   Aggregate.new(some_id)
+      #
+      # @example With draft as keyword argument
+      #   Aggregate.new(draft: true)
+      #
+      # @example With positional id and draft keyword
+      #   Aggregate.new(some_id, draft: true)
+      #
+      def initialize(id = SecureRandom.uuid, draft: false)
+        validate_draft_initialization(draft)
+
         @id = id
-        @command_utilities = Utils::CommandUtils.new(
-          context: self.class.context,
-          aggregate: self.class.aggregate,
-          aggregate_id: @id
-        )
+        @draft = draft
+
+        @command_utilities = build_command_utilities
       end
 
       # Reloads the aggregate and its read model
@@ -325,6 +337,33 @@ module Yes
       # @return [Enumerator<PgEventstore::Event>] The events for the aggregate
       def events
         PgEventstore.client.read_paginated(command_utilities.build_stream, options: { direction: 'Forwards' })
+      end
+
+      private
+
+      # Validates that draft initialization is only allowed for draftable aggregates
+      #
+      # @param draft [Boolean] Whether the aggregate is being initialized as a draft
+      # @raise [ArgumentError] If draft is true but aggregate is not draftable
+      # @return [void]
+      def validate_draft_initialization(draft)
+        return unless draft && !self.class.draftable?
+
+        raise ArgumentError, "#{self.class.name} is not draftable. Add 'draftable' to the class definition."
+      end
+
+      # Builds command utilities with appropriate context and aggregate based on draft status
+      #
+      # @return [Utils::CommandUtils] The command utilities instance
+      def build_command_utilities
+        context = @draft && self.class.draftable? ? self.class.draft_context : self.class.context
+        aggregate = @draft && self.class.draftable? ? self.class.draft_aggregate : self.class.aggregate
+
+        Utils::CommandUtils.new(
+          context:,
+          aggregate:,
+          aggregate_id: @id
+        )
       end
     end
   end
