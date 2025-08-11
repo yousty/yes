@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::Aggregate::HasDraftable do
+RSpec.describe Yes::Core::Aggregate::Draftable do
   let(:aggregate_class) do
     Class.new(Yes::Core::Aggregate) do
       def self.name
@@ -163,6 +163,52 @@ RSpec.describe Yes::Core::Aggregate::HasDraftable do
 
       it 'allows initialization without draft parameter' do
         expect { aggregate_class.new }.not_to raise_error
+      end
+    end
+  end
+
+  describe '#draft?' do
+    context 'when aggregate is draftable' do
+      context 'when initialized with draft: true' do
+        subject { draftable_aggregate_class.new(draft: true) }
+
+        it 'returns true' do
+          expect(subject.draft?).to be true
+        end
+      end
+
+      context 'when initialized with draft: false' do
+        subject { draftable_aggregate_class.new(draft: false) }
+
+        it 'returns false' do
+          expect(subject.draft?).to be false
+        end
+      end
+
+      context 'when initialized without draft parameter' do
+        subject { draftable_aggregate_class.new }
+
+        it 'returns false' do
+          expect(subject.draft?).to be false
+        end
+      end
+    end
+
+    context 'when aggregate is not draftable' do
+      context 'when initialized without draft parameter' do
+        subject { aggregate_class.new }
+
+        it 'returns false' do
+          expect(subject.draft?).to be false
+        end
+      end
+
+      context 'when initialized with draft: false' do
+        subject { aggregate_class.new(draft: false) }
+
+        it 'returns false' do
+          expect(subject.draft?).to be false
+        end
       end
     end
   end

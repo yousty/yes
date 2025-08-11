@@ -46,7 +46,7 @@ module Yes
       private :command_utilities, :draft
 
       include HasReadModel
-      include HasDraftable
+      include Draftable
       include HasAuthorizer
       include CommandHandling
 

@@ -9,7 +9,7 @@ module Yes
       #   class UserAggregate < Yes::Core::Aggregate
       #     draftable
       #   end
-      module HasDraftable
+      module Draftable
         extend ActiveSupport::Concern
 
         included do
@@ -132,6 +132,13 @@ module Yes
           result
         end
 
+        # Checks if this instance is a draft
+        #
+        # @return [Boolean] true if draft, false otherwise
+        def draft?
+          @draft == true
+        end
+
         private
 
         # Returns the draft read model class
@@ -186,13 +193,6 @@ module Yes
         # @return [Boolean] true if should skip, false otherwise
         def skip_draft_aggregate_update?
           false
-        end
-
-        # Checks if this instance is a draft
-        #
-        # @return [Boolean] true if draft, false otherwise
-        def draft?
-          @draft == true
         end
       end
     end
