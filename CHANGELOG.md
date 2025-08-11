@@ -1,5 +1,14 @@
 ## [Unreleased]
 
+## [0.3.1] - 2025-01-11
+
+### Changed
+- Made `draft?` method public on draftable aggregates to allow checking if an aggregate instance was initialized as a draft
+- Renamed `HasDraftable` module to `Draftable` for better naming consistency
+
+### Fixed
+- Fixed test support file `test_aggregates.rb` that had incorrect DSL usage
+
 ## [0.3.0] - 2025-01-11
 
 - Add draftable functionality to aggregates
