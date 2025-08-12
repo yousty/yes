@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-## [0.3.2] - 2025-01-12
+## [0.3.2] - 2025-08-12
 
 ### Changed
 - **BREAKING**: Refactored `draftable` method signature to consolidate configuration
@@ -13,7 +13,7 @@
 ### Added
 - Comprehensive documentation for the `draftable` feature in README
 
-## [0.3.1] - 2025-01-11
+## [0.3.1] - 2025-08-11
 
 ### Changed
 - Made `draft?` method public on draftable aggregates to allow checking if an aggregate instance was initialized as a draft
@@ -22,7 +22,7 @@
 ### Fixed
 - Fixed test support file `test_aggregates.rb` that had incorrect DSL usage
 
-## [0.3.0] - 2025-01-11
+## [0.3.0] - 2025-08-11
 
 - Add draftable functionality to aggregates
 - Update documentation and gitignore
