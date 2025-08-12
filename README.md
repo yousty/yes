@@ -32,6 +32,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Primary Context](#primary-context)
   - [Aggregate Authorization](#aggregate-authorization)
   - [Removable](#removable)
+  - [Draftable](#draftable)
 - [Development](#development)
   - [Example Usage](#example-usage)
   - [Testing the APIs](#testing-the-apis)
@@ -906,6 +907,62 @@ module Users
   end
 end
 ```
+
+### Draftable
+
+The `draftable` feature allows aggregates to be created and modified in a draft state before being published. This is useful when you want to prepare changes without immediately making them live.
+
+```ruby
+module Articles
+  module Article
+    class Aggregate < Yes::Core::Aggregate
+      # Makes aggregate draftable by connecting it to a draft aggregate for managing the draft state.
+      # The draft aggregate has to exist already. The default draft aggregate is <CurrentAggregateContext>::<CurrentAggregateName>Draft.
+      # Also configures a changes read model (defaults to "<read_model>_change")
+      draftable
+      
+      # Draftable with custom parameters
+      # draftable draft_aggregate: { context: 'ArticleDrafts', aggregate: 'ArticleDraft' }, changes_read_model: :article_change
+      
+      attribute :title, :string, command: true
+      attribute :content, :string, command: true
+    end
+  end
+end
+```
+
+#### Method Parameters
+
+The `draftable` method accepts two optional parameters:
+
+- `draft_aggregate`: A hash containing the draft aggregate configuration
+  - `context`: The context name for the draft version (defaults to the same context as the main aggregate)
+  - `aggregate`: The aggregate name for the draft version (defaults to the main aggregate name with "Draft" suffix)
+- `changes_read_model`: The name for the changes read model (defaults to the main read model name with "_change" appended)
+
+#### Example Usage
+
+```ruby
+# Use all defaults
+draftable
+
+# Custom context only
+draftable draft_aggregate: { context: 'DraftContext' }
+
+# Custom aggregate name only  
+draftable draft_aggregate: { aggregate: 'MyDraft' }
+
+# Both context and aggregate
+draftable draft_aggregate: { context: 'DraftContext', aggregate: 'MyDraft' }
+
+# Custom changes read model only
+draftable changes_read_model: :custom_changes
+
+# All custom parameters
+draftable draft_aggregate: { context: 'DraftContext', aggregate: 'MyDraft' }, changes_read_model: :my_changes
+```
+
+When `changes_read_model` is not specified, it defaults to using the main read model name with "_change" appended (e.g., if the read model is "article", the changes read model becomes "article_change").
 
 ## Development
 
