@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+## [0.3.2] - 2025-01-12
+
+### Changed
+- **BREAKING**: Refactored `draftable` method signature to consolidate configuration
+  - Removed separate `changes_read_model` method
+  - Added `changes_read_model` as parameter to `draftable` method
+  - Nested `context` and `aggregate` parameters under `draft_aggregate` hash
+  - Example: `draftable(draft_aggregate: { context: '...', aggregate: '...' }, changes_read_model: '...')`
+- Renamed internal `draft_read_model` references to `changes_read_model` for consistency
+
+### Added
+- Comprehensive documentation for the `draftable` feature in README
+
 ## [0.3.1] - 2025-01-11
 
 ### Changed
