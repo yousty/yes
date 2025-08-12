@@ -14,7 +14,7 @@ module Yes
 
         included do
           class << self
-            attr_accessor :_draft_context, :_draft_aggregate, :_draft_read_model_name,
+            attr_accessor :_draft_context, :_draft_aggregate, :_changes_read_model_name,
                           :_draft_foreign_key, :_is_draftable
           end
         end
@@ -22,22 +22,36 @@ module Yes
         class_methods do
           # Configures the aggregate as draftable
           #
-          # @param context [String, nil] The draft context (defaults to same as aggregate context)
-          # @param aggregate [String, nil] The draft aggregate name (defaults to "<MyAggregate>Draft")
+          # @param draft_aggregate [Hash, nil] The draft aggregate configuration with :context and :aggregate keys
+          # @param changes_read_model [String, Symbol, nil] The changes read model name (defaults to "<read_model>_change")
           # @return [void]
           #
           # @example Use defaults
           #   draftable
           #
-          # @example Override both parameters
-          #   draftable context: 'ApprenticeshipPresentation', aggregate: 'MyAggregateDraft'
+          # @example Override all parameters
+          #   draftable draft_aggregate: { context: 'ApprenticeshipPresentation', aggregate: 'MyAggregateDraft' }, changes_read_model: 'custom_change'
           #
           # @example Override only context
-          #   draftable context: 'CustomContext'
-          def draftable(context: nil, aggregate: nil)
+          #   draftable draft_aggregate: { context: 'CustomContext' }
+          #
+          # @example Override only aggregate
+          #   draftable draft_aggregate: { aggregate: 'CustomDraft' }
+          #
+          # @example Override only changes_read_model
+          #   draftable changes_read_model: :article_change
+          def draftable(draft_aggregate: nil, changes_read_model: nil)
             self._is_draftable = true
-            self._draft_context = context || self.context
-            self._draft_aggregate = aggregate || "#{self.aggregate}Draft"
+            
+            draft_config = draft_aggregate || {}
+            self._draft_context = draft_config[:context] || self.context
+            self._draft_aggregate = draft_config[:aggregate] || "#{self.aggregate}Draft"
+            
+            self._changes_read_model_name = if changes_read_model
+                                              changes_read_model.to_s
+                                            else
+                                              "#{read_model_name}_change"
+                                            end
           end
 
           # Checks if the aggregate is draftable
@@ -61,29 +75,11 @@ module Yes
             _draft_aggregate
           end
 
-          # Configures the draft read model for the aggregate
+          # Returns the changes read model name
           #
-          # @param name [String, Symbol, nil] The draft read model name
-          # @return [void]
-          #
-          # @example Use default
-          #   changes_read_model
-          #
-          # @example Use custom name
-          #   changes_read_model :my_aggregate_change
-          def changes_read_model(name = nil)
-            self._draft_read_model_name = if name
-                                            name.to_s
-                                          else
-                                            "#{read_model_name}_change"
-                                          end
-          end
-
-          # Returns the draft read model name
-          #
-          # @return [String, nil] the draft read model name
-          def draft_read_model_name
-            _draft_read_model_name
+          # @return [String, nil] the changes read model name
+          def changes_read_model_name
+            _changes_read_model_name
           end
 
           # Configures the draft foreign key
@@ -111,13 +107,13 @@ module Yes
           end
         end
 
-        # Override read_model to return draft read model when initialized as draft
+        # Override read_model to return changes read model when initialized as draft
         #
         # @return [ApplicationRecord] The read model or draft read model instance
         def read_model
           return super unless draft? && self.class.draftable?
 
-          @read_model ||= draft_read_model_class.find_or_create_by(id:)
+          @read_model ||= changes_read_model_class.find_or_create_by(id:)
         end
 
         # Updates the read model and handles draft aggregate updates
@@ -141,22 +137,22 @@ module Yes
 
         private
 
-        # Returns the draft read model class
+        # Returns the changes read model class
         #
-        # @return [Class] the draft read model class
-        def draft_read_model_class
-          @draft_read_model_class ||= resolve_draft_read_model_class
+        # @return [Class] the changes read model class
+        def changes_read_model_class
+          @changes_read_model_class ||= resolve_changes_read_model_class
         end
 
-        # Resolves the draft read model class
+        # Resolves the changes read model class
         #
-        # @return [Class] the resolved draft read model class
-        def resolve_draft_read_model_class
-          draft_read_model_name = self.class.draft_read_model_name
-          return self.class.read_model_class unless draft_read_model_name
+        # @return [Class] the resolved changes read model class
+        def resolve_changes_read_model_class
+          changes_read_model_name = self.class.changes_read_model_name
+          return self.class.read_model_class unless changes_read_model_name
 
           Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel.new(
-            draft_read_model_name,
+            changes_read_model_name,
             self.class.context,
             self.class.aggregate
           ).call
@@ -180,12 +176,12 @@ module Yes
 
           draft_aggregate_class = "#{draft_context}::#{draft_aggregate}".constantize
 
-          draft_read_model_class = draft_aggregate_class.read_model_class
+          changes_aggregate_read_model_class = draft_aggregate_class.read_model_class
           base_id = read_model.send(base_attribute)
 
-          draft_read_model_class.
+          changes_aggregate_read_model_class.
             find_by(change_foreign_key => base_id)&.
-            update(state: draft_read_model_class.states[:draft])
+            update(state: changes_aggregate_read_model_class.states[:draft])
         end
 
         # Checks if draft aggregate update should be skipped

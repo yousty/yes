@@ -28,14 +28,12 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
   let(:draftable_aggregate_class) do
     Class.new(aggregate_class) do
       draftable
-      changes_read_model
     end
   end
 
   let(:custom_draftable_aggregate_class) do
     Class.new(aggregate_class) do
-      draftable context: 'CustomContext', aggregate: 'CustomDraft'
-      changes_read_model :custom_change
+      draftable draft_aggregate: { context: 'CustomContext', aggregate: 'CustomDraft' }, changes_read_model: :custom_change
       draft_foreign_key :custom_foreign_key
     end
   end
@@ -88,22 +86,40 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
         expect(subject.draft_aggregate).to be_nil
       end
     end
+
+    context 'with only aggregate specified in draft_aggregate' do
+      let(:aggregate_only_class) do
+        Class.new(aggregate_class) do
+          draftable draft_aggregate: { aggregate: 'OnlyAggregateDraft' }
+        end
+      end
+
+      subject { aggregate_only_class }
+
+      it 'uses custom aggregate name' do
+        expect(subject.draft_aggregate).to eq('OnlyAggregateDraft')
+      end
+
+      it 'uses default context' do
+        expect(subject.draft_context).to eq('TestContext')
+      end
+    end
   end
 
-  describe '.changes_read_model' do
-    context 'with default parameter' do
+  describe 'changes_read_model configuration' do
+    context 'when not specified (default)' do
       subject { draftable_aggregate_class }
 
       it 'appends _change to the read model name' do
-        expect(subject.draft_read_model_name).to eq('test_aggregate_change')
+        expect(subject.changes_read_model_name).to eq('test_aggregate_change')
       end
     end
 
-    context 'with custom parameter' do
+    context 'when specified as parameter' do
       subject { custom_draftable_aggregate_class }
 
-      it 'uses the custom draft read model name' do
-        expect(subject.draft_read_model_name).to eq('custom_change')
+      it 'uses the custom changes read model name' do
+        expect(subject.changes_read_model_name).to eq('custom_change')
       end
     end
   end
@@ -214,23 +230,23 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
   end
 
   describe '#read_model' do
-    let(:draft_read_model_class) { double('DraftReadModelClass') }
+    let(:changes_read_model_class) { double('ChangesReadModelClass') }
     let(:normal_read_model_class) { double('NormalReadModelClass') }
-    let(:draft_read_model_instance) { double('DraftReadModel') }
+    let(:changes_read_model_instance) { double('ChangesReadModel') }
     let(:normal_read_model_instance) { double('NormalReadModel') }
 
     before do
       allow(draftable_aggregate_class).to receive(:read_model_class).and_return(normal_read_model_class)
       allow(normal_read_model_class).to receive(:find_or_create_by).and_return(normal_read_model_instance)
-      allow(draft_read_model_class).to receive(:find_or_create_by).and_return(draft_read_model_instance)
+      allow(changes_read_model_class).to receive(:find_or_create_by).and_return(changes_read_model_instance)
     end
 
     context 'when initialized as draft' do
       subject { draftable_aggregate_class.new('test-id', draft: true) }
 
-      it 'returns the draft read model' do
-        allow(subject).to receive(:draft_read_model_class).and_return(draft_read_model_class)
-        expect(subject.read_model).to eq(draft_read_model_instance)
+      it 'returns the changes read model' do
+        allow(subject).to receive(:changes_read_model_class).and_return(changes_read_model_class)
+        expect(subject.read_model).to eq(changes_read_model_instance)
       end
     end
 
@@ -286,8 +302,8 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
   describe '#update_connected_draft_aggregate' do
     let(:draft_instance) { draftable_aggregate_class.new('test-id', draft: true) }
     let(:draft_aggregate_class_mock) { double('DraftAggregateClass') }
-    let(:draft_read_model_class) { double('DraftReadModelClass') }
-    let(:draft_read_model) { double('DraftReadModel') }
+    let(:changes_aggregate_read_model_class) { double('ChangesAggregateReadModelClass') }
+    let(:changes_aggregate_read_model) { double('ChangesAggregateReadModel') }
     let(:read_model) { double('ReadModel', update!: true) }
     before do
       allow(draft_instance).to receive(:read_model).and_return(read_model)
@@ -298,15 +314,15 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     context 'when draft aggregate exists' do
       before do
         stub_const('TestContext::TestAggregateDraft', draft_aggregate_class_mock)
-        allow(draft_aggregate_class_mock).to receive(:read_model_class).and_return(draft_read_model_class)
-        allow(draft_read_model_class).to receive(:states).and_return({ draft: 'draft' })
-        allow(draft_read_model_class).to receive(:find_by).
+        allow(draft_aggregate_class_mock).to receive(:read_model_class).and_return(changes_aggregate_read_model_class)
+        allow(changes_aggregate_read_model_class).to receive(:states).and_return({ draft: 'draft' })
+        allow(changes_aggregate_read_model_class).to receive(:find_by).
           with('test_aggregate_change_id' => 'base-id').
-          and_return(draft_read_model)
+          and_return(changes_aggregate_read_model)
       end
 
       it 'updates the draft aggregate read model state' do
-        expect(draft_read_model).to receive(:update).with(state: 'draft')
+        expect(changes_aggregate_read_model).to receive(:update).with(state: 'draft')
         draft_instance.update_read_model(name: 'Test')
       end
     end
@@ -314,9 +330,9 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     context 'when draft aggregate does not exist' do
       before do
         stub_const('TestContext::TestAggregateDraft', draft_aggregate_class_mock)
-        allow(draft_aggregate_class_mock).to receive(:read_model_class).and_return(draft_read_model_class)
-        allow(draft_read_model_class).to receive(:states).and_return({ draft: 'draft' })
-        allow(draft_read_model_class).to receive(:find_by).
+        allow(draft_aggregate_class_mock).to receive(:read_model_class).and_return(changes_aggregate_read_model_class)
+        allow(changes_aggregate_read_model_class).to receive(:states).and_return({ draft: 'draft' })
+        allow(changes_aggregate_read_model_class).to receive(:find_by).
           with('test_aggregate_change_id' => 'base-id').
           and_return(nil)
       end
@@ -375,8 +391,8 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     context 'when using partial draftable configuration' do
       let(:partial_draftable_class) do
         Class.new(aggregate_class) do
-          draftable context: 'PartialContext'
-          # No changes_read_model call
+          draftable draft_aggregate: { context: 'PartialContext' }
+          # changes_read_model not specified, will use default
         end
       end
 
@@ -389,8 +405,8 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
         expect(partial_draftable_class.draft_aggregate).to eq('TestAggregateDraft')
       end
 
-      it 'has nil draft_read_model_name when not set' do
-        expect(partial_draftable_class.draft_read_model_name).to be_nil
+      it 'has default changes_read_model_name when not specified' do
+        expect(partial_draftable_class.changes_read_model_name).to eq('test_aggregate_change')
       end
     end
 
@@ -398,7 +414,6 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
       let(:skip_override_class) do
         Class.new(aggregate_class) do
           draftable
-          changes_read_model
 
           private
 
