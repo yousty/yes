@@ -69,6 +69,35 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
           'yes-dsl' => true
         )
       end
+
+      context 'with draft metadata' do
+        let(:payload) do
+          {
+            user_id:,
+            location_id:,
+            origin: 'test',
+            batch_id: '123',
+            metadata: { 'test' => 'value', 'draft' => true }
+          }
+        end
+
+        it 'publishes event to draft stream' do
+          event = event_publisher.call
+          
+          # Verify the event was published
+          expect(event).to be_a(PgEventstore::Event)
+          
+          # The event should have been published to UserDraft stream
+          # We can verify this by checking the event's stream property
+          expect(event.stream.stream_name).to eq('UserDraft')
+          expect(event.type).to eq('Test::UserLocationIdChanged')
+        end
+
+        it 'preserves draft metadata in the event' do
+          event = event_publisher.call
+          expect(event.metadata).to include('draft' => true)
+        end
+      end
     end
 
     context 'when external revisions do not match' do
@@ -101,6 +130,88 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
       end
 
       it 'raises a WrongExpectedRevisionError' do
+        expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError)
+      end
+    end
+  end
+
+  describe '#stream_name (private method)' do
+    subject { event_publisher.send(:stream_name, 'TestAggregate') }
+
+    context 'when command has draft metadata' do
+      let(:payload) do
+        {
+          user_id:,
+          location_id:,
+          metadata: { 'draft' => true }
+        }
+      end
+
+      it 'returns draft stream name' do
+        expect(subject).to eq('TestAggregateDraft')
+      end
+    end
+
+    context 'when command has no draft metadata' do
+      it 'returns original stream name' do
+        expect(subject).to eq('TestAggregate')
+      end
+    end
+
+    context 'when command has metadata but no draft flag' do
+      let(:payload) do
+        {
+          user_id:,
+          location_id:,
+          metadata: { 'other' => 'value' }
+        }
+      end
+
+      it 'returns original stream name' do
+        expect(subject).to eq('TestAggregate')
+      end
+    end
+  end
+
+  describe 'external aggregate revision verification with draft mode' do
+    context 'when main aggregate uses draft stream' do
+      let(:payload) do
+        {
+          user_id:,
+          location_id:,
+          metadata: { 'draft' => true }
+        }
+      end
+
+      let(:accessed_external_aggregates) do
+        [{
+          id: location_id,
+          context: 'Test',
+          name: 'Location',
+          revision: -> { -1 }
+        }]
+      end
+
+      it 'verifies external aggregates against their non-draft streams' do
+        # This should succeed because external aggregates are checked against their normal streams
+        expect { event_publisher.call }.not_to raise_error
+      end
+
+      it 'does not use draft stream names for external aggregate verification' do
+        # Create a revision mismatch on the normal Location stream (not LocationDraft)
+        location_stream = PgEventstore::Stream.new(
+          context: 'Test',
+          stream_name: 'Location',
+          stream_id: location_id
+        )
+        PgEventstore.client.append_to_stream(
+          location_stream,
+          PgEventstore::Event.new(type: 'Test::LocationCreated', data: {})
+        )
+
+        # Now the external aggregate revision check should fail
+        accessed_external_aggregates[0][:revision] = -> { -1 }
+        
         expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError)
       end
     end

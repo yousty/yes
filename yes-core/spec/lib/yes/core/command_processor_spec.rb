@@ -73,5 +73,49 @@ RSpec.describe Yes::Core::CommandProcessor do
         expect { subject }.not_to raise_error
       end
     end
+
+    context 'with draft metadata in command' do
+      let(:draft_command) do
+        Test::User::Commands::ChangeName::Command.new(
+          user_id:,
+          name:,
+          metadata: { draft: true }
+        )
+      end
+      let(:commands) { draft_command }
+      let(:aggregate_instance) { instance_double(Test::User::Aggregate, public_send: nil) }
+
+      before do
+        allow(Test::User::Aggregate).to receive(:new).and_return(aggregate_instance)
+        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
+      end
+
+      it 'instantiates aggregate with draft: true' do
+        subject
+        expect(Test::User::Aggregate).to have_received(:new).with(user_id, draft: true)
+      end
+
+      it 'preserves draft metadata through command processing' do
+        subject
+        expect(aggregate_instance).to have_received(:public_send).with(
+          'change_name',
+          hash_including(metadata: { draft: true })
+        )
+      end
+    end
+
+    context 'without draft metadata in command' do
+      let(:aggregate_instance) { instance_double(Test::User::Aggregate, public_send: nil) }
+
+      before do
+        allow(Test::User::Aggregate).to receive(:new).and_return(aggregate_instance)
+        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
+      end
+
+      it 'instantiates aggregate without draft parameter' do
+        subject
+        expect(Test::User::Aggregate).to have_received(:new).with(user_id, draft: nil)
+      end
+    end
   end
 end

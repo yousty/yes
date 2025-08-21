@@ -219,6 +219,96 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           end
         end
       end
+
+      context 'when aggregate is in draft mode' do
+        let(:draft_aggregate) { aggregate_class.new(aggregate.id, draft: true) }
+        let(:draft_stream) { PgEventstore::Stream.new(context:, stream_name: "#{aggregate_name}Draft", stream_id: draft_aggregate.id) }
+        let(:draft_latest_event) { PgEventstore.client.read(draft_stream, options: { max_count: 1, direction: :desc }).first }
+        let(:changes_read_model) do 
+          mock = instance_double('TestUserChange', 
+            update!: true,
+            id: draft_aggregate.id,
+            revision: -1,
+            document_ids: nil,
+            another: nil
+          )
+          # Add column_names method to the mock's class
+          allow(mock.class).to receive(:column_names).and_return(['id', 'revision', 'document_ids', 'another'])
+          # Add reload method that returns self
+          allow(mock).to receive(:reload).and_return(mock)
+          mock
+        end
+
+        before do
+          # Make the aggregate draftable for this test
+          aggregate_class.class_eval { draftable }
+          
+          # Mock the read_model method to return our mock directly
+          allow(draft_aggregate).to receive(:read_model).and_return(changes_read_model)
+          allow(draft_aggregate).to receive(:update_draft_aggregate)
+          allow(draft_aggregate).to receive(:reload).and_return(draft_aggregate)
+          # For a new draft aggregate, revision should be -1 (no stream)
+          allow(draft_aggregate).to receive(:revision).and_return(-1)
+          # Mock revision_column to avoid accessing column_names
+          allow(draft_aggregate).to receive(:revision_column).and_return('revision')
+        end
+
+        after do
+          # Clean up draftable configuration
+          aggregate_class.instance_variable_set(:@is_draftable, false)
+          aggregate_class.instance_variable_set(:@draft_context, nil)
+          aggregate_class.instance_variable_set(:@draft_aggregate, nil)
+        end
+
+        it 'adds draft metadata to the payload' do
+          draft_aggregate.approve_documents(payload)
+
+          aggregate_failures do
+            expect(draft_latest_event.metadata).to include('draft' => true)
+            expect(draft_latest_event.type).to eq('Test::UserDocumentsApproved')
+          end
+        end
+
+        context 'with existing metadata in payload' do
+          let(:payload_with_metadata) do
+            payload.merge(metadata: { 'existing_key' => 'existing_value' })
+          end
+
+          it 'preserves existing metadata and adds draft flag' do
+            draft_aggregate.approve_documents(payload_with_metadata)
+
+            aggregate_failures do
+              expect(draft_latest_event.metadata).to include(
+                'draft' => true,
+                'existing_key' => 'existing_value'
+              )
+            end
+          end
+        end
+
+        it 'publishes event to draft stream' do
+          draft_aggregate.approve_documents(payload)
+
+          # Verify the event was published to the draft stream
+          draft_stream_events = PgEventstore.client.read(draft_stream)
+          expect(draft_stream_events.to_a).not_to be_empty
+
+          # Verify no event was published to the non-draft stream
+          non_draft_stream = PgEventstore::Stream.new(context:, stream_name: aggregate_name, stream_id: draft_aggregate.id)
+          expect { PgEventstore.client.read(non_draft_stream).to_a }.to raise_error(PgEventstore::StreamNotFoundError)
+        end
+      end
+
+      context 'when aggregate is not in draft mode' do
+        it 'does not add draft metadata to the payload' do
+          aggregate.approve_documents(payload)
+
+          non_draft_stream = PgEventstore::Stream.new(context:, stream_name: aggregate_name, stream_id: aggregate.id)
+          non_draft_latest_event = PgEventstore.client.read(non_draft_stream, options: { max_count: 1, direction: :desc }).first
+
+          expect(non_draft_latest_event.metadata).not_to include('draft')
+        end
+      end
     end
   end
 end

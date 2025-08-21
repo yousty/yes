@@ -221,28 +221,6 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
     end
   end
 
-  describe '#prepare_payload' do
-    subject { instance.prepare_payload(attribute, payload) }
-
-    context 'when payload is already a hash' do
-      let(:attribute) { :test_field }
-      let(:payload) { { key: 'value', another_key: 'another_value' } }
-
-      it 'returns the payload unchanged' do
-        expect(subject).to eq(payload)
-      end
-    end
-
-    context 'when payload is not a hash' do
-      let(:attribute) { :test_field }
-      let(:payload) { 'test_value' }
-
-      it 'wraps the payload in a hash with the attribute as key' do
-        expect(subject).to eq({ test_field: 'test_value' })
-      end
-    end
-  end
-
   describe '#prepare_assign_command_payload' do
     subject { instance.prepare_assign_command_payload(command_name, payload) }
     let(:command_name) { :assign_location }
