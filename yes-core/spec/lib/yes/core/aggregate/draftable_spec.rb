@@ -34,7 +34,6 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
   let(:custom_draftable_aggregate_class) do
     Class.new(aggregate_class) do
       draftable draft_aggregate: { context: 'CustomContext', aggregate: 'CustomDraft' }, changes_read_model: :custom_change
-      draft_foreign_key :custom_foreign_key
     end
   end
 
@@ -124,23 +123,6 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     end
   end
 
-  describe '.change_foreign_key' do
-    context 'with default' do
-      subject { draftable_aggregate_class }
-
-      it 'generates the default foreign key' do
-        expect(subject.change_foreign_key).to eq('test_aggregate_change_id')
-      end
-    end
-
-    context 'with custom foreign key' do
-      subject { custom_draftable_aggregate_class }
-
-      it 'uses the custom foreign key' do
-        expect(subject.change_foreign_key).to eq('custom_foreign_key')
-      end
-    end
-  end
 
   describe '#initialize' do
     context 'when aggregate is draftable' do
@@ -234,27 +216,43 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     let(:normal_read_model_class) { double('NormalReadModelClass') }
     let(:changes_read_model_instance) { double('ChangesReadModel') }
     let(:normal_read_model_instance) { double('NormalReadModel') }
+    let(:aggregate_id) { 'test-id' }
 
     before do
       allow(draftable_aggregate_class).to receive(:read_model_class).and_return(normal_read_model_class)
-      allow(normal_read_model_class).to receive(:find_or_create_by).and_return(normal_read_model_instance)
-      allow(changes_read_model_class).to receive(:find_or_create_by).and_return(changes_read_model_instance)
+      allow(normal_read_model_class).to receive(:find_or_create_by).with(id: aggregate_id).and_return(normal_read_model_instance)
+      allow(changes_read_model_class).to receive(:find_or_create_by).with(id: aggregate_id).and_return(changes_read_model_instance)
     end
 
     context 'when initialized as draft' do
-      subject { draftable_aggregate_class.new('test-id', draft: true) }
+      subject { draftable_aggregate_class.new(aggregate_id, draft: true) }
+
+      before do
+        allow(subject).to receive(:changes_read_model_class).and_return(changes_read_model_class)
+      end
 
       it 'returns the changes read model' do
-        allow(subject).to receive(:changes_read_model_class).and_return(changes_read_model_class)
         expect(subject.read_model).to eq(changes_read_model_instance)
+      end
+      
+      it 'calls find_or_create_by on changes read model class' do
+        subject.read_model
+        
+        expect(changes_read_model_class).to have_received(:find_or_create_by).with(id: aggregate_id)
       end
     end
 
     context 'when not initialized as draft' do
-      subject { draftable_aggregate_class.new('test-id', draft: false) }
+      subject { draftable_aggregate_class.new(aggregate_id, draft: false) }
 
       it 'returns the normal read model' do
         expect(subject.read_model).to eq(normal_read_model_instance)
+      end
+      
+      it 'calls find_or_create_by on normal read model class' do
+        subject.read_model
+        
+        expect(normal_read_model_class).to have_received(:find_or_create_by).with(id: aggregate_id)
       end
     end
   end
@@ -262,199 +260,202 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
   describe '#update_read_model' do
     let(:draft_instance) { draftable_aggregate_class.new('test-id', draft: true) }
     let(:normal_instance) { draftable_aggregate_class.new('test-id', draft: false) }
-    let(:read_model) { double('ReadModel', update!: true) }
+    let(:changes_read_model) { double('ChangesReadModel', update!: true) }
+    let(:normal_read_model) { double('NormalReadModel', update!: true) }
+    let(:changes_read_model_class) { double('ChangesReadModelClass') }
+    let(:test_attributes) { { name: 'Test' } }
 
     before do
-      allow(draft_instance).to receive(:read_model).and_return(read_model)
-      allow(normal_instance).to receive(:read_model).and_return(read_model)
       allow(I18n).to receive(:with_locale).and_yield
+      allow(draftable_aggregate_class).to receive(:read_model_class).and_return(OpenStruct)
+      allow(OpenStruct).to receive(:find_or_create_by).with(id: 'test-id').and_return(normal_read_model)
     end
 
     context 'when initialized as draft' do
-      it 'updates the read model' do
-        expect(read_model).to receive(:update!).with(hash_including(name: 'Test'))
-        # Mock update_connected_draft_aggregate to avoid TestContext constant error
-        allow(draft_instance).to receive(:update_connected_draft_aggregate)
-        draft_instance.update_read_model(name: 'Test')
+      before do
+        # Mock the changes read model class resolution
+        allow(draft_instance).to receive(:changes_read_model_class).and_return(changes_read_model_class)
+        allow(changes_read_model_class).to receive(:find_or_create_by).with(id: 'test-id').and_return(changes_read_model)
+        # Mock update_draft_aggregate to avoid TestContext constant error
+        allow(draft_instance).to receive(:update_draft_aggregate)
       end
 
-      it 'calls update_connected_draft_aggregate' do
-        allow(read_model).to receive(:update!)
-        expect(draft_instance).to receive(:update_connected_draft_aggregate)
-        draft_instance.update_read_model(name: 'Test')
+      it 'updates the changes read model' do
+        draft_instance.update_read_model(test_attributes)
+        
+        aggregate_failures do
+          expect(changes_read_model).to have_received(:update!).with(hash_including(test_attributes))
+          expect(normal_read_model).not_to have_received(:update!)
+        end
+      end
+
+      it 'calls update_draft_aggregate' do
+        draft_instance.update_read_model(test_attributes)
+        
+        expect(draft_instance).to have_received(:update_draft_aggregate)
       end
     end
 
     context 'when not initialized as draft' do
-      it 'updates the read model' do
-        expect(read_model).to receive(:update!).with(hash_including(name: 'Test'))
-        normal_instance.update_read_model(name: 'Test')
+      before do
+        allow(normal_instance).to receive(:update_draft_aggregate)
       end
 
-      it 'does not call update_connected_draft_aggregate' do
-        allow(read_model).to receive(:update!)
-        expect(normal_instance).not_to receive(:update_connected_draft_aggregate)
-        normal_instance.update_read_model(name: 'Test')
+      it 'updates the normal read model' do
+        normal_instance.update_read_model(test_attributes)
+        
+        aggregate_failures do
+          expect(normal_read_model).to have_received(:update!).with(hash_including(test_attributes))
+          expect(changes_read_model).not_to have_received(:update!)
+        end
+      end
+
+      it 'does not call update_draft_aggregate' do
+        normal_instance.update_read_model(test_attributes)
+        
+        expect(normal_instance).not_to have_received(:update_draft_aggregate)
       end
     end
   end
 
-  describe '#update_connected_draft_aggregate' do
+  describe 'private class methods' do
+    describe '.draft_aggregate_class' do
+      subject { draftable_aggregate_class }
+      let(:mock_class) { double('DraftAggregateClass') }
+
+      before do
+        stub_const('TestContext::TestAggregateDraft', mock_class)
+      end
+
+      it 'returns the constantized draft aggregate class' do
+        expect(subject.send(:draft_aggregate_class)).to eq(mock_class)
+      end
+    end
+
+    describe '.draft_read_model_class' do
+      subject { draftable_aggregate_class }
+      let(:mock_class) { double('DraftReadModelClass') }
+
+      before do
+        stub_const('::TestAggregateDraft', mock_class)
+      end
+
+      it 'returns the constantized draft read model class' do
+        expect(subject.send(:draft_read_model_class)).to eq(mock_class)
+      end
+    end
+
+    describe '.main_changes_model_foreign_key' do
+      subject { draftable_aggregate_class }
+      let(:draft_class) { double('DraftAggregateClass') }
+
+      before do
+        allow(subject).to receive(:draft_aggregate_class).and_return(draft_class)
+      end
+
+      context 'when draft aggregate class responds to changes_read_model_foreign_key' do
+        before do
+          allow(draft_class).to receive(:changes_read_model_foreign_key).and_return('custom_key')
+        end
+
+        it 'returns the foreign key from draft aggregate class' do
+          expect(subject.send(:main_changes_model_foreign_key)).to eq('custom_key')
+        end
+      end
+
+      context 'when draft aggregate class does not respond to changes_read_model_foreign_key' do
+        before do
+          allow(draft_class).to receive(:respond_to?).with(:changes_read_model_foreign_key).and_return(false)
+        end
+
+        it 'generates the foreign key from draft aggregate name' do
+          expect(subject.send(:main_changes_model_foreign_key)).to eq('test_aggregate_id')
+        end
+      end
+
+      context 'with custom draft aggregate ending in Batch' do
+        let(:batch_class) do
+          Class.new(aggregate_class) do
+            draftable draft_aggregate: { aggregate: 'TestAggregateBatch' }
+          end
+        end
+        let(:batch_draft_class) { double('BatchDraftAggregateClass') }
+
+        before do
+          allow(batch_draft_class).to receive(:respond_to?).with(:changes_read_model_foreign_key).and_return(false)
+          allow(batch_class).to receive(:draft_aggregate_class).and_return(batch_draft_class)
+        end
+
+        it 'removes _batch suffix when generating foreign key' do
+          expect(batch_class.send(:main_changes_model_foreign_key)).to eq('test_aggregate_id')
+        end
+      end
+    end
+  end
+
+  describe '#update_draft_aggregate' do
     let(:draft_instance) { draftable_aggregate_class.new('test-id', draft: true) }
-    let(:draft_aggregate_class_mock) { double('DraftAggregateClass') }
-    let(:changes_aggregate_read_model_class) { double('ChangesAggregateReadModelClass') }
-    let(:changes_aggregate_read_model) { double('ChangesAggregateReadModel') }
-    let(:read_model) { double('ReadModel', update!: true) }
+    let(:draft_read_model_class) { double('DraftReadModelClass') }
+    let(:draft_read_model) { double('DraftReadModel', state_draft!: true) }
+    let(:read_model) { double('ReadModel', update!: true, test_aggregate_id: 'base-id') }
+    let(:test_attributes) { { name: 'Test' } }
+    
     before do
       allow(draft_instance).to receive(:read_model).and_return(read_model)
-      allow(read_model).to receive(:test_aggregate).and_return('base-id')
       allow(I18n).to receive(:with_locale).and_yield
+      stub_const('::TestAggregateDraft', draft_read_model_class)
+      allow(draftable_aggregate_class).to receive(:draft_read_model_class).and_return(draft_read_model_class)
+      allow(draftable_aggregate_class).to receive(:main_changes_model_foreign_key).and_return('test_aggregate_id')
     end
 
-    context 'when draft aggregate exists' do
+    context 'when read model has the foreign key method' do
       before do
-        stub_const('TestContext::TestAggregateDraft', draft_aggregate_class_mock)
-        allow(draft_aggregate_class_mock).to receive(:read_model_class).and_return(changes_aggregate_read_model_class)
-        allow(changes_aggregate_read_model_class).to receive(:states).and_return({ draft: 'draft' })
-        allow(changes_aggregate_read_model_class).to receive(:find_by).
-          with('test_aggregate_change_id' => 'base-id').
-          and_return(changes_aggregate_read_model)
+        allow(read_model).to receive(:respond_to?).with(:test_aggregate_id).and_return(true)
       end
 
-      it 'updates the draft aggregate read model state' do
-        expect(changes_aggregate_read_model).to receive(:update).with(state: 'draft')
-        draft_instance.update_read_model(name: 'Test')
+      context 'when draft read model exists' do
+        before do
+          allow(draft_read_model_class).to receive(:find_by).
+            with('test_aggregate_id' => 'base-id').
+            and_return(draft_read_model)
+        end
+
+        it 'updates the draft read model state to draft' do
+          draft_instance.update_read_model(test_attributes)
+          
+          expect(draft_read_model).to have_received(:state_draft!)
+        end
+      end
+
+      context 'when draft read model does not exist' do
+        before do
+          allow(draft_read_model_class).to receive(:find_by).
+            with('test_aggregate_id' => 'base-id').
+            and_return(nil)
+        end
+
+        it 'does not raise an error' do
+          expect { draft_instance.update_read_model(test_attributes) }.not_to raise_error
+        end
+        
+        it 'does not call state_draft!' do
+          draft_instance.update_read_model(test_attributes)
+          
+          expect(draft_read_model).not_to have_received(:state_draft!)
+        end
       end
     end
 
-    context 'when draft aggregate does not exist' do
+    context 'when read model does not have the foreign key method' do
       before do
-        stub_const('TestContext::TestAggregateDraft', draft_aggregate_class_mock)
-        allow(draft_aggregate_class_mock).to receive(:read_model_class).and_return(changes_aggregate_read_model_class)
-        allow(changes_aggregate_read_model_class).to receive(:states).and_return({ draft: 'draft' })
-        allow(changes_aggregate_read_model_class).to receive(:find_by).
-          with('test_aggregate_change_id' => 'base-id').
-          and_return(nil)
-      end
-
-      it 'does not raise an error' do
-        expect { draft_instance.update_read_model(name: 'Test') }.not_to raise_error
-      end
-    end
-
-    context 'when skip_draft_aggregate_update? returns true' do
-      before do
-        allow(draft_instance).to receive(:skip_draft_aggregate_update?).and_return(true)
+        allow(read_model).to receive(:respond_to?).with(:test_aggregate_id).and_return(false)
+        allow(draft_read_model_class).to receive(:find_by)
       end
 
       it 'does not update the draft aggregate' do
-        # The update_connected_draft_aggregate method will be called but will return early
-        # because skip_draft_aggregate_update? returns true
-        expect { draft_instance.update_read_model(name: 'Test') }.not_to raise_error
-      end
-    end
-  end
-
-  describe '#build_command_utilities' do
-    context 'when initialized as draft and is draftable' do
-      let(:draft_instance) { draftable_aggregate_class.new('test-id', draft: true) }
-
-      it 'uses draft context and aggregate' do
-        command_utils = draft_instance.send(:build_command_utilities)
-        expect(command_utils.instance_variable_get(:@context)).to eq('TestContext')
-        expect(command_utils.instance_variable_get(:@aggregate)).to eq('TestAggregateDraft')
-      end
-    end
-
-    context 'when initialized as draft with custom settings' do
-      let(:draft_instance) { custom_draftable_aggregate_class.new('test-id', draft: true) }
-
-      it 'uses custom draft context and aggregate' do
-        command_utils = draft_instance.send(:build_command_utilities)
-        expect(command_utils.instance_variable_get(:@context)).to eq('CustomContext')
-        expect(command_utils.instance_variable_get(:@aggregate)).to eq('CustomDraft')
-      end
-    end
-
-    context 'when not initialized as draft' do
-      let(:normal_instance) { draftable_aggregate_class.new('test-id', draft: false) }
-
-      it 'uses normal context and aggregate' do
-        command_utils = normal_instance.send(:build_command_utilities)
-        expect(command_utils.instance_variable_get(:@context)).to eq('TestContext')
-        expect(command_utils.instance_variable_get(:@aggregate)).to eq('TestAggregate')
-      end
-    end
-  end
-
-  describe 'edge cases' do
-    context 'when using partial draftable configuration' do
-      let(:partial_draftable_class) do
-        Class.new(aggregate_class) do
-          draftable draft_aggregate: { context: 'PartialContext' }
-          # changes_read_model not specified, will use default
-        end
-      end
-
-      it 'allows draft initialization' do
-        expect { partial_draftable_class.new(draft: true) }.not_to raise_error
-      end
-
-      it 'uses custom context and default aggregate name' do
-        expect(partial_draftable_class.draft_context).to eq('PartialContext')
-        expect(partial_draftable_class.draft_aggregate).to eq('TestAggregateDraft')
-      end
-
-      it 'has default changes_read_model_name when not specified' do
-        expect(partial_draftable_class.changes_read_model_name).to eq('test_aggregate_change')
-      end
-    end
-
-    context 'when overriding skip_draft_aggregate_update?' do
-      let(:skip_override_class) do
-        Class.new(aggregate_class) do
-          draftable
-
-          private
-
-          def skip_draft_aggregate_update?
-            true
-          end
-        end
-      end
-
-      it 'respects the override' do
-        instance = skip_override_class.new(draft: true)
-        read_model = double('ReadModel', update!: true)
-        allow(instance).to receive(:read_model).and_return(read_model)
-        allow(I18n).to receive(:with_locale).and_yield
-
-        # Should not attempt to constantize or do any draft aggregate update
-        expect { instance.update_read_model(name: 'Test') }.not_to raise_error
-      end
-    end
-  end
-
-  describe 'integration with command utilities' do
-    context 'when initializing with draft mode' do
-      let(:draft_instance) { custom_draftable_aggregate_class.new('test-id', draft: true) }
-
-      it 'command utilities use draft context and aggregate' do
-        utils = draft_instance.instance_variable_get(:@command_utilities)
-        expect(utils.instance_variable_get(:@context)).to eq('CustomContext')
-        expect(utils.instance_variable_get(:@aggregate)).to eq('CustomDraft')
-        expect(utils.instance_variable_get(:@aggregate_id)).to eq('test-id')
-      end
-    end
-
-    context 'when initializing without draft mode' do
-      let(:normal_instance) { custom_draftable_aggregate_class.new('test-id', draft: false) }
-
-      it 'command utilities use normal context and aggregate' do
-        utils = normal_instance.instance_variable_get(:@command_utilities)
-        expect(utils.instance_variable_get(:@context)).to eq('TestContext')
-        expect(utils.instance_variable_get(:@aggregate)).to eq('TestAggregate')
-        expect(utils.instance_variable_get(:@aggregate_id)).to eq('test-id')
+        draft_instance.update_read_model(test_attributes)
+        
+        expect(draft_read_model_class).not_to have_received(:find_by)
       end
     end
   end

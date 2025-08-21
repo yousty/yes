@@ -82,28 +82,22 @@ module Yes
             _changes_read_model_name
           end
 
-          # Configures the draft foreign key
-          #
-          # @param key [String, Symbol] The foreign key name
-          # @return [void]
-          def draft_foreign_key(key)
-            self._draft_foreign_key = key.to_s
-          end
-
-          # Returns the draft foreign key
-          #
-          # @return [String] the draft foreign key
-          def change_foreign_key
-            _draft_foreign_key || default_change_foreign_key
-          end
-
           private
 
-          # Returns the default change foreign key
-          #
-          # @return [String] the default change foreign key
-          def default_change_foreign_key
-            "#{_draft_aggregate}".underscore.sub(/_(draft|batch)/, '_change_id')
+          def draft_aggregate_class
+            "#{draft_context}::#{draft_aggregate}".constantize
+          end
+
+          def draft_read_model_class
+            "::#{draft_aggregate}".constantize
+          end
+
+          def main_changes_model_foreign_key
+            if draft_aggregate_class.respond_to?(:changes_read_model_foreign_key) 
+              draft_aggregate_class.changes_read_model_foreign_key
+            else
+              "#{draft_aggregate}".underscore.sub(/_(draft|batch)$/, '_id')
+            end
           end
         end
 
@@ -123,7 +117,7 @@ module Yes
         def update_read_model(attributes)
           result = super
 
-          update_connected_draft_aggregate if draft? && self.class.draftable?
+          update_draft_aggregate if self.class.draftable? && draft?
 
           result
         end
@@ -161,34 +155,21 @@ module Yes
         # Updates the connected draft aggregate's read model
         #
         # @return [void]
-        def update_connected_draft_aggregate
-          return if skip_draft_aggregate_update?
+        def update_draft_aggregate
+          main_id_method = "#{self.class.read_model_name}_id".to_sym
+          
+          # Check if the changes read model has a foreign key that relates it to the main read model
+          #
+          # e.g. ApprenticeshipDraft is a draft for Apprenticeship, so main_read_model_id is :apprenticeship_id
+          #
+          return unless read_model.respond_to?(main_id_method)
 
-          draft_context = self.class.draft_context
-          draft_aggregate = self.class.draft_aggregate
-          change_foreign_key = self.class.change_foreign_key
+          main_changes_model_id = read_model.send(main_id_method)
 
-          # Determine the base attribute name from the draft aggregate name
-          base_attribute = draft_aggregate.underscore.sub(/_draft$/, '')
-
-          # Check if the read model responds to this method
-          return unless read_model.respond_to?(base_attribute)
-
-          draft_aggregate_class = "#{draft_context}::#{draft_aggregate}".constantize
-
-          changes_aggregate_read_model_class = draft_aggregate_class.read_model_class
-          base_id = read_model.send(base_attribute)
-
-          changes_aggregate_read_model_class.
-            find_by(change_foreign_key => base_id)&.
-            update(state: changes_aggregate_read_model_class.states[:draft])
-        end
-
-        # Checks if draft aggregate update should be skipped
-        #
-        # @return [Boolean] true if should skip, false otherwise
-        def skip_draft_aggregate_update?
-          false
+          # e.g. ::ApprenticeshipBatch.find_by(apprenticeship_edit_template_id: apprenticeship_id)&.state_draft!
+          self.class.send(:draft_read_model_class).find_by(
+            self.class.send(:main_changes_model_foreign_key) => main_changes_model_id
+          )&.state_draft!
         end
       end
     end
