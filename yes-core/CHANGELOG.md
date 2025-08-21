@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2025-08-21
+
+### Added
+- Draft mode support for aggregates
+
+### Changed
+- Enhanced command utilities and event publishing
+- Improved command processor functionality
+
 ## [0.2.2] - 2025-08-21
 
 ### Fixed
