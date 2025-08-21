@@ -65,7 +65,7 @@ module Yes
           expected_revision = revision == -1 ? :no_stream : revision
 
           PgEventstore.client.append_to_stream(
-            command_utilities.build_stream,
+            command_utilities.build_stream(name: stream_name(aggregate_data.name)),
             event_with_metadata,
             options: { expected_revision: }
           )
@@ -94,6 +94,16 @@ module Yes
               stream:
             )
           end
+        end
+
+        # Builds the stream name for the aggregate
+        #
+        # @param aggregate_name [String] The name of the aggregate
+        # @return [String] The stream name
+        def stream_name(aggregate_name)
+          return aggregate_name unless metadata&.dig(:draft) || metadata&.dig('draft')
+
+          "#{aggregate_name}Draft"
         end
 
         # Builds an event with metadata from the command

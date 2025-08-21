@@ -13,6 +13,11 @@ module Yes
                 command_name = @name
 
                 aggregate_class.define_method(command_name) do |payload = {}|
+                  if draft?
+                    payload[:metadata] ||= {}
+                    payload[:metadata][:draft] = true
+                  end
+
                   execute_command_and_update_state(command_name, payload)
                 end
               end
