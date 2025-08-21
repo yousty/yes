@@ -100,12 +100,6 @@ module Yes
           :no_stream
         end
 
-        def prepare_payload(attribute, payload)
-          return payload if payload.is_a?(Hash)
-
-          { attribute => payload }
-        end
-
         def prepare_assign_command_payload(command_name, payload)
           return payload unless command_name.to_s.starts_with?(ASSIGN_COMMAND_PREFIX)
 
