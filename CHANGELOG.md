@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [0.3.3] - 2025-08-21
+
+### Changed
+- Refactored draftable module to simplify draft aggregate updates
+- Removed `draft_foreign_key` configuration method and related logic
+- Improved foreign key resolution with fallback to draft aggregate class method
+- Enhanced private method encapsulation and naming conventions
+
 ## [0.3.2] - 2025-08-12
 
 ### Changed
