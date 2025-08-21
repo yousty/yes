@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2025-08-21
+
+### Fixed
+- Fixed draft aggregate class resolution to include ::Aggregate suffix
+- Changed foreign key naming convention from _id to _change_id suffix
+
 ## [0.2.1] - 2025-08-21
 
 ### Fixed
