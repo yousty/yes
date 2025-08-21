@@ -85,7 +85,7 @@ module Yes
           private
 
           def draft_aggregate_class
-            "#{draft_context}::#{draft_aggregate}".constantize
+            "#{draft_context}::#{draft_aggregate}::Aggregate".constantize
           end
 
           def draft_read_model_class
@@ -96,7 +96,7 @@ module Yes
             if draft_aggregate_class.respond_to?(:changes_read_model_foreign_key) 
               draft_aggregate_class.changes_read_model_foreign_key
             else
-              "#{draft_aggregate}".underscore.sub(/_(draft|batch)$/, '_id')
+              "#{draft_aggregate}".underscore.sub(/_(draft|batch)$/, '_change_id')
             end
           end
         end

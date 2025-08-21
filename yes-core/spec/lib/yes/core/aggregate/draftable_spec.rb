@@ -322,9 +322,11 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     describe '.draft_aggregate_class' do
       subject { draftable_aggregate_class }
       let(:mock_class) { double('DraftAggregateClass') }
+      let(:mock_module) { Module.new }
 
       before do
-        stub_const('TestContext::TestAggregateDraft', mock_class)
+        stub_const('TestContext::TestAggregateDraft', mock_module)
+        stub_const('TestContext::TestAggregateDraft::Aggregate', mock_class)
       end
 
       it 'returns the constantized draft aggregate class' do
@@ -369,7 +371,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
         end
 
         it 'generates the foreign key from draft aggregate name' do
-          expect(subject.send(:main_changes_model_foreign_key)).to eq('test_aggregate_id')
+          expect(subject.send(:main_changes_model_foreign_key)).to eq('test_aggregate_change_id')
         end
       end
 
@@ -387,7 +389,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
         end
 
         it 'removes _batch suffix when generating foreign key' do
-          expect(batch_class.send(:main_changes_model_foreign_key)).to eq('test_aggregate_id')
+          expect(batch_class.send(:main_changes_model_foreign_key)).to eq('test_aggregate_change_id')
         end
       end
     end
