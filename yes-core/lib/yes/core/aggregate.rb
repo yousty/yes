@@ -322,7 +322,11 @@ module Yes
         @id = id
         @draft = draft
 
-        @command_utilities = build_command_utilities
+        @command_utilities = Utils::CommandUtils.new(
+          context: self.class.context,
+          aggregate: self.class.aggregate,
+          aggregate_id: @id
+        )
       end
 
       # Reloads the aggregate and its read model
@@ -350,21 +354,7 @@ module Yes
         return unless draft && !self.class.draftable?
 
         raise ArgumentError, "#{self.class.name} is not draftable. Add 'draftable' to the class definition."
-      end
-
-      # Builds command utilities with appropriate context and aggregate based on draft status
-      #
-      # @return [Utils::CommandUtils] The command utilities instance
-      def build_command_utilities
-        context = @draft && self.class.draftable? ? self.class.draft_context : self.class.context
-        aggregate = @draft && self.class.draftable? ? self.class.draft_aggregate : self.class.aggregate
-
-        Utils::CommandUtils.new(
-          context:,
-          aggregate:,
-          aggregate_id: @id
-        )
-      end
+      end     
     end
   end
 end
