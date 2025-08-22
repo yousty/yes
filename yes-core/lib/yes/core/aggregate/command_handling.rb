@@ -95,6 +95,12 @@ module Yes
         def execute_command_and_update_state(command_name, payload)
           payload = command_utilities.prepare_command_payload(command_name, payload.clone, self.class)
           payload = command_utilities.prepare_assign_command_payload(command_name, payload)
+
+          if draft?
+            payload[:metadata] ||= {}
+            payload[:metadata][:draft] = true
+          end
+
           cmd = command_utilities.build_command(command_name, payload)
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
