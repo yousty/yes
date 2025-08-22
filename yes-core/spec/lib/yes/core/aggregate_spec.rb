@@ -175,6 +175,81 @@ RSpec.describe Yes::Core::Aggregate do
     end
   end
 
+  describe '#commands' do
+    subject(:commands) { instance.commands }
+
+    let(:instance) { subject_class.new }
+
+    it 'returns a hash of commands with their associated events' do
+      expect(commands).to be_a(Hash)
+    end
+
+    it 'includes attribute-based commands defined on the aggregate' do
+      expect(commands).to include(
+        change_name: [:name_changed],
+        change_email: [:email_changed],
+        change_age: [:age_changed],
+        change_active: [:active_changed]
+      )
+    end
+
+    it 'includes custom commands with specified events' do
+      expect(commands).to include(
+        approve_documents: [:documents_approved],
+        approve_documents_with_custom_event: [:document_happily_approved],
+        some_custom_command: [:some_custom_event]
+      )
+    end
+
+    it 'includes shortcut commands' do
+      expect(commands).to include(
+        publish: [:published],
+        enable_shortcut_toggle: [:shortcut_toggle_enabled],
+        disable_shortcut_toggle: [:shortcut_toggle_disabled],
+        activate_shorcut_usage: [:shorcut_usage_activated],
+        change_shortcut_description: [:shortcut_description_changed],
+        change_shortcuts_used: [:shortcuts_used_changed]
+      )
+    end
+
+    it 'includes locale-specific commands' do
+      expect(commands).to include(
+        test_command_with_locale: [:locale_test_changed]
+      )
+    end
+
+    it 'returns commands in alphabetical order' do
+      command_names = commands.keys
+      expect(command_names).to eq(command_names.sort)
+    end
+
+    it 'retrieves command mappings from the global configuration' do
+      expect(Yes::Core.configuration).to receive(:command_event_mappings)
+        .with('Test', 'User')
+        .and_call_original
+
+      commands
+    end
+
+    context 'with an aggregate that has no commands' do
+      let(:empty_aggregate_class) do
+        Class.new(Yes::Core::Aggregate) do
+          def self.name
+            'EmptyContext::EmptyAggregate::Aggregate'
+          end
+
+          primary_context 'EmptyContext'
+        end
+      end
+
+      let(:instance) { empty_aggregate_class.new }
+
+      it 'returns an empty hash' do
+        expect(commands).to eq({})
+      end
+    end
+  end
+
   describe '.command' do
     after do
       # reset to not mess with further specs

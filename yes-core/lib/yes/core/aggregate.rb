@@ -343,6 +343,25 @@ module Yes
         PgEventstore.client.read_paginated(command_utilities.build_stream, options: { direction: 'Forwards' })
       end
 
+      # Returns a list of commands that can be executed on this aggregate with their associated events
+      # @return [Hash<Symbol, Array<Symbol>>] A hash of command names to their event names, sorted alphabetically
+      # @example
+      #   user_aggregate.commands
+      #   # => {
+      #   #   approve_documents: [:documents_approved],
+      #   #   change_age: [:age_changed],
+      #   #   change_email: [:email_changed],
+      #   #   change_name: [:name_changed]
+      #   # }
+      def commands
+        mappings = Yes::Core.configuration.command_event_mappings(
+          self.class.context,
+          self.class.aggregate
+        )
+        
+        mappings.sort.to_h
+      end
+
       private
 
       # Validates that draft initialization is only allowed for draftable aggregates
