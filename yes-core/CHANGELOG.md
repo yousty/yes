@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2025-08-22
+
+### Added
+- Added `commands` instance method to Aggregate class for accessing available command classes
+
+### Changed
+- Improved test isolation and added comprehensive draft handling tests
+- Moved draft metadata handling to execute_command_and_update_state for better encapsulation
+
 ## [0.4.0] - 2025-08-22
 
 ### Added
