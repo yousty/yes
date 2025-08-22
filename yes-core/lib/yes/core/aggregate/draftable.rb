@@ -15,7 +15,7 @@ module Yes
         included do
           class << self
             attr_accessor :_draft_context, :_draft_aggregate, :_changes_read_model_name,
-                          :_draft_foreign_key, :_is_draftable
+                          :_draft_foreign_key, :_is_draftable, :_changes_read_model_public
           end
         end
 
@@ -24,13 +24,14 @@ module Yes
           #
           # @param draft_aggregate [Hash, nil] The draft aggregate configuration with :context and :aggregate keys
           # @param changes_read_model [String, Symbol, nil] The changes read model name (defaults to "<read_model>_change")
+          # @param changes_read_model_public [Boolean] Whether the changes read model should be public via read API (default: true)
           # @return [void]
           #
           # @example Use defaults
           #   draftable
           #
           # @example Override all parameters
-          #   draftable draft_aggregate: { context: 'ApprenticeshipPresentation', aggregate: 'MyAggregateDraft' }, changes_read_model: 'custom_change'
+          #   draftable draft_aggregate: { context: 'ApprenticeshipPresentation', aggregate: 'MyAggregateDraft' }, changes_read_model: 'custom_change', changes_read_model_public: false
           #
           # @example Override only context
           #   draftable draft_aggregate: { context: 'CustomContext' }
@@ -40,7 +41,10 @@ module Yes
           #
           # @example Override only changes_read_model
           #   draftable changes_read_model: :article_change
-          def draftable(draft_aggregate: nil, changes_read_model: nil)
+          #
+          # @example Make changes read model private
+          #   draftable changes_read_model_public: false
+          def draftable(draft_aggregate: nil, changes_read_model: nil, changes_read_model_public: true)
             self._is_draftable = true
             
             draft_config = draft_aggregate || {}
@@ -52,6 +56,8 @@ module Yes
                                             else
                                               "#{read_model_name}_change"
                                             end
+            
+            self._changes_read_model_public = changes_read_model_public
           end
 
           # Checks if the aggregate is draftable
@@ -80,6 +86,13 @@ module Yes
           # @return [String, nil] the changes read model name
           def changes_read_model_name
             _changes_read_model_name
+          end
+
+          # Returns whether the changes read model is public
+          #
+          # @return [Boolean] true if public, false otherwise
+          def changes_read_model_public?
+            _changes_read_model_public.nil? || _changes_read_model_public
           end
 
           private

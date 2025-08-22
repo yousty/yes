@@ -123,6 +123,64 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     end
   end
 
+  describe 'changes_read_model_public configuration' do
+    context 'when not specified (default)' do
+      subject { draftable_aggregate_class }
+
+      it 'defaults to true (public)' do
+        expect(subject.changes_read_model_public?).to be true
+      end
+    end
+
+    context 'when explicitly set to true' do
+      let(:public_changes_class) do
+        Class.new(aggregate_class) do
+          draftable changes_read_model_public: true
+        end
+      end
+
+      subject { public_changes_class }
+
+      it 'returns true for changes_read_model_public?' do
+        expect(subject.changes_read_model_public?).to be true
+      end
+    end
+
+    context 'when explicitly set to false' do
+      let(:private_changes_class) do
+        Class.new(aggregate_class) do
+          draftable changes_read_model_public: false
+        end
+      end
+
+      subject { private_changes_class }
+
+      it 'returns false for changes_read_model_public?' do
+        expect(subject.changes_read_model_public?).to be false
+      end
+    end
+
+    context 'when combined with other options' do
+      let(:combined_options_class) do
+        Class.new(aggregate_class) do
+          draftable draft_aggregate: { context: 'CustomContext' }, 
+                   changes_read_model: :custom_model,
+                   changes_read_model_public: false
+        end
+      end
+
+      subject { combined_options_class }
+
+      it 'correctly sets all options' do
+        aggregate_failures do
+          expect(subject.draft_context).to eq('CustomContext')
+          expect(subject.changes_read_model_name).to eq('custom_model')
+          expect(subject.changes_read_model_public?).to be false
+        end
+      end
+    end
+  end
+
 
   describe '#initialize' do
     context 'when aggregate is draftable' do
