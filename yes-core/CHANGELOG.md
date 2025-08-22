@@ -4,8 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [0.4.0] - 2025-08-22
 
+### Added
+- Added `changes_read_model_public` option to draftable aggregates
+- Added `changes_read_model_public?` method to check template read model visibility status
+- Template read models marked as public are now automatically registered for API access via railtie
+
 ### Changed
-- Minor version bump with dependency updates
+- Enhanced draftable module to allow control over changes read model (template read model) API visibility
+- Default behavior maintains backward compatibility with public visibility
 
 ## [0.3.0] - 2025-08-21
 
