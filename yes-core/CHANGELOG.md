@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Improved test isolation and added comprehensive draft handling tests
-- Moved draft metadata handling to execute_command_and_update_state for better encapsulation
+- Fix: Moved draft metadata handling to execute_command_and_update_state to fix using commands with shorthand sytax on drafts
 
 ## [0.4.0] - 2025-08-22
 
