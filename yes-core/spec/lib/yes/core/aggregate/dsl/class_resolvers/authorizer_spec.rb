@@ -38,12 +38,34 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
     described_class.new(authorizer_options)
   end
 
-  before do
-    # Ensure the authorizer class is not defined before each test
-    # This prevents state leakage between examples where one might define
-    # the constant that another expects to generate.
-    hide_const("#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer")
+  let(:authorizer_constant_path) { "#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer" }
+  
+  around do |example|
+    # Track if we're using stub_const in this test
+    @using_stub_const = false
+    
+    # Run the test
+    example.run
+    
+    # Clean up generated constants after the test, but only if not stubbed
+    unless @using_stub_const
+      if Object.const_defined?(context_name, false)
+        context_module = Object.const_get(context_name, false)
+        if context_module.const_defined?(aggregate_name, false)
+          aggregate_module = context_module.const_get(aggregate_name, false)
+          if aggregate_module.const_defined?('Commands', false)
+            commands_module = aggregate_module.const_get('Commands', false)
+            authorizer_name = "#{aggregate_name}Authorizer"
+            if commands_module.const_defined?(authorizer_name, false)
+              commands_module.send(:remove_const, authorizer_name)
+            end
+          end
+        end
+      end
+    end
+  end
 
+  before do
     # Allow tracking calls while letting the original method run
     allow(Yes::Core.configuration).to receive(:register_aggregate_authorizer_class).and_call_original
   end
@@ -97,6 +119,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
 
       context 'when an authorizer class already exists' do
         before do
+          @using_stub_const = true
           stub_const("#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer",
                      existing_authorizer_class)
         end

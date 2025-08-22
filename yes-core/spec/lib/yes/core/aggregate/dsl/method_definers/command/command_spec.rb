@@ -309,6 +309,66 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           expect(non_draft_latest_event.metadata).not_to include('draft')
         end
       end
+
+      context 'when aggregate is in draft mode with shorthand payload' do
+        let(:draft_aggregate) { aggregate_class.new(aggregate.id, draft: true) }
+        let(:draft_stream) { PgEventstore::Stream.new(context:, stream_name: "#{aggregate_name}Draft", stream_id: draft_aggregate.id) }
+        let(:draft_latest_event) { PgEventstore.client.read(draft_stream, options: { max_count: 1, direction: :desc }).first }
+        let(:payload_attributes) { { another: :string } }
+        let(:payload) { 'test_shorthand_value' }
+        let(:changes_read_model) do 
+          mock = instance_double('TestUserChange', 
+            update!: true,
+            id: draft_aggregate.id,
+            revision: -1,
+            another: nil
+          )
+          allow(mock.class).to receive(:column_names).and_return(['id', 'revision', 'another'])
+          allow(mock).to receive(:reload).and_return(mock)
+          mock
+        end
+
+        before do
+          # Make the aggregate draftable for this test
+          aggregate_class.class_eval { draftable }
+          
+          # Mock the read_model method to return our mock directly
+          allow(draft_aggregate).to receive(:read_model).and_return(changes_read_model)
+          allow(draft_aggregate).to receive(:update_draft_aggregate)
+          allow(draft_aggregate).to receive(:reload).and_return(draft_aggregate)
+          allow(draft_aggregate).to receive(:revision).and_return(-1)
+          allow(draft_aggregate).to receive(:revision_column).and_return('revision')
+        end
+
+        after do
+          # Clean up draftable configuration
+          aggregate_class.instance_variable_set(:@is_draftable, false)
+          aggregate_class.instance_variable_set(:@draft_context, nil)
+          aggregate_class.instance_variable_set(:@draft_aggregate, nil)
+        end
+
+        it 'handles shorthand string payload correctly and adds draft metadata' do
+          draft_aggregate.some_custom_command(payload)
+
+          aggregate_failures do
+            expect(draft_latest_event.metadata).to include('draft' => true)
+            expect(draft_latest_event.type).to eq('Test::UserSomeCustomEvent')
+            expect(draft_latest_event.data).to include('another' => payload)
+          end
+        end
+
+        it 'publishes event to draft stream with shorthand payload' do
+          draft_aggregate.some_custom_command(payload)
+
+          # Verify the event was published to the draft stream
+          draft_stream_events = PgEventstore.client.read(draft_stream)
+          expect(draft_stream_events.to_a).not_to be_empty
+
+          # Verify no event was published to the non-draft stream
+          non_draft_stream = PgEventstore::Stream.new(context:, stream_name: aggregate_name, stream_id: draft_aggregate.id)
+          expect { PgEventstore.client.read(non_draft_stream).to_a }.to raise_error(PgEventstore::StreamNotFoundError)
+        end
+      end
     end
   end
 end
