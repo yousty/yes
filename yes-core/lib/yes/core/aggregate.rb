@@ -343,6 +343,19 @@ module Yes
         PgEventstore.client.read_paginated(command_utilities.build_stream, options: { direction: 'Forwards' })
       end
 
+      # Retrieves the most recent event from the aggregate's event stream
+      # @return [PgEventstore::Event, nil] The latest event or nil if no events exist
+      def latest_event
+        PgEventstore.client.read(command_utilities.build_stream, options: { max_count: 1, direction: :desc }).first
+      end
+
+      # Returns the stream revision number of the latest event
+      # @return [Integer] The revision number of the latest event in the stream
+      # @raise [NoMethodError] If no events exist for this aggregate
+      def event_revision
+        latest_event.stream_revision
+      end
+
       # Returns a list of commands that can be executed on this aggregate with their associated events
       # @return [Hash<Symbol, Array<Symbol>>] A hash of command names to their event names, sorted alphabetically
       # @example

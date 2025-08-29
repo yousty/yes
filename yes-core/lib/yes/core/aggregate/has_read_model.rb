@@ -131,8 +131,17 @@ module Yes
           :revision
         end
 
+        # Returns the current revision number from the read model
+        # @return [Integer, nil] The revision number stored in the read model
         def revision
           read_model.send(revision_column)
+        end
+
+        # Initializes the read model's revision column with the current event stream revision
+        # @return [Boolean] True if the update was successful
+        # @note This method bypasses validations and callbacks by using update_column
+        def init_revision_from_stream
+          read_model.update_column(revision_column, event_revision)
         end
       end
     end
