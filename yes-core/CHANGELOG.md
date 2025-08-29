@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0] - 2025-08-29
+
+### Added
+- Added `event_stream_revision` and `event_stream_revision=` methods to Aggregate for managing event stream revision tracking
+- Added comprehensive specs for event stream revision methods
+
 ## [0.5.0] - 2025-08-22
 
 ### Added
