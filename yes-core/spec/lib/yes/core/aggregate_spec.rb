@@ -175,6 +175,80 @@ RSpec.describe Yes::Core::Aggregate do
     end
   end
 
+  describe '#latest_event' do
+    subject(:latest_event) { instance.latest_event }
+
+    let(:instance) { subject_class.new(aggregate_id) }
+    let(:aggregate_id) { SecureRandom.uuid }
+    let(:stream) { PgEventstore::Stream.new(context: 'Test', stream_name: "User", stream_id: aggregate_id) }
+    let(:event) { 
+      Yousty::Eventsourcing::Event.new(
+        id: SecureRandom.uuid,
+        type: 'Test::UserCreated',
+        data: {},
+        stream_revision: 5
+      )
+    }
+    let(:client_double) { instance_double(PgEventstore::Client) }
+
+    before do
+      allow(instance).to receive(:command_utilities).and_return(
+        instance_double('CommandUtilities', build_stream: stream)
+      )
+      allow(PgEventstore).to receive(:client).and_return(client_double)
+    end
+
+    it 'reads the latest event from the stream with correct options' do
+      expect(client_double).to receive(:read)
+        .with(stream, options: { max_count: 1, direction: :desc })
+        .and_return([event])
+
+      expect(latest_event).to eq(event)
+    end
+
+    context 'when no events exist' do
+      it 'returns nil' do
+        expect(client_double).to receive(:read)
+          .with(stream, options: { max_count: 1, direction: :desc })
+          .and_return([])
+
+        expect(latest_event).to be_nil
+      end
+    end
+  end
+
+  describe '#event_revision' do
+    subject(:event_revision) { instance.event_revision }
+
+    let(:instance) { subject_class.new(SecureRandom.uuid) }
+    let(:event) { 
+      Yousty::Eventsourcing::Event.new(
+        id: SecureRandom.uuid,
+        type: 'Test::UserCreated',
+        data: {},
+        stream_revision: 42
+      )
+    }
+
+    before do
+      allow(instance).to receive(:latest_event).and_return(event)
+    end
+
+    it 'returns the stream revision of the latest event' do
+      expect(event_revision).to eq(42)
+    end
+
+    context 'when no events exist' do
+      before do
+        allow(instance).to receive(:latest_event).and_return(nil)
+      end
+
+      it 'raises NoMethodError' do
+        expect { event_revision }.to raise_error(NoMethodError)
+      end
+    end
+  end
+
   describe '#commands' do
     subject(:commands) { instance.commands }
 
