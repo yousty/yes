@@ -19,17 +19,19 @@ module Yes
       # @param command_or_commands [Command, Array<Command>] Command(s) instance(s)
       # @param origin [String] Origin of the command
       # @param notifier_options [Hash] Options for command notifier
+      # @param batch_id [String] Batch ID
       # @return [void]
       def call(
         command_or_commands,
         origin: nil,
-        notifier_options: {}
+        notifier_options: {},
+        batch_id: nil
       )
         origin ||= Utils::CallerUtils.origin_from_caller(caller_locations(1..1).first)
 
         perform_method = perform_inline ? :perform_now : :perform_later
         command_processor.public_send(
-          perform_method, origin, command_or_commands, notifier_options
+          perform_method, origin, command_or_commands, notifier_options, batch_id
         )
       end
     end
