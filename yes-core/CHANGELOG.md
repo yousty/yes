@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2025-09-04
+
+### Fixed
+- Fixed draft mode not being considered when reading aggregate events
+
 ## [0.7.1] - 2025-09-04
 
 ### Fixed
