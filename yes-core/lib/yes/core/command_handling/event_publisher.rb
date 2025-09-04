@@ -101,10 +101,10 @@ module Yes
         # @param aggregate_name [String] The name of the aggregate
         # @return [String] The stream name
         def stream_name(aggregate_name)
-          return "#{aggregate_name}Draft" if metadata&.dig(:draft)
-
           # TODO: remove this once edit template command is no longer used
           return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
+          
+          return "#{aggregate_name}Draft" if metadata&.dig(:draft)
 
           aggregate_name
         end
