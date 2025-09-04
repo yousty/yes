@@ -77,7 +77,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
             location_id:,
             origin: 'test',
             batch_id: '123',
-            metadata: { 'test' => 'value', 'draft' => true }
+            metadata: { test: 'value', draft: true }
           }
         end
 
@@ -143,12 +143,26 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
         {
           user_id:,
           location_id:,
-          metadata: { 'draft' => true }
+          metadata: { draft: true }
         }
       end
 
       it 'returns draft stream name' do
         expect(subject).to eq('TestAggregateDraft')
+      end
+    end
+
+    context 'when command has edit_template_command metadata' do
+      let(:payload) do
+        {
+          user_id:,
+          location_id:,
+          metadata: { edit_template_command: true }
+        }
+      end
+
+      it 'returns edit template stream name' do
+        expect(subject).to eq('TestAggregateEditTemplate')
       end
     end
 
