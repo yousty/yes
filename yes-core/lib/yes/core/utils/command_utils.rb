@@ -78,10 +78,10 @@ module Yes
         # @param name [String] The stream name
         # @param id [String] The stream ID
         # @return [PgEventstore::Stream] The stream instance
-        def build_stream(context: @context, name: @aggregate, id: @aggregate_id)
+        def build_stream(context: @context, name: @aggregate, id: @aggregate_id, metadata: {})
           PgEventstore::Stream.new(
             context:,
-            stream_name: name,
+            stream_name: stream_name(name, metadata),
             stream_id: id
           )
         end
@@ -175,6 +175,20 @@ module Yes
           return payload unless aggregate_class.commands[command_name].payload_attributes.key?(:locale)
 
           payload.merge(locale: I18n.locale.to_s)
+        end
+
+        # Builds the stream name for the aggregate
+        #
+        # @param aggregate_name [String] The name of the aggregate
+        # @param metadata [Hash] The command metadata
+        # @return [String] The stream name
+        def stream_name(aggregate_name, metadata = {})
+          # TODO: remove this once edit template command is no longer used
+          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
+          
+          return "#{aggregate_name}Draft" if metadata&.dig(:draft)
+
+          aggregate_name
         end
       end
     end

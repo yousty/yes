@@ -98,6 +98,35 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
           expect(event.metadata).to include('draft' => true)
         end
       end
+
+      context 'with edit_template_command metadata' do
+        let(:payload) do
+          {
+            user_id:,
+            location_id:,
+            origin: 'test',
+            batch_id: '123',
+            metadata: { test: 'value', edit_template_command: true }
+          }
+        end
+
+        it 'publishes event to edit template stream' do
+          event = event_publisher.call
+          
+          # Verify the event was published
+          expect(event).to be_a(PgEventstore::Event)
+          
+          # The event should have been published to UserEditTemplate stream
+          # We can verify this by checking the event's stream property
+          expect(event.stream.stream_name).to eq('UserEditTemplate')
+          expect(event.type).to eq('Test::UserLocationIdChanged')
+        end
+
+        it 'preserves edit_template_command metadata in the event' do
+          event = event_publisher.call
+          expect(event.metadata).to include('edit_template_command' => true)
+        end
+      end
     end
 
     context 'when external revisions do not match' do
@@ -135,57 +164,6 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
     end
   end
 
-  describe '#stream_name (private method)' do
-    subject { event_publisher.send(:stream_name, 'TestAggregate') }
-
-    context 'when command has draft metadata' do
-      let(:payload) do
-        {
-          user_id:,
-          location_id:,
-          metadata: { draft: true }
-        }
-      end
-
-      it 'returns draft stream name' do
-        expect(subject).to eq('TestAggregateDraft')
-      end
-    end
-
-    context 'when command has edit_template_command metadata' do
-      let(:payload) do
-        {
-          user_id:,
-          location_id:,
-          metadata: { edit_template_command: true }
-        }
-      end
-
-      it 'returns edit template stream name' do
-        expect(subject).to eq('TestAggregateEditTemplate')
-      end
-    end
-
-    context 'when command has no draft metadata' do
-      it 'returns original stream name' do
-        expect(subject).to eq('TestAggregate')
-      end
-    end
-
-    context 'when command has metadata but no draft flag' do
-      let(:payload) do
-        {
-          user_id:,
-          location_id:,
-          metadata: { 'other' => 'value' }
-        }
-      end
-
-      it 'returns original stream name' do
-        expect(subject).to eq('TestAggregate')
-      end
-    end
-  end
 
   describe 'external aggregate revision verification with draft mode' do
     context 'when main aggregate uses draft stream' do

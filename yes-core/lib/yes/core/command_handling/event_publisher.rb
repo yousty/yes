@@ -65,7 +65,7 @@ module Yes
           expected_revision = revision == -1 ? :no_stream : revision
 
           PgEventstore.client.append_to_stream(
-            command_utilities.build_stream(name: stream_name(aggregate_data.name)),
+            command_utilities.build_stream(metadata:),
             event_with_metadata,
             options: { expected_revision: }
           )
@@ -94,19 +94,6 @@ module Yes
               stream:
             )
           end
-        end
-
-        # Builds the stream name for the aggregate
-        #
-        # @param aggregate_name [String] The name of the aggregate
-        # @return [String] The stream name
-        def stream_name(aggregate_name)
-          # TODO: remove this once edit template command is no longer used
-          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
-          
-          return "#{aggregate_name}Draft" if metadata&.dig(:draft)
-
-          aggregate_name
         end
 
         # Builds an event with metadata from the command
