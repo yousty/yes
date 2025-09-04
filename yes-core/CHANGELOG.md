@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0] - 2025-09-04
+
+### Added
+- Added legacy support for edit_template_command metadata
+- Added specs for edit_template_command metadata support
+
 ## [0.6.0] - 2025-08-29
 
 ### Added
