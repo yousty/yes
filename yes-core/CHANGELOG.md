@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2025-09-04
+
+### Fixed
+- Fixed ordering for draft meta tags check in event publisher - legacy key needs precedence
+
 ## [0.7.0] - 2025-09-04
 
 ### Added
