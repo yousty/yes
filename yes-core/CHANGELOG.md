@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.3] - 2025-09-04
+
+### Fixed
+- Fixed regression allowing custom batch id for command processor
+
 ## [0.7.2] - 2025-09-04
 
 ### Fixed
