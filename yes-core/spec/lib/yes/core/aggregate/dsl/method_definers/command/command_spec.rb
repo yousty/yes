@@ -174,6 +174,169 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           end
         end
 
+        context 'when skipping guards' do
+          let(:command_name) { :test_command_with_guard }
+          let(:payload_attributes) { { another: :string } }
+          let(:payload) { { another: 'test_value' } }
+
+          before do
+            # Remove the command method if it exists from a previous test
+            if Test::User::Aggregate.method_defined?(:test_command_with_guard)
+              Test::User::Aggregate.remove_method(:test_command_with_guard)
+            end
+            
+            # Define a command with a guard that should fail
+            Test::User::Aggregate.command :test_command_with_guard do
+              payload another: :string
+              event :test_command_with_guard_executed
+              
+              guard :should_fail do
+                false # This guard always fails
+              end
+            end
+          end
+
+          after do
+            # Clean up the test command
+            Test::User::Aggregate.singleton_class.instance_variable_set(
+              :@commands, 
+              Test::User::Aggregate.commands.except(:test_command_with_guard)
+            )
+          end
+
+          context 'with guards enabled (default)' do
+            it 'evaluates guards and returns error when guard fails' do
+              response = aggregate.test_command_with_guard(payload)
+              
+              expect(response.success?).to be false
+              expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+              expect(response.error.message).to include("Guard 'should_fail' failed")
+            end
+
+            it 'evaluates guards when guards: true is explicitly passed' do
+              response = aggregate.test_command_with_guard(payload, guards: true)
+              
+              expect(response.success?).to be false
+              expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+              expect(response.error.message).to include("Guard 'should_fail' failed")
+            end
+          end
+
+          context 'with guards disabled' do
+            it 'skips guard evaluation when guards: false is passed' do
+              expect { aggregate.test_command_with_guard(payload, guards: false) }.
+                not_to raise_error
+            end
+
+            it 'publishes the event even when guard would fail' do
+              aggregate.test_command_with_guard(payload, guards: false)
+              
+              stream = PgEventstore::Stream.new(
+                context:, 
+                stream_name: aggregate_name, 
+                stream_id: aggregate.id
+              )
+              latest_event = PgEventstore.client.read(stream, options: { max_count: 1, direction: :desc }).first
+              
+              expect(latest_event.type).to eq('Test::UserTestCommandWithGuardExecuted')
+            end
+
+            it 'updates the read model when guards are skipped' do
+              aggregate.test_command_with_guard(payload, guards: false)
+              
+              expect(aggregate.another).to eq('test_value')
+            end
+          end
+        end
+
+        context 'when testing option separation from payload' do
+          it 'correctly separates guards option from payload when using explicit hash' do
+            # Test that the guards option is properly separated from payload
+            # When using guards option, payload must be passed as explicit first argument
+            
+            # Pass payload as explicit hash, guards as option
+            response = aggregate.approve_documents({ document_ids: 'doc-123', another: 'test' }, guards: false)
+            
+            # Should succeed because we skipped guard evaluation
+            expect(response.success?).to be true
+            
+            # Verify the event contains only the payload data, not the guards option
+            stream = PgEventstore::Stream.new(
+              context:,
+              stream_name: aggregate_name,
+              stream_id: aggregate.id
+            )
+            latest_event = PgEventstore.client.read(stream, options: { max_count: 1, direction: :desc }).first
+            
+            # The event should contain only payload data, guards option should not be in the event
+            expect(latest_event.data).to include(
+              'document_ids' => 'doc-123',
+              'another' => 'test'
+            )
+            expect(latest_event.data).not_to have_key('guards')
+          end
+          
+          it 'handles different calling patterns correctly' do
+            # Test various ways of passing payload with and without options
+            
+            # Method 1: Hash payload as first arg, option as kwarg
+            response1 = aggregate.approve_documents({ document_ids: 'doc-1', another: 'test1' }, guards: false)
+            expect(response1.success?).to be true
+            
+            # Method 2: Kwargs only (no options) - all kwargs become payload
+            response2 = aggregate.approve_documents(document_ids: 'doc-2', another: 'test2')
+            expect(response2.success?).to be true
+            
+            # Method 3: Hash payload without options
+            response3 = aggregate.approve_documents({ document_ids: 'doc-3', another: 'test3' })
+            expect(response3.success?).to be true
+            
+            # Verify all three created events with correct payload
+            stream = PgEventstore::Stream.new(
+              context:,
+              stream_name: aggregate_name,
+              stream_id: aggregate.id
+            )
+            events = PgEventstore.client.read(stream).to_a
+            
+            expect(events[-3].data).to include('document_ids' => 'doc-1', 'another' => 'test1')
+            expect(events[-2].data).to include('document_ids' => 'doc-2', 'another' => 'test2')
+            expect(events[-1].data).to include('document_ids' => 'doc-3', 'another' => 'test3')
+            
+            # None should have guards in the data
+            events.last(3).each do |event|
+              expect(event.data).not_to have_key('guards')
+            end
+          end
+          
+          it 'requires explicit hash when using guards option to avoid ambiguity' do
+            # To use guards as an option, you must pass payload as explicit first argument
+            # This avoids ambiguity about whether "guards" is payload or option
+            
+            # This passes guards: false as an option (skips guard evaluation)
+            response_with_option = aggregate.approve_documents({ document_ids: 'doc-4', another: 'test4' }, guards: false)
+            expect(response_with_option.success?).to be true
+            
+            # This passes all kwargs as payload (guards would be payload if included)
+            response_without_option = aggregate.approve_documents(document_ids: 'doc-5', another: 'test5')
+            expect(response_without_option.success?).to be true
+            
+            stream = PgEventstore::Stream.new(
+              context:,
+              stream_name: aggregate_name,
+              stream_id: aggregate.id
+            )
+            events = PgEventstore.client.read(stream).to_a
+            
+            # Both events should only have the expected payload attributes
+            expect(events[-2].data).to include('document_ids' => 'doc-4', 'another' => 'test4')
+            expect(events[-2].data).not_to have_key('guards')
+            
+            expect(events[-1].data).to include('document_ids' => 'doc-5', 'another' => 'test5')
+            expect(events[-1].data).not_to have_key('guards')
+          end
+        end
+
         context 'with custom state update' do
           before do
             Test::User::Aggregate.command :do_something do

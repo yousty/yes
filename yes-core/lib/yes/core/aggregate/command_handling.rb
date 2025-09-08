@@ -35,12 +35,18 @@ module Yes
         # Handles a command using the specified guard evaluator class
         # @param cmd [Yes::Core::Command] The command to be handled
         # @param guard_evaluator_class [Class] The guard evaluator class to process the command with
-        # @return [GuardEvaluator] The guard evaluator instance
+        # @param skip_guards [Boolean] Whether to skip guard evaluation
+        # @return [GuardEvaluator, nil] The guard evaluator instance or nil if guards are skipped
         # @raise [CommandHandling::GuardEvaluator::InvalidTransition] If the command transition is invalid
         # @raise [CommandHandling::GuardEvaluator::NoChangeTransition] If the command results in no change
         # @raise [Yousty::Eventsourcing::Command::Invalid] If the command is invalid
-        def handle_command(cmd, guard_evaluator_class)
+        def handle_command(cmd, guard_evaluator_class, skip_guards: false)
           command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
+
+          if skip_guards
+            send(:"#{command_helper.command_name.underscore}_error=", nil)
+            return nil
+          end
 
           evaluator = guard_evaluator_class.new(
             payload: cmd.payload,
@@ -63,18 +69,19 @@ module Yes
         # Executes a command within a transaction, handling errors and publishing events
         # @param cmd [Yes::Core::Command] The command to execute
         # @param guard_evaluator_class [Class] The guard evaluator class to process the command
+        # @param skip_guards [Boolean] Whether to skip guard evaluation
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] with error if command handling fails
-        def execute_command(cmd, guard_evaluator_class)
+        def execute_command(cmd, guard_evaluator_class, skip_guards: false)
           retries = 0
 
           begin
-            evaluator = handle_command(cmd, guard_evaluator_class)
+            evaluator = handle_command(cmd, guard_evaluator_class, skip_guards:)
 
             event = Yes::Core::CommandHandling::EventPublisher.new(
               command: cmd,
               aggregate_data: EventPublicationData.from_aggregate(self),
-              accessed_external_aggregates: evaluator.accessed_external_aggregates
+              accessed_external_aggregates: evaluator&.accessed_external_aggregates || []
             ).call
 
             command_response_class(cmd).new(cmd:, event:)
@@ -92,7 +99,7 @@ module Yes
           end
         end
 
-        def execute_command_and_update_state(command_name, payload)
+        def execute_command_and_update_state(command_name, payload, guards: true)
           payload = command_utilities.prepare_command_payload(command_name, payload.clone, self.class)
           payload = command_utilities.prepare_assign_command_payload(command_name, payload)
 
@@ -104,7 +111,7 @@ module Yes
           cmd = command_utilities.build_command(command_name, payload)
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
-          response = execute_command(cmd, guard_evaluator_class)
+          response = execute_command(cmd, guard_evaluator_class, skip_guards: !guards)
 
           update_read_model_with_revision_guard(response.event, payload, command_name) if response.success?
 
