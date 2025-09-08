@@ -95,11 +95,12 @@ RSpec.describe Yes::Core::CommandProcessor do
         expect(Test::User::Aggregate).to have_received(:new).with(user_id, draft: true)
       end
 
-      it 'preserves draft metadata through command processing' do
+      it 'preserves draft metadata through command processing and disables guards' do
         subject
         expect(aggregate_instance).to have_received(:public_send).with(
           'change_name',
-          hash_including(metadata: { draft: true })
+          hash_including(metadata: { draft: true }),
+          guards: false
         )
       end
     end
@@ -125,11 +126,12 @@ RSpec.describe Yes::Core::CommandProcessor do
         expect(Test::User::Aggregate).to have_received(:new).with(user_id, draft: true)
       end
 
-      it 'preserves edit_template_command metadata through command processing' do
+      it 'preserves edit_template_command metadata through command processing and disables guards' do
         subject
         expect(aggregate_instance).to have_received(:public_send).with(
           'change_name',
-          hash_including(metadata: { edit_template_command: true })
+          hash_including(metadata: { edit_template_command: true }),
+          guards: false
         )
       end
     end
@@ -145,6 +147,15 @@ RSpec.describe Yes::Core::CommandProcessor do
       it 'instantiates aggregate without draft parameter' do
         subject
         expect(Test::User::Aggregate).to have_received(:new).with(user_id, draft: nil)
+      end
+
+      it 'enables guards when not in draft mode' do
+        subject
+        expect(aggregate_instance).to have_received(:public_send).with(
+          'change_name',
+          hash_including(user_id:, name:),
+          guards: true
+        )
       end
     end
   end

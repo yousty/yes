@@ -65,9 +65,11 @@ module Yes
       # @return [CommandResponse] response from executing the command
       def run_command(cmd)
         command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
-        aggregate = aggregate_class(cmd).new(cmd.subject_id, draft: draft?(cmd))
+        draft = draft?(cmd)
+        aggregate = aggregate_class(cmd).new(cmd.subject_id, draft:)
         I18n.with_locale(command_helper.command_locale) do
-          aggregate.public_send(command_helper.command_name, **cmd.to_h)
+          # Pass payload as first argument, guards as option
+          aggregate.public_send(command_helper.command_name, cmd.to_h, guards: !draft)
         end
       end
 
