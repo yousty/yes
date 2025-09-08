@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2025-09-08
+
+### Added
+- Added guards option to skip guard evaluation in commands
+- Commands now support passing guards option based on draft mode
+
+### Changed
+- Command processor updated to pass guards option based on draft mode
+
 ## [0.7.3] - 2025-09-04
 
 ### Fixed
