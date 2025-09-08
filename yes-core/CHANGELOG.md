@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added guards option to skip guard evaluation in commands
-- Commands now support passing guards option based on draft mode
+- Draft mode skips guard evaluation by default
 
 ### Changed
 - Command processor updated to pass guards option based on draft mode
