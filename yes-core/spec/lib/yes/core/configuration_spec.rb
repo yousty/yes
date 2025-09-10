@@ -98,8 +98,8 @@ RSpec.describe Yes::Core::Configuration do
 
   describe 'plural model name handling' do
     before do
-      # Clear any existing registrations
-      Yes::Core.configuration = configuration
+      # Use the configuration instance from the test
+      allow(Yes::Core).to receive(:configuration).and_return(configuration)
     end
 
     describe '#all_read_model_class_names' do
