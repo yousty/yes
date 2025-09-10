@@ -222,12 +222,12 @@ module Yes
             
             # Add main read model if it exists
             if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
-              models << aggregate_class.read_model_name.classify.to_s
+              models << aggregate_class.read_model_name.camelize.to_s
             end
             
             # Add changes read model if aggregate is draftable
             if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
-              models << aggregate_class.changes_read_model_name.classify.to_s
+              models << aggregate_class.changes_read_model_name.camelize.to_s
             end
             
             models
@@ -271,7 +271,7 @@ module Yes
             # Main read model (not draft)
             if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
               begin
-                read_model_class = aggregate_class.read_model_name.classify.constantize
+                read_model_class = aggregate_class.read_model_name.camelize.constantize
                 models << { 
                   read_model_class: read_model_class, 
                   aggregate_class: aggregate_class,
@@ -285,7 +285,7 @@ module Yes
             # Changes read model (draft)
             if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
               begin
-                changes_model_class = aggregate_class.changes_read_model_name.classify.constantize
+                changes_model_class = aggregate_class.changes_read_model_name.camelize.constantize
                 models << { 
                   read_model_class: changes_model_class, 
                   aggregate_class: aggregate_class,
