@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.5] - 2025-09-10
+
+### Fixed
+- Fixed command name extraction from draft and edit template events
+
 ## [0.9.4] - 2025-09-10
 
 ### Fixed
