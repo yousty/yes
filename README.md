@@ -27,6 +27,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Default Naming](#default-naming)
   - [Customizing Read Models](#customizing-read-models)
   - [Read Model Schema Generator](#read-model-schema-generator)
+  - [Pending Update Tracking Generator](#pending-update-tracking-generator)
 - [Additional Features](#additional-features)
   - [Parent Aggregates](#parent-aggregates)
   - [Primary Context](#primary-context)
@@ -691,6 +692,83 @@ Attribute types are mapped to database column types as follows:
 - `:boolean` → `:boolean`
 - `:hash` → `:jsonb`
 - `:aggregate` → `:uuid` (stored as `<attribute_name>_id`)
+
+### Pending Update Tracking Generator
+
+To ensure read model consistency and enable recovery from failures during event processing, Yes provides a generator that adds pending update tracking to your read models:
+
+```shell
+rails generate yes:core:read_models:add_pending_update_tracking
+```
+
+This generator creates a migration that:
+1. Adds a `pending_update_since` column to all read model tables
+2. Creates indexes to efficiently track and recover stale pending updates
+3. Automatically handles PostgreSQL's 63-character index name limit by truncating long names
+
+#### What It Does
+
+The pending update tracking system helps prevent read models from getting stuck in an inconsistent state by:
+- Marking read models as "pending" before event publication
+- Clearing the pending state after successful updates
+- Allowing automatic recovery of stale pending states (default timeout: 5 minutes)
+
+#### Generated Migration Example
+
+```ruby
+class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration[7.1]
+  def up
+    read_model_tables = Yes::Core.configuration.all_read_model_table_names
+    
+    read_model_tables.each do |table_name|
+      next unless ActiveRecord::Base.connection.table_exists?(table_name)
+      
+      add_column table_name, :pending_update_since, :datetime
+      
+      # Unique index to prevent concurrent updates to same aggregate
+      add_index table_name, :id,
+                unique: true,
+                where: 'pending_update_since IS NOT NULL',
+                name: truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")
+      
+      # Index for efficient recovery queries
+      add_index table_name, :pending_update_since,
+                where: 'pending_update_since IS NOT NULL',
+                name: truncate_index_name("idx_#{table_name}_pending_recovery")
+    end
+  end
+end
+```
+
+#### Recovery Job
+
+You can schedule a background job to automatically recover stale pending updates:
+
+```ruby
+# app/jobs/read_model_recovery_job.rb
+class ReadModelRecoveryJob < ApplicationJob
+  def perform
+    Yes::Core::Jobs::ReadModelRecoveryJob.new.perform
+  end
+end
+
+# Schedule it to run periodically (e.g., every 5 minutes)
+# In your scheduler (whenever, sidekiq-cron, etc.):
+ReadModelRecoveryJob.perform_later
+```
+
+#### Manual Recovery
+
+You can also manually trigger recovery for specific read models:
+
+```ruby
+# Recover a specific read model instance
+read_model = UserReadModel.find(id)
+Yes::Core::CommandHandling::ReadModelRecoveryService.recover(read_model)
+
+# Recover all stale pending updates (older than 5 minutes by default)
+Yes::Core::CommandHandling::ReadModelRecoveryService.recover_all_stale
+```
 
 ## Additional Features
 
