@@ -90,8 +90,21 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
     end
 
     it 'truncates long index names correctly' do
-      expect(migration_content).to include('"idx_#{table_name}_one_pending_per_aggregate"')
-      expect(migration_content).to include('"idx_#{table_name}_pending_recovery"')
+      expect(migration_content).to include('def truncate_index_name(name)')
+      expect(migration_content).to include('return name if name.length <= 62')
+      expect(migration_content).to include('Digest::SHA256.hexdigest(name)[0..7]')
+      expect(migration_content).to include('truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")')
+      expect(migration_content).to include('truncate_index_name("idx_#{table_name}_pending_recovery")')
+    end
+
+    it 'handles very long table names by truncating index names' do
+      # The logic in the migration will truncate names over 62 chars
+      # Test that the helper method is defined
+      expect(migration_content).to include('def truncate_index_name')
+      
+      # Test that it's used for both index types
+      expect(migration_content).to match(/index_name = truncate_index_name\("idx_#\{table_name\}_one_pending_per_aggregate"\)/)
+      expect(migration_content).to match(/recovery_index_name = truncate_index_name\("idx_#\{table_name\}_pending_recovery"\)/)
     end
   end
 

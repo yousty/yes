@@ -27,6 +27,20 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migratio
 
   private
 
+  # Truncates an index name to fit within PostgreSQL's 63 character limit
+  # @param name [String] The index name to potentially truncate
+  # @return [String] The truncated index name
+  def truncate_index_name(name)
+    return name if name.length <= 62
+    
+    # Create a short hash for uniqueness
+    require 'digest'
+    hash = Digest::SHA256.hexdigest(name)[0..7]
+    
+    # Take first part of name and append hash
+    "#{name[0..52]}_#{hash}"
+  end
+
   # Adds pending_update_since tracking to a table
   # @param table_name [String] The table to modify
   def add_pending_tracking_to_table(table_name)
@@ -44,7 +58,7 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migratio
                           end
 
     # Create partial unique index to prevent concurrent pending states
-    index_name = "idx_#{table_name}_one_pending_per_aggregate"
+    index_name = truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")
     unless index_exists?(table_name, aggregate_id_column, name: index_name)
       add_index table_name,
                 aggregate_id_column,
@@ -55,7 +69,7 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migratio
     end
 
     # Create regular index for efficient recovery queries
-    recovery_index_name = "idx_#{table_name}_pending_recovery"
+    recovery_index_name = truncate_index_name("idx_#{table_name}_pending_recovery")
     unless index_exists?(table_name, :pending_update_since, name: recovery_index_name)
       add_index table_name,
                 :pending_update_since,
@@ -70,11 +84,11 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migratio
   def remove_pending_tracking_from_table(table_name)
     aggregate_id_column = column_exists?(table_name, :aggregate_id) ? :aggregate_id : :id
     
-    # Remove indexes
-    index_name = "idx_#{table_name}_one_pending_per_aggregate"
+    # Remove indexes (using same truncated names as when created)
+    index_name = truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")
     remove_index table_name, name: index_name if index_exists?(table_name, nil, name: index_name)
     
-    recovery_index_name = "idx_#{table_name}_pending_recovery"
+    recovery_index_name = truncate_index_name("idx_#{table_name}_pending_recovery")
     remove_index table_name, name: recovery_index_name if index_exists?(table_name, nil, name: recovery_index_name)
     
     # Remove column
