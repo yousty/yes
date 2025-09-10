@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
+require 'tmpdir'
+require 'fileutils'
+
 RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenerator, type: :generator do
-  let(:destination) { File.expand_path('../../../../dummy', __dir__) }
+  let(:destination) { Dir.mktmpdir('generator_test') }
 
   before do
     self.destination_root = destination
@@ -9,19 +12,13 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
     # Set Rails.root to the destination root
     allow(Rails).to receive(:root).and_return(Pathname.new(destination_root))
     
-    # Store list of existing migrations before running generator
-    @existing_migrations = Dir[File.join(destination_root, 'db/migrate/*')].map { |f| File.basename(f) }
+    # Create the migration directory
+    FileUtils.mkdir_p(File.join(destination_root, 'db/migrate'))
   end
 
   after do
-    # Clean up only newly generated migration files, not existing ones
-    Dir[File.join(destination_root, 'db/migrate/*')].each do |file|
-      basename = File.basename(file)
-      # Only remove if it's a new file created during the test
-      unless @existing_migrations.include?(basename)
-        FileUtils.rm_f(file)
-      end
-    end
+    # Clean up the temporary directory
+    FileUtils.rm_rf(destination) if File.exist?(destination)
   end
 
   describe '#create_migration' do
@@ -84,12 +81,23 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
     it 'checks table existence before processing' do
       expect(migration_content).to include('next unless ActiveRecord::Base.connection.table_exists?(table_name)')
     end
+
+    it 'includes say statements for feedback' do
+      expect(migration_content).to include('say "Added pending_update_since column')
+      expect(migration_content).to include('say "Added unique partial index')
+      expect(migration_content).to include('say "Added recovery index')
+      expect(migration_content).to include('say "Removed pending tracking')
+    end
+
+    it 'truncates long index names correctly' do
+      expect(migration_content).to include('"idx_#{table_name}_one_pending_per_aggregate"')
+      expect(migration_content).to include('"idx_#{table_name}_pending_recovery"')
+    end
   end
 
   describe '.next_migration_number' do
     it 'generates sequential migration numbers' do
       # Create a dummy migration to set the baseline
-      FileUtils.mkdir_p(File.join(destination_root, 'db/migrate'))
       FileUtils.touch(File.join(destination_root, 'db/migrate/20240101000000_dummy_migration.rb'))
       
       next_number = described_class.next_migration_number(File.join(destination_root, 'db/migrate'))
