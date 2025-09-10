@@ -15,7 +15,8 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
     Dir[File.join(destination_root, 'db/migrate/*')].each do |file|
       if file.include?('create_test_users') ||
          file.include?('create_test_locations') ||
-         file.include?('create_shared_profile_read_model')
+         file.include?('create_shared_profile_read_model') ||
+         file.include?('add_pending_update_tracking')
         next
       end
 
