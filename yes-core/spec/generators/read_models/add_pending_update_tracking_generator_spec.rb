@@ -2,7 +2,6 @@
 
 RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenerator, type: :generator do
   let(:destination) { File.expand_path('../../../../dummy', __dir__) }
-  let(:existing_migration) { '20250101000000_add_pending_update_tracking_to_read_models.rb' }
 
   before do
     self.destination_root = destination
@@ -18,10 +17,8 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
     # Clean up only newly generated migration files, not existing ones
     Dir[File.join(destination_root, 'db/migrate/*')].each do |file|
       basename = File.basename(file)
-      # Only remove if it's a new file created during the test and matches our pattern
-      if basename.include?('add_pending_update_tracking_to_read_models') && 
-         !@existing_migrations.include?(basename) &&
-         basename != existing_migration
+      # Only remove if it's a new file created during the test
+      unless @existing_migrations.include?(basename)
         FileUtils.rm_f(file)
       end
     end
