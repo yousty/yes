@@ -114,7 +114,7 @@ module Yes
         end
 
         def command_name_from_event(event, aggregate_class)
-          event_name = event.type.split('::').last.sub(event.stream.stream_name, '').underscore
+          event_name = event.type.split('::').last.sub(event.stream.stream_name.sub(/(Draft|EditTemplate)/, ''), '').underscore
           aggregate_class.commands.values.find { _1.event_name.to_s == event_name }.name
         end
 
