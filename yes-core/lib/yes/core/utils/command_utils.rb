@@ -184,8 +184,8 @@ module Yes
         # @return [String] The stream name
         def stream_name(aggregate_name, metadata = {})
           # TODO: remove this once edit template command is no longer used
-          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
-          
+          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command) 
+          return "#{aggregate_name}EditTemplate" if ENV['LEGACY_DRAFT_IS_EDIT_TEMPLATE'] && metadata&.dig(:draft)
           return "#{aggregate_name}Draft" if metadata&.dig(:draft)
 
           aggregate_name
