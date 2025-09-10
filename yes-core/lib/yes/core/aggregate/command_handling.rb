@@ -26,7 +26,12 @@ module Yes
               aggregate: self,
               event: event
             )
-            update_read_model(state_updater.call.merge(revision_column => event.stream_revision, locale:))
+            # Clear pending state when updating read model
+            update_read_model(state_updater.call.merge(
+              revision_column => event.stream_revision,
+              locale:,
+              pending_update_since: nil
+            ))
           end
         end
 
@@ -78,18 +83,33 @@ module Yes
           begin
             evaluator = handle_command(cmd, guard_evaluator_class, skip_guards:)
 
-            event = Yes::Core::CommandHandling::EventPublisher.new(
-              command: cmd,
-              aggregate_data: EventPublicationData.from_aggregate(self),
-              accessed_external_aggregates: evaluator&.accessed_external_aggregates || []
-            ).call
+            # Set pending state after guards pass but before publishing event
+            set_pending_update_state
+
+            begin
+              event = Yes::Core::CommandHandling::EventPublisher.new(
+                command: cmd,
+                aggregate_data: EventPublicationData.from_aggregate(self),
+                accessed_external_aggregates: evaluator&.accessed_external_aggregates || []
+              ).call
+            rescue StandardError => e
+              # Clear pending state if event publication fails
+              clear_pending_update_state
+              raise e
+            end
 
             command_response_class(cmd).new(cmd:, event:)
           rescue PgEventstore::WrongExpectedRevisionError => e
             retries += 1
 
-            retry if retries < MAX_RETRIES
+            if retries < MAX_RETRIES
+              # Clear pending state before retry
+              clear_pending_update_state
+              retry
+            end
 
+            # Clear pending state after max retries exceeded
+            clear_pending_update_state
             command_response_class(cmd).new(cmd:, error: e)
           rescue Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition,
                  Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition,
@@ -100,6 +120,9 @@ module Yes
         end
 
         def execute_command_and_update_state(command_name, payload, guards: true)
+          # Check and recover if read model is in pending state, passing the aggregate instance
+          Yes::Core::CommandHandling::ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate: self)
+
           payload = command_utilities.prepare_command_payload(command_name, payload.clone, self.class)
           payload = command_utilities.prepare_assign_command_payload(command_name, payload)
 
@@ -113,13 +136,40 @@ module Yes
 
           response = execute_command(cmd, guard_evaluator_class, skip_guards: !guards)
 
-          update_read_model_with_revision_guard(response.event, payload, command_name) if response.success?
+          update_read_model_with_revision_guard(response.event, payload, command_name) if response.success? 
 
           response
         end
 
         def command_response_class(cmd)
           cmd.is_a?(Yousty::Eventsourcing::CommandGroup) ? CommandGroupResponse : CommandResponse
+        end
+
+        # Sets the pending_update_since timestamp on the read model
+        # This marks the read model as being in a pending update state
+        # @raise [ActiveRecord::RecordNotUnique] if another process is already updating this aggregate
+        def set_pending_update_state
+          return unless read_model.respond_to?(:pending_update_since=)
+
+          begin
+            read_model.update_column(:pending_update_since, Time.current)
+          rescue ActiveRecord::RecordNotUnique => e
+            # Another process is already updating this aggregate
+            # Let it retry through the normal retry mechanism
+            raise PgEventstore::WrongExpectedRevisionError.new(
+              revision: -1,
+              expected_revision: -1,
+              stream: { context: 'dummy', stream_name: "aggregate-#{read_model.id}", stream_id: read_model.id }
+            ), "Another process is updating this aggregate (pending state conflict): #{e.message}"
+          end
+        end
+
+        # Clears the pending_update_since timestamp on the read model
+        # This marks the read model as no longer being in a pending update state
+        def clear_pending_update_state
+          return unless read_model.respond_to?(:pending_update_since=)
+
+          read_model.update_column(:pending_update_since, nil)
         end
       end
     end

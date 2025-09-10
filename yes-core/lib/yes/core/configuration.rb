@@ -205,6 +205,113 @@ module Yes
       def list_all_registered_classes
         @registered_classes
       end
+
+      # Get all read model class names from registered aggregates
+      # @return [Array<String>] Array of read model class names
+      # @example
+      #   read_model_classes = all_read_model_class_names
+      #   # Returns: ["UserReadModel", "UserChangesReadModel", "ProfileReadModel", ...]
+      def all_read_model_class_names
+        list_all_registered_classes.keys.flat_map do |context_aggregate|
+          context_name, aggregate_name = context_aggregate
+          aggregate_class_name = "#{context_name.to_s.camelize}::#{aggregate_name.to_s.camelize}::Aggregate"
+          
+          begin
+            aggregate_class = aggregate_class_name.constantize
+            models = []
+            
+            # Add main read model if it exists
+            if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
+              models << aggregate_class.read_model_name.classify.to_s
+            end
+            
+            # Add changes read model if aggregate is draftable
+            if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
+              models << aggregate_class.changes_read_model_name.classify.to_s
+            end
+            
+            models
+          rescue NameError
+            # Skip if aggregate class doesn't exist
+            []
+          end
+        end.compact.uniq
+      end
+
+      # Get all read model classes (constantized)
+      # @return [Array<Class>] Array of read model classes
+      # @example
+      #   read_model_classes = all_read_model_classes
+      #   # Returns: [UserReadModel, UserChangesReadModel, ProfileReadModel, ...]
+      def all_read_model_classes
+        all_read_model_class_names.filter_map do |class_name|
+          class_name.constantize
+        rescue NameError
+          nil
+        end
+      end
+
+      # Get all read model classes with their associated aggregate classes
+      # @return [Array<Hash>] Array of hashes with read_model_class, aggregate_class, and is_draft flag
+      # @example
+      #   mappings = all_read_models_with_aggregate_classes
+      #   # Returns: [
+      #   #   { read_model_class: UserReadModel, aggregate_class: User::Aggregate, is_draft: false },
+      #   #   { read_model_class: UserChangesReadModel, aggregate_class: User::Aggregate, is_draft: true }
+      #   # ]
+      def all_read_models_with_aggregate_classes
+        list_all_registered_classes.keys.flat_map do |context_aggregate|
+          context_name, aggregate_name = context_aggregate
+          aggregate_class_name = "#{context_name.to_s.camelize}::#{aggregate_name.to_s.camelize}::Aggregate"
+          
+          begin
+            aggregate_class = aggregate_class_name.constantize
+            models = []
+            
+            # Main read model (not draft)
+            if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
+              begin
+                read_model_class = aggregate_class.read_model_name.classify.constantize
+                models << { 
+                  read_model_class: read_model_class, 
+                  aggregate_class: aggregate_class,
+                  is_draft: false 
+                }
+              rescue NameError
+                # Skip if read model class doesn't exist
+              end
+            end
+            
+            # Changes read model (draft)
+            if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
+              begin
+                changes_model_class = aggregate_class.changes_read_model_name.classify.constantize
+                models << { 
+                  read_model_class: changes_model_class, 
+                  aggregate_class: aggregate_class,
+                  is_draft: true
+                }
+              rescue NameError
+                # Skip if changes read model class doesn't exist
+              end
+            end
+            
+            models
+          rescue NameError
+            # Skip if aggregate class doesn't exist
+            []
+          end
+        end.compact
+      end
+
+      # Get all read model table names
+      # @return [Array<String>] Array of read model table names
+      # @example
+      #   table_names = all_read_model_table_names
+      #   # Returns: ["user_read_models", "user_changes_read_models", "profile_read_models", ...]
+      def all_read_model_table_names
+        all_read_model_classes.map(&:table_name).uniq
+      end
     end
   end
 end
