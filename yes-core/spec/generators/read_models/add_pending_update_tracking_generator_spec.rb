@@ -40,73 +40,49 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
     end
 
     it 'generates migration with correct structure' do
-      # Mock the configuration to return test read model classes
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([
-        'test_user_read_models',
-        'shared_profile_read_models'
-      ])
-
       expect(migration_content).to include('class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration')
       expect(migration_content).to include('def up')
       expect(migration_content).to include('def down')
+      expect(migration_content).to include('Yes::Core.configuration.all_read_model_table_names')
     end
 
-    it 'adds pending_update_since column to each read model table' do
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([
-        'test_user_read_models',
-        'shared_profile_read_models'
-      ])
-
-      expect(migration_content).to include('add_column :test_user_read_models, :pending_update_since, :datetime')
-      expect(migration_content).to include('add_column :shared_profile_read_models, :pending_update_since, :datetime')
+    it 'defines helper methods for adding and removing tracking' do
+      expect(migration_content).to include('def add_pending_tracking_to_table(table_name)')
+      expect(migration_content).to include('def remove_pending_tracking_from_table(table_name)')
     end
 
-    it 'adds unique index for pending updates' do
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([
-        'test_user_read_models'
-      ])
+    it 'adds pending_update_since column with proper checks' do
+      expect(migration_content).to include('add_column table_name, :pending_update_since, :datetime')
+      expect(migration_content).to include('unless column_exists?(table_name, :pending_update_since)')
+    end
 
-      expect(migration_content).to include('add_index :test_user_read_models')
+    it 'adds unique index for preventing concurrent updates' do
+      expect(migration_content).to include('add_index table_name')
       expect(migration_content).to include('unique: true')
-      expect(migration_content).to include('where: "(pending_update_since IS NOT NULL)"')
-      expect(migration_content).to include('name: "idx_test_user_read_models_one_pending_per_aggregate"')
+      expect(migration_content).to include("where: 'pending_update_since IS NOT NULL'")
+      expect(migration_content).to include('idx_#{table_name}_one_pending_per_aggregate')
     end
 
     it 'adds recovery index for efficient querying' do
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([
-        'test_user_read_models'
-      ])
+      expect(migration_content).to include('idx_#{table_name}_pending_recovery')
+      expect(migration_content).to include(':pending_update_since')
+      expect(migration_content).to include("where: 'pending_update_since IS NOT NULL'")
+    end
 
-      expect(migration_content).to include('name: "idx_test_user_read_models_pending_recovery"')
-      expect(migration_content).to include('where: "(pending_update_since IS NOT NULL)"')
+    it 'handles both id and aggregate_id columns' do
+      expect(migration_content).to include('aggregate_id_column = if column_exists?(table_name, :aggregate_id)')
+      expect(migration_content).to include(':aggregate_id')
+      expect(migration_content).to include(':id')
     end
 
     it 'removes columns and indexes in down method' do
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([
-        'test_user_read_models'
-      ])
-
-      expect(migration_content).to include('remove_index :test_user_read_models, name: "idx_test_user_read_models_one_pending_per_aggregate"')
-      expect(migration_content).to include('remove_index :test_user_read_models, name: "idx_test_user_read_models_pending_recovery"')
-      expect(migration_content).to include('remove_column :test_user_read_models, :pending_update_since')
+      expect(migration_content).to include('remove_index table_name, name: index_name')
+      expect(migration_content).to include('remove_index table_name, name: recovery_index_name')
+      expect(migration_content).to include('remove_column table_name, :pending_update_since')
     end
 
-    it 'handles empty read model list gracefully' do
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([])
-
-      expect(migration_content).to include('class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration')
-      expect(migration_content).not_to include('add_column')
-      expect(migration_content).not_to include('add_index')
-    end
-
-    it 'truncates long table names for index names' do
-      allow(Yes::Core::Configuration).to receive(:all_read_model_table_names).and_return([
-        'very_long_table_name_that_exceeds_normal_limits_for_index_naming_conventions'
-      ])
-
-      # PostgreSQL has a 63 character limit for index names
-      expect(migration_content).to include('name: "idx_very_long_table_name_that_exceeds_norm_one_pending"')
-      expect(migration_content).to include('name: "idx_very_long_table_name_that_exceeds_norm_pending_rec"')
+    it 'checks table existence before processing' do
+      expect(migration_content).to include('next unless ActiveRecord::Base.connection.table_exists?(table_name)')
     end
   end
 
