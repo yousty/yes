@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.2] - 2025-09-10
+
+### Fixed
+- Fixed long index name errors in pending update tracking migration
+
 ## [0.9.1] - 2025-09-10
 
 ### Fixed
