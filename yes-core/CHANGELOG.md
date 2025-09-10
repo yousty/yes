@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2025-09-10
+
+### Added
+- Added pending update tracking to read models for better synchronization
+- Added read model recovery service and job for handling out-of-sync read models
+
+### Changed
+- Integrated pending update tracking into command handling workflow
+- Enhanced read model update mechanism with pending state management
+
 ## [0.8.0] - 2025-09-08
 
 ### Added
