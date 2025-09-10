@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_03_21_000002) do
+ActiveRecord::Schema[7.2].define(version: 2025_01_01_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -29,7 +29,10 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000002) do
     t.string "locale"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "pending_update_since"
     t.index ["email"], name: "index_shared_profile_read_models_on_email"
+    t.index ["id"], name: "idx_shared_profiles_one_pending_per_aggregate", unique: true, where: "(pending_update_since IS NOT NULL)"
+    t.index ["pending_update_since"], name: "idx_shared_profiles_pending_recovery", where: "(pending_update_since IS NOT NULL)"
   end
 
   create_table "test_locations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -56,5 +59,8 @@ ActiveRecord::Schema[7.2].define(version: 2024_03_21_000002) do
     t.integer "revision", default: -1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "pending_update_since"
+    t.index ["id"], name: "idx_test_users_one_pending_per_aggregate", unique: true, where: "(pending_update_since IS NOT NULL)"
+    t.index ["pending_update_since"], name: "idx_test_users_pending_recovery", where: "(pending_update_since IS NOT NULL)"
   end
 end
