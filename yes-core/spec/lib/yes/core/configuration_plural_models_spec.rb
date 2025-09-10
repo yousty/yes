@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'spec_helper'
-
 RSpec.describe Yes::Core::Configuration do
   describe 'plural model name handling' do
     let(:configuration) { Yes::Core::Configuration.new }
