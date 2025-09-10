@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1] - 2025-09-10
+
+### Fixed
+- Fixed generator specs to use temporary directory to avoid conflicts
+- Updated generator specs to match actual template output
+- Simplified spec cleanup logic to preserve existing migrations
+- Fixed generator error handling
+
 ## [0.9.0] - 2025-09-10
 
 ### Added
