@@ -97,16 +97,11 @@ RSpec.describe Yes::Core::Configuration do
   end
 
   describe 'plural model name handling' do
-    before do
-      # Use the configuration instance from the test
-      allow(Yes::Core).to receive(:configuration).and_return(configuration)
-    end
-
     describe '#all_read_model_class_names' do
       context 'with plural model names' do
         before do
-          # Register a test aggregate with plural name
-          configuration.register_aggregate_class(:test, :company_settings)
+          # Register a test aggregate with plural name - need all 5 params
+          configuration.register_aggregate_class(:test, :company_settings, :dummy_action, :command, test_class)
           
           # Mock the aggregate class
           aggregate_class = double('TestCompanySettingsAggregate')
@@ -128,8 +123,8 @@ RSpec.describe Yes::Core::Configuration do
 
       context 'with singular model names' do
         before do
-          # Register a test aggregate with singular name
-          configuration.register_aggregate_class(:test, :user)
+          # Register a test aggregate with singular name - need all 5 params
+          configuration.register_aggregate_class(:test, :user, :dummy_action, :command, test_class)
           
           # Mock the aggregate class
           aggregate_class = double('TestUserAggregate')
@@ -150,8 +145,8 @@ RSpec.describe Yes::Core::Configuration do
 
       context 'with mixed plural/singular compound names' do
         before do
-          # Register aggregates with compound names
-          configuration.register_aggregate_class(:company_management, :user_settings)
+          # Register aggregates with compound names - need all 5 params
+          configuration.register_aggregate_class(:company_management, :user_settings, :dummy_action, :command, test_class)
           
           # Mock the aggregate class
           aggregate_class = double('CompanyManagementUserSettingsAggregate')
@@ -175,8 +170,8 @@ RSpec.describe Yes::Core::Configuration do
     describe '#all_read_models_with_aggregate_classes' do
       context 'with plural model names' do
         before do
-          # Register a test aggregate
-          configuration.register_aggregate_class(:test, :company_settings)
+          # Register a test aggregate - need all 5 params
+          configuration.register_aggregate_class(:test, :company_settings, :dummy_action, :command, test_class)
           
           # Mock the aggregate class
           aggregate_class = Class.new
