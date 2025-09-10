@@ -159,7 +159,7 @@ module Yes
             raise PgEventstore::WrongExpectedRevisionError.new(
               revision: -1,
               expected_revision: -1,
-              stream: { context: 'dummy', stream_name: "aggregate-#{read_model.id}", stream_id: read_model.id }
+              stream: { context: self.class.context, stream_name: self.class.aggregate, stream_id: read_model.id }
             ), "Another process is updating this aggregate (pending state conflict): #{e.message}"
           end
         end
