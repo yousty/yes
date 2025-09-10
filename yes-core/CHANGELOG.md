@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.4] - 2025-09-10
+
+### Fixed
+- Fixed stream context reference in pending update error handling
+- Fixed configuration spec tests to use correct method signature
+
+### Added
+- Added legacy draft compatibility for edit templates
+
 ## [0.9.3] - 2025-09-10
 
 ### Fixed
