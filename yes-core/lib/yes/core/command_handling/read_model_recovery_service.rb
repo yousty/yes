@@ -63,8 +63,9 @@ module Yes
               
               latest_event = aggregate.latest_event
               
-              # Reapply the update using the existing update mechanism
-              aggregate.update_read_model_with_revision_guard(latest_event, latest_event.data)
+              # Reapply the update using ReadModelUpdater
+              updater = ReadModelUpdater.new(aggregate)
+              updater.call(latest_event, latest_event.data)
               
               RecoveryResult.new(success: true, read_model:)
             end
@@ -147,7 +148,8 @@ module Yes
             # If aggregate is provided (from command handling), use it directly
             if aggregate
               begin
-                aggregate.update_read_model_with_revision_guard(
+                updater = ReadModelUpdater.new(aggregate)
+                updater.call(
                   aggregate.latest_event, 
                   aggregate.latest_event.data
                 )

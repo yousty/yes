@@ -3,6 +3,8 @@
 module Test
   module User
     class Aggregate < Yes::Core::Aggregate
+      read_model 'test_user'
+      
       authorize do
         command.user_id == auth_data[:user_id]
       end

@@ -32,12 +32,6 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         )
       end
       
-      def update_read_model_with_revision_guard(event, payload, command_name)
-        read_model.update!(
-          revision: event.stream_revision,
-          pending_update_since: nil
-        )
-      end
     end
   end
   
@@ -53,7 +47,9 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
     )
   end
   
-  let(:aggregate) { double('aggregate', read_model:, latest_event: nil, update_read_model_with_revision_guard: nil) }
+  let(:command_utilities) { double('command_utilities') }
+  let(:revision_column) { :revision }
+  let(:aggregate) { double('aggregate', read_model:, latest_event: nil) }
   
   describe '.recover_read_model' do
     subject(:recover) { described_class.recover_read_model(read_model, aggregate_class: aggregate_class, is_draft: false) }
@@ -61,6 +57,8 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
     before do
       allow(described_class).to receive(:with_advisory_lock).and_yield
       allow(aggregate_class).to receive(:new).with(read_model.id).and_return(aggregate)
+      allow(aggregate).to receive(:send).with(:command_utilities).and_return(command_utilities)
+      allow(aggregate).to receive(:send).with(:revision_column).and_return(revision_column)
       allow(aggregate).to receive(:latest_event).and_return(
         Yousty::Eventsourcing::Event.new(
           id: SecureRandom.uuid,
@@ -69,7 +67,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
           stream_revision: 5
         )
       )
-      allow(aggregate).to receive(:update_read_model_with_revision_guard)
+      allow_any_instance_of(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:call)
     end
     
     context 'when read model is stuck in pending state' do
@@ -87,7 +85,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
       end
       
       it 'reapplies the state update' do
-        expect(aggregate).to receive(:update_read_model_with_revision_guard)
+        expect_any_instance_of(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:call)
         recover
       end
     end
@@ -124,7 +122,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
     
     context 'when recovery fails' do
       before do
-        allow(aggregate).to receive(:update_read_model_with_revision_guard)
+        allow_any_instance_of(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:call)
           .and_raise(StandardError, 'Recovery failed')
       end
       

@@ -67,6 +67,8 @@ RSpec.describe Yes::Core::CommandHandling::StateUpdater do
   describe 'state update evaluation context' do
     context 'when accessing via aggregate attribute' do
       before do
+        Test::User::Aggregate.parent :location
+        
         described_class.update_state do
           name { location.id }
         end

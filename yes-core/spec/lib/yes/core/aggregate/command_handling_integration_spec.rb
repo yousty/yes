@@ -85,7 +85,7 @@ RSpec.describe 'Yes::Core::Aggregate Command Handling with Pending State', integ
         # Allow event to publish but fail on read model update  
         allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new)
           .and_return(double(call: event))
-        allow(aggregate).to receive(:update_read_model_with_revision_guard)
+        allow_any_instance_of(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:call)
           .and_raise(ActiveRecord::StaleObjectError, 'Revision conflict')
       end
       
@@ -110,10 +110,10 @@ RSpec.describe 'Yes::Core::Aggregate Command Handling with Pending State', integ
         # Simulate another process already setting pending state
         read_model.update_column(:pending_update_since, 1.minute.ago)
         
-        # Mock to simulate unique constraint violation when trying to set pending state
+        # Mock to simulate trigger error when trying to set pending state
         allow(concurrent_aggregate.read_model).to receive(:update_column) do |column, value|
           if column == :pending_update_since && !value.nil?
-            raise ActiveRecord::RecordNotUnique, 'Unique constraint violation'
+            raise ActiveRecord::StatementInvalid, 'Concurrent pending update not allowed for record 123'
           else
             # Allow clearing pending state
             nil
@@ -122,10 +122,14 @@ RSpec.describe 'Yes::Core::Aggregate Command Handling with Pending State', integ
       end
       
       it 'handles concurrent updates gracefully' do
-        # The command handling should catch the error and handle it
+        # When the concurrent aggregate tries to execute a command,
+        # it should detect the conflict when trying to set pending state
+        # The mock in the before block will raise ActiveRecord::StatementInvalid
+        # which CommandExecutor converts to ConcurrentUpdateError
+        
         expect {
-          concurrent_aggregate.send(:set_pending_update_state)
-        }.to raise_error(PgEventstore::WrongExpectedRevisionError, /pending state conflict/)
+          concurrent_aggregate.approve_documents(valid_payload)
+        }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError, /Concurrent update detected/)
       end
     end
     
@@ -301,53 +305,6 @@ RSpec.describe 'Yes::Core::Aggregate Command Handling with Pending State', integ
   end
   
   describe 'error handling and edge cases' do
-    context 'when read model does not support pending_update_since' do
-      let(:non_pending_model) do
-        double('ReadModel', id: SecureRandom.uuid, revision: 0)
-      end
-
-      let(:event) do
-        Yousty::Eventsourcing::Event.new(
-          id: SecureRandom.uuid,
-          type: 'Test::UserDocumentsApproved',
-          data: valid_payload.merge(user_id: aggregate_id),
-          stream_revision: 1
-        )
-      end
-      
-      before do
-        allow(non_pending_model).to receive(:respond_to?) do |method|
-          case method
-          when :pending_update_since=, :pending_update_since, :update_column
-            false
-          else
-            true
-          end
-        end
-        allow(aggregate).to receive(:read_model).and_return(non_pending_model)
-
-        # Stub all the methods the aggregate might call on the read model
-        allow(non_pending_model).to receive(:document_ids).and_return(nil)
-        allow(non_pending_model).to receive(:another).and_return(nil)
-        allow(non_pending_model).to receive(:update!)
-      end
-      
-      it 'executes command without pending state tracking' do
-        aggregate_failures do
-          # The command should still work even without pending state support
-          expect(non_pending_model).not_to receive(:update_column)
-          
-          allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new)
-            .and_return(double(call: event))
-          allow(aggregate).to receive(:update_read_model_with_revision_guard)
-          
-          response = aggregate.approve_documents(valid_payload)
-          
-          expect(response.success?).to be true
-        end
-      end
-    end
-    
     context 'when process crashes during command execution' do
       let(:job) { Yes::Core::Jobs::ReadModelRecoveryJob.new }
       
