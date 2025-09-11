@@ -31,7 +31,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_01_01_000000) do
     t.datetime "updated_at", null: false
     t.datetime "pending_update_since"
     t.index ["email"], name: "index_shared_profile_read_models_on_email"
-    t.index ["id"], name: "idx_shared_profiles_one_pending_per_aggregate", unique: true, where: "(pending_update_since IS NOT NULL)"
     t.index ["pending_update_since"], name: "idx_shared_profiles_pending_recovery", where: "(pending_update_since IS NOT NULL)"
   end
 
@@ -60,7 +59,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_01_01_000000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "pending_update_since"
-    t.index ["id"], name: "idx_test_users_one_pending_per_aggregate", unique: true, where: "(pending_update_since IS NOT NULL)"
     t.index ["pending_update_since"], name: "idx_test_users_pending_recovery", where: "(pending_update_since IS NOT NULL)"
   end
 end

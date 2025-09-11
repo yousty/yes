@@ -53,11 +53,11 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
       expect(migration_content).to include('unless column_exists?(table_name, :pending_update_since)')
     end
 
-    it 'adds unique index for preventing concurrent updates' do
-      expect(migration_content).to include('add_index table_name')
-      expect(migration_content).to include('unique: true')
-      expect(migration_content).to include("where: 'pending_update_since IS NOT NULL'")
-      expect(migration_content).to include('idx_#{table_name}_one_pending_per_aggregate')
+    it 'adds trigger for preventing concurrent updates' do
+      expect(migration_content).to include('CREATE TRIGGER')
+      expect(migration_content).to include('prevent_concurrent_pending_update()')
+      expect(migration_content).to include('BEFORE UPDATE')
+      expect(migration_content).to include('trg_#{table_name}_prevent_concurrent_pending')
     end
 
     it 'adds recovery index for efficient querying' do
@@ -66,14 +66,14 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
       expect(migration_content).to include("where: 'pending_update_since IS NOT NULL'")
     end
 
-    it 'handles both id and aggregate_id columns' do
-      expect(migration_content).to include('aggregate_id_column = if column_exists?(table_name, :aggregate_id)')
-      expect(migration_content).to include(':aggregate_id')
-      expect(migration_content).to include(':id')
+    it 'creates trigger function for concurrent update prevention' do
+      expect(migration_content).to include('CREATE OR REPLACE FUNCTION prevent_concurrent_pending_update()')
+      expect(migration_content).to include('RAISE EXCEPTION')
+      expect(migration_content).to include('Concurrent pending update not allowed')
     end
 
-    it 'removes columns and indexes in down method' do
-      expect(migration_content).to include('remove_index table_name, name: index_name')
+    it 'removes columns and triggers in down method' do
+      expect(migration_content).to include('DROP TRIGGER IF EXISTS')
       expect(migration_content).to include('remove_index table_name, name: recovery_index_name')
       expect(migration_content).to include('remove_column table_name, :pending_update_since')
     end
@@ -84,7 +84,7 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
 
     it 'includes say statements for feedback' do
       expect(migration_content).to include('say "Added pending_update_since column')
-      expect(migration_content).to include('say "Added unique partial index')
+      expect(migration_content).to include('say "Added concurrent update prevention trigger')
       expect(migration_content).to include('say "Added recovery index')
       expect(migration_content).to include('say "Removed pending tracking')
     end
@@ -93,17 +93,17 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
       expect(migration_content).to include('def truncate_index_name(name)')
       expect(migration_content).to include('return name if name.length <= 62')
       expect(migration_content).to include('Digest::SHA256.hexdigest(name)[0..7]')
-      expect(migration_content).to include('truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")')
       expect(migration_content).to include('truncate_index_name("idx_#{table_name}_pending_recovery")')
     end
 
-    it 'handles very long table names by truncating index names' do
+    it 'handles very long table names by truncating names' do
       # The logic in the migration will truncate names over 62 chars
       # Test that the helper method is defined
       expect(migration_content).to include('def truncate_index_name')
       
-      # Test that it's used for both index types
-      expect(migration_content).to match(/index_name = truncate_index_name\("idx_#\{table_name\}_one_pending_per_aggregate"\)/)
+      # Test that triggers are truncated
+      expect(migration_content).to include('trigger_name = trigger_name[0..62] if trigger_name.length > 63')
+      # Test that recovery index uses truncation
       expect(migration_content).to match(/recovery_index_name = truncate_index_name\("idx_#\{table_name\}_pending_recovery"\)/)
     end
   end

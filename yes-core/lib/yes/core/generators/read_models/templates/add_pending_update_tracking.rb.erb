@@ -50,23 +50,22 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migratio
       say "Added pending_update_since column to #{table_name}", :green
     end
 
-    # Determine the aggregate_id column (could be id or aggregate_id)
-    aggregate_id_column = if column_exists?(table_name, :aggregate_id)
-                            :aggregate_id
-                          else
-                            :id
-                          end
+    # Create trigger function if it doesn't exist
+    create_pending_update_trigger_function
 
-    # Create partial unique index to prevent concurrent pending states
-    index_name = truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")
-    unless index_exists?(table_name, aggregate_id_column, name: index_name)
-      add_index table_name,
-                aggregate_id_column,
-                unique: true,
-                where: 'pending_update_since IS NOT NULL',
-                name: index_name
-      say "Added unique partial index on #{table_name}.#{aggregate_id_column}", :green
-    end
+    # Create trigger on the table
+    trigger_name = "trg_#{table_name}_prevent_concurrent_pending"
+    # Truncate trigger name if too long
+    trigger_name = trigger_name[0..62] if trigger_name.length > 63
+    
+    execute <<-SQL
+      DROP TRIGGER IF EXISTS #{trigger_name} ON #{table_name};
+      CREATE TRIGGER #{trigger_name}
+        BEFORE UPDATE ON #{table_name}
+        FOR EACH ROW
+        EXECUTE FUNCTION prevent_concurrent_pending_update();
+    SQL
+    say "Added concurrent update prevention trigger on #{table_name}", :green
 
     # Create regular index for efficient recovery queries
     recovery_index_name = truncate_index_name("idx_#{table_name}_pending_recovery")
@@ -79,20 +78,44 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migratio
     end
   end
 
+  # Creates the PostgreSQL function to prevent concurrent pending updates
+  def create_pending_update_trigger_function
+    execute <<-SQL
+      CREATE OR REPLACE FUNCTION prevent_concurrent_pending_update()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        -- If trying to set pending_update_since when it's already set
+        IF NEW.pending_update_since IS NOT NULL AND 
+           OLD.pending_update_since IS NOT NULL AND
+           NEW.pending_update_since != OLD.pending_update_since THEN
+          RAISE EXCEPTION 'Concurrent pending update not allowed for record %', NEW.id
+            USING ERRCODE = 'unique_violation';
+        END IF;
+        
+        -- Allow clearing pending_update_since (setting to NULL)
+        -- Allow initial setting when OLD value is NULL
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    SQL
+  end
+
   # Removes pending tracking from a table
   # @param table_name [String] The table to modify
   def remove_pending_tracking_from_table(table_name)
-    aggregate_id_column = column_exists?(table_name, :aggregate_id) ? :aggregate_id : :id
+    # Remove trigger
+    trigger_name = "trg_#{table_name}_prevent_concurrent_pending"
+    trigger_name = trigger_name[0..62] if trigger_name.length > 63
+    execute "DROP TRIGGER IF EXISTS #{trigger_name} ON #{table_name};"
     
-    # Remove indexes (using same truncated names as when created)
-    index_name = truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")
-    remove_index table_name, name: index_name if index_exists?(table_name, nil, name: index_name)
-    
+    # Remove recovery index
     recovery_index_name = truncate_index_name("idx_#{table_name}_pending_recovery")
     remove_index table_name, name: recovery_index_name if index_exists?(table_name, nil, name: recovery_index_name)
     
     # Remove column
     remove_column table_name, :pending_update_since if column_exists?(table_name, :pending_update_since)
+    
+    # Note: We don't remove the trigger function as it might be used by other tables
     
     say "Removed pending tracking from #{table_name}", :yellow
   end
