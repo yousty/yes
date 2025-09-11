@@ -48,7 +48,6 @@ module Yes
       include HasReadModel
       include Draftable
       include HasAuthorizer
-      include CommandHandling
 
       class << self
         # @return [String, nil] The primary context name for this aggregate

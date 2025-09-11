@@ -22,8 +22,9 @@ module Yes
                   cmd = command_utilities.build_command(command_name, payload)
                   guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
-                  # handle_command returns a guard evaluator instance if successful
-                  send(:handle_command, cmd, guard_evaluator_class).present?
+                  Yes::Core::CommandHandling::GuardRunner.new(self).call(
+                    cmd, guard_evaluator_class, skip_guards: false
+                  ).present?
                 rescue Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition,
                        Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition,
                        Yousty::Eventsourcing::Command::Invalid

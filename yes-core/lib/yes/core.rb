@@ -6,17 +6,6 @@ require 'yousty/api' # for serializers
 
 module Yes
   module Core
-    class Error < StandardError; end
-
-    # Base command class for all commands in the system
-    class Command < Yousty::Eventsourcing::Command; end
-
-    # Base event class for all events in the system
-    class Event < Yousty::Eventsourcing::Event; end
-
-    # Base command handler class for all command handlers in the system
-    class CommandHandler < Yousty::Eventsourcing::Stateless::CommandHandler; end
-
     class << self
       def loader
         @loader ||= begin

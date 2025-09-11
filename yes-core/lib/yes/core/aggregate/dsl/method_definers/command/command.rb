@@ -32,7 +32,7 @@ module Yes
                     payload = {}
                   end
                   
-                  execute_command_and_update_state(command_name, payload, guards:)
+                  Yes::Core::CommandHandling::CommandHandler.new(self).call(command_name, payload, guards:)
                 end
               end
             end
