@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.6] - 2025-09-11
+
+### Changed
+- Refactored CommandHandling module following SOLID principles
+- Replaced unique index with PostgreSQL trigger for concurrent update prevention
+
+### Fixed
+- Updated specs to use real models and improve test structure
+
 ## [0.9.5] - 2025-09-10
 
 ### Fixed
