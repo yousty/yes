@@ -12,6 +12,9 @@ module Dummy
     config.eager_load = false
     config.active_support.deprecation = :log
 
+    # Use SQL schema format to preserve database-specific features like triggers
+    config.active_record.schema_format = :sql
+
     # Add database configuration
     config.paths['config/database'] = ['config/database.yml']
     config.paths.add 'db/migrate', with: 'db/migrate'
