@@ -10,8 +10,12 @@ RSpec.describe Yes::Core::Configuration do
   describe '.configuration' do
     subject { Yes::Core.configuration }
 
-    it { is_expected.to be_a(described_class) }
-    it { is_expected.to eq(Yes::Core.configuration) }
+    it 'returns the configuration singleton' do
+      aggregate_failures do
+        expect(subject).to be_a(described_class)
+        expect(subject).to eq(Yes::Core.configuration)
+      end
+    end
   end
 
   describe '#register_command_class' do
@@ -74,8 +78,12 @@ RSpec.describe Yes::Core::Configuration do
       configuration.register_event_class(context_name, aggregate_name, :created, test_class)
     end
 
-    it { is_expected.to include(command: { create: test_class }, event: { created: test_class }) }
-    it { expect(subject[:handler]).to be_empty }
+    it 'returns the registered classes' do
+      aggregate_failures do
+        expect(subject).to include(command: { create: test_class }, event: { created: test_class })
+        expect(subject[:handler]).to be_empty
+      end
+    end
   end
 
   describe '#list_all_registered_classes' do
@@ -192,20 +200,6 @@ RSpec.describe Yes::Core::Configuration do
           expect(mappings).not_to be_empty
           expect(mappings.first[:read_model_class]).to be_a(Class)
         end
-      end
-    end
-
-    describe 'classify vs camelize behavior' do
-      it 'demonstrates the difference between classify and camelize' do
-        # Document the actual behavior difference
-        expect('company_settings'.classify).to eq('CompanySetting')  # Singularizes
-        expect('company_settings'.camelize).to eq('CompanySettings')  # Preserves plurality
-        
-        expect('test_users'.classify).to eq('TestUser')  # Singularizes
-        expect('test_users'.camelize).to eq('TestUsers')  # Preserves plurality
-        
-        expect('user'.classify).to eq('User')  # Already singular
-        expect('user'.camelize).to eq('User')  # Already singular
       end
     end
   end
