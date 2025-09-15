@@ -26,7 +26,6 @@ source 'https://gem.fury.io/yousty-ag/' do
   gem 'yousty-eventsourcing', '~> 14'
 end
 
-gem 'database_cleaner-active_record'
 gem 'faker'
 gem 'generator_spec'
 gem 'rspec', '~> 3.0'
