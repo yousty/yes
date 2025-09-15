@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.7] - 2025-09-15
+
+### Added
+- Added rake task for loading structure.sql
+
+### Changed
+- Switched dummy app to SQL schema format
+- Improved command handling implementation
+- Refactored command handling specs to use real classes
+- Updated remaining specs to use real models
+- Cleaned up Gemfiles and database setup
+
 ## [0.9.6] - 2025-09-11
 
 ### Changed
