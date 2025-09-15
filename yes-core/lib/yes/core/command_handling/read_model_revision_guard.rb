@@ -48,6 +48,10 @@ module Yes
             )
           end
 
+          def debug?
+            base_logger&.debug?
+          end
+
           private
 
           attr_reader :base_logger, :context

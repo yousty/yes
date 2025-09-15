@@ -8,7 +8,7 @@ module Yes
       #
       # @example
       #   runner = GuardRunner.new(aggregate)
-      #   evaluator = runner.call(cmd, guard_evaluator_class, skip_guards: false)
+      #   evaluator = runner.call(cmd, command_name, guard_evaluator_class, skip_guards: false)
       #
       class GuardRunner
         # Initializes a new GuardRunner
@@ -21,15 +21,14 @@ module Yes
         # Evaluates guards for the command
         #
         # @param cmd [Yes::Core::Command] The command to be handled
+        # @param command_name [Symbol] The name of the command being executed
         # @param guard_evaluator_class [Class] The guard evaluator class
         # @param skip_guards [Boolean] Whether to skip guard evaluation
         # @return [GuardEvaluator, nil] The guard evaluator instance or nil if guards skipped
         # @raise [GuardEvaluator::InvalidTransition] When the transition is invalid
         # @raise [GuardEvaluator::NoChangeTransition] When no change would occur
         # @raise [Yousty::Eventsourcing::Command::Invalid] When the command is invalid
-        def call(cmd, guard_evaluator_class, skip_guards:)
-          command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
-          command_name = command_helper.command_name
+        def call(cmd, command_name, guard_evaluator_class, skip_guards:)
 
           if skip_guards
             clear_command_error(command_name)
@@ -50,7 +49,7 @@ module Yes
         rescue GuardEvaluator::InvalidTransition,
                GuardEvaluator::NoChangeTransition,
                Yousty::Eventsourcing::Command::Invalid => e
-          aggregate.send(:"#{command_name.underscore}_error=", e.message)
+          aggregate.send(:"#{command_name.to_s.underscore}_error=", e.message)
           raise e
         end
 
@@ -60,10 +59,10 @@ module Yes
 
         # Clears command-specific error on aggregate
         #
-        # @param command_name [String] The command name
+        # @param command_name [Symbol, String] The command name
         # @return [void]
         def clear_command_error(command_name)
-          aggregate.send(:"#{command_name.underscore}_error=", nil)
+          aggregate.send(:"#{command_name.to_s.underscore}_error=", nil)
         end
       end
     end

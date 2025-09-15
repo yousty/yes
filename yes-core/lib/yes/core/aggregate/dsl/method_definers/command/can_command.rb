@@ -23,7 +23,7 @@ module Yes
                   guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
                   Yes::Core::CommandHandling::GuardRunner.new(self).call(
-                    cmd, guard_evaluator_class, skip_guards: false
+                    cmd, command_name, guard_evaluator_class, skip_guards: false
                   ).present?
                 rescue Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition,
                        Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition,

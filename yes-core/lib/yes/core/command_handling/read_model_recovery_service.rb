@@ -190,11 +190,7 @@ module Yes
                 .where('pending_update_since < ?', stuck_timeout.ago)
                 .limit(batch_size)
                 .each do |read_model|
-                  stuck_models << { 
-                    read_model: read_model, 
-                    aggregate_class: aggregate_class,
-                    is_draft: is_draft
-                  }
+                  stuck_models << { read_model:, aggregate_class:, is_draft: }
                 end
             end
             

@@ -69,14 +69,15 @@ module Yes
         # Executes a command with retry logic and error handling
         #
         # @param cmd [Yes::Core::Command] The command to execute
+        # @param command_name [Symbol] The name of the command being executed
         # @param guard_evaluator_class [Class] The guard evaluator class to process the command
         # @param skip_guards [Boolean] Whether to skip guard evaluation (default: false)
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
-        def call(cmd, guard_evaluator_class, skip_guards: false)
+        def call(cmd, command_name, guard_evaluator_class, skip_guards: false)
           retries = 0
 
           begin
-            evaluator = GuardRunner.new(aggregate).call(cmd, guard_evaluator_class, skip_guards:)
+            evaluator = GuardRunner.new(aggregate).call(cmd, command_name, guard_evaluator_class, skip_guards:)
             
             set_pending_update_state
             
@@ -92,10 +93,14 @@ module Yes
             end
 
             command_response_class(cmd).new(cmd:, event:)
-          rescue PgEventstore::WrongExpectedRevisionError, ConcurrentUpdateError => e
+          rescue PgEventstore::WrongExpectedRevisionError => e
             retries += 1
             clear_pending_update_state
-            
+
+            retries <= MAX_RETRIES ? retry : raise(e)
+          rescue ConcurrentUpdateError => e
+            retries += 1
+            # Don't clear pending state - another process owns it
             retries <= MAX_RETRIES ? retry : raise(e)
           rescue GuardEvaluator::InvalidTransition,
                  GuardEvaluator::NoChangeTransition,
@@ -113,8 +118,6 @@ module Yes
         # @return [void]
         # @raise [ConcurrentUpdateError] If another process is already updating
         def set_pending_update_state
-          return unless read_model.respond_to?(:pending_update_since=)
-
           begin
             read_model.update_column(:pending_update_since, Time.current)
           rescue ActiveRecord::StatementInvalid => e

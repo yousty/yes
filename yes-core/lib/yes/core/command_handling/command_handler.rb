@@ -36,10 +36,10 @@ module Yes
           cmd = command_utilities.build_command(command_name, prepared_payload)
           
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
-          response = CommandExecutor.new(aggregate).call(cmd, guard_evaluator_class, skip_guards: !guards)
+          response = CommandExecutor.new(aggregate).call(cmd, command_name, guard_evaluator_class, skip_guards: !guards)
 
           ReadModelUpdater.new(aggregate).call(response.event, prepared_payload, command_name) if response.success?
-          
+
           response
         end
 
