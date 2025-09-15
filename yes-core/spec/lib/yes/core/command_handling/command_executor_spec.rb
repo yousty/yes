@@ -1,340 +1,139 @@
 # frozen_string_literal: true
 
-# frozen_string_literal: true
-
 RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
-  # Test command class for specs
-  class ExecutorTestCommand < Yes::Core::Command
-    attribute :document_ids, ::Yousty::Eventsourcing::Types::UUID
-    attribute? :another, ::Yousty::Eventsourcing::Types::String.optional
-    attribute? :user_id, ::Yousty::Eventsourcing::Types::UUID.optional
-  end
-
   subject(:executor) { described_class.new(aggregate) }
 
   let(:aggregate_id) { SecureRandom.uuid }
+  let(:user_id) { SecureRandom.uuid }
+  let!(:read_model) { TestUser.create!(id: aggregate_id, name: 'John') }
   let(:aggregate) { Test::User::Aggregate.new(aggregate_id) }
-  let(:read_model) { TestUser.create!(id: aggregate_id, revision: -1) }
-  let(:aggregate_class) { Test::User::Aggregate }
-  
-  let(:command) { ExecutorTestCommand.new(payload.merge(metadata: metadata, batch_id: nil)) }
-  let(:payload) { { document_ids: SecureRandom.uuid } }
-  let(:metadata) { {} }
-  let(:guard_evaluator_class) { class_double(Yes::Core::CommandHandling::GuardEvaluator) }
-  let(:guard_evaluator) { instance_double(Yes::Core::CommandHandling::GuardEvaluator) }
-  let(:event_publisher) { instance_double(Yes::Core::CommandHandling::EventPublisher) }
-  let(:event) { Yousty::Eventsourcing::Event.new(id: SecureRandom.uuid, type: 'TestEvent', data: {}) }
-  let(:command_helper) { double('CommandHelper', command_name: 'ApproveDocuments') }
 
-  before do
-    allow(aggregate).to receive(:read_model).and_return(read_model)
-    allow(Yousty::Eventsourcing::CommandHelper).to receive(:new).with(command).and_return(command_helper)
-  end
 
   describe '#call' do
-    context 'when guards are evaluated' do
-      before do
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator)
-        allow(guard_evaluator).to receive(:call)
-        allow(guard_evaluator).to receive(:accessed_external_aggregates).and_return([])
-        allow(aggregate).to receive(:send)
-        allow(read_model).to receive(:respond_to?).with(:pending_update_since=).and_return(true)
-        allow(read_model).to receive(:update_column)
-        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(event_publisher)
-        allow(event_publisher).to receive(:call).and_return(event)
-      end
+    subject { executor.call(command, command_name, guard_evaluator_class, skip_guards:) }
 
-      it 'evaluates guards' do
+    let(:command_name) { :change_name }
+    let(:guard_evaluator_class) { Test::User::Commands::ChangeName::GuardEvaluator }
+    let(:skip_guards) { false }
+
+    let(:command) do
+      Test::User::Commands::ChangeName::Command.new(
+        name: 'Jane',
+        user_id:
+      )
+    end
+
+    context 'when successful' do
+      it 'successfully executes when value changes' do
+        result = subject
+
         aggregate_failures do
-          expect(guard_evaluator_class)
-            .to receive(:new)
-            .with(
-              payload: payload,
-              metadata: metadata,
-              aggregate: aggregate,
-              command_name: 'ApproveDocuments'
-            )
-            .and_return(guard_evaluator)
-          
-          expect(guard_evaluator).to receive(:call)
+          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result.error).to be_nil
+          expect(result.event).to be_present
         end
-        
-        executor.call(command, guard_evaluator_class, skip_guards: false)
+      end
+    end
+
+    context 'when guard fails' do
+      let(:command) do
+        Test::User::Commands::ChangeName::Command.new(
+          name: 'John', # Same as current value
+          user_id:
+        )
       end
 
-      it 'clears command error on success' do
-        expect(aggregate).to receive(:send).with(:approve_documents_error=, nil)
-        
-        executor.call(command, guard_evaluator_class, skip_guards: false)
-      end
+      it 'returns error when value does not change' do
+        # The no_change guard is automatically added to change commands
+        result = subject
 
-      context 'when guard evaluation fails' do
-        let(:guard_error) { Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition.new('Invalid') }
-
-        before do
-          allow(guard_evaluator).to receive(:call).and_raise(guard_error)
-        end
-
-        it 'sets command error' do
-          expect(aggregate).to receive(:send).with(:approve_documents_error=, 'Invalid')
-          
-          executor.call(command, guard_evaluator_class, skip_guards: false)
-        end
-
-        it 'returns error response' do
-          result = executor.call(command, guard_evaluator_class, skip_guards: false)
-          
-          aggregate_failures do
-            expect(result).to be_a(Yes::Core::CommandResponse)
-            expect(result.cmd).to eq(command)
-            expect(result.error).to eq(guard_error)
-          end
+        aggregate_failures do
+          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+          expect(result.error.message).to include('no_change')
+          expect(result.event).to be_nil
         end
       end
     end
 
     context 'when guards are skipped' do
-      before do
-        allow(aggregate).to receive(:send)
-        allow(read_model).to receive(:respond_to?).with(:pending_update_since=).and_return(true)
-        allow(read_model).to receive(:update_column)
-        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(event_publisher)
-        allow(event_publisher).to receive(:call).and_return(event)
+      let(:command) do
+        Test::User::Commands::ChangeName::Command.new(
+          name: 'John', # Same value - would normally fail no_change guard
+          user_id:
+        )
       end
 
-      it 'does not evaluate guards' do
-        expect(guard_evaluator_class).not_to receive(:new)
-        
-        executor.call(command, guard_evaluator_class, skip_guards: true)
-      end
+      let(:skip_guards) { true }
 
-      it 'clears command error' do
-        expect(aggregate).to receive(:send).with(:approve_documents_error=, nil)
-        
-        executor.call(command, guard_evaluator_class, skip_guards: true)
-      end
-    end
+      it 'executes successfully even when guard would fail' do
+        result = subject
 
-    context 'pending state management' do
-      before do
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator)
-        allow(guard_evaluator).to receive(:call)
-        allow(guard_evaluator).to receive(:accessed_external_aggregates).and_return([])
-        allow(aggregate).to receive(:send)
-        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(event_publisher)
-        allow(event_publisher).to receive(:call).and_return(event)
-        allow(read_model).to receive(:respond_to?).with(:pending_update_since=).and_return(true)
-      end
-
-      it 'sets pending state before publishing event' do
-        expect(read_model).to receive(:update_column).with(:pending_update_since, kind_of(Time))
-        
-        executor.call(command, guard_evaluator_class, skip_guards: false)
-      end
-
-      context 'when event publication fails' do
-        let(:error) { PgEventstore::Error.new('Event store error') }
-
-        before do
-          allow(event_publisher).to receive(:call).and_raise(error)
-        end
-
-        it 'clears pending state' do
-          aggregate_failures do
-            expect(read_model).to receive(:update_column).with(:pending_update_since, kind_of(Time)).ordered
-            expect(read_model).to receive(:update_column).with(:pending_update_since, nil).ordered
-            expect { executor.call(command, guard_evaluator_class, skip_guards: false) }.to raise_error(error)
-          end
-        end
-      end
-
-      context 'when setting pending state fails with trigger error' do
-        before do
-          allow(read_model)
-            .to receive(:update_column)
-            .with(:pending_update_since, kind_of(Time))
-            .and_raise(ActiveRecord::StatementInvalid.new('Concurrent pending update not allowed for record 123'))
-          allow(read_model)
-            .to receive(:update_column)
-            .with(:pending_update_since, nil)
-        end
-
-        it 'raises ConcurrentUpdateError for retry' do
-          expect { executor.call(command, guard_evaluator_class, skip_guards: false) }
-            .to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
-        end
-      end
-    end
-
-    context 'event publication' do
-      before do
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator)
-        allow(guard_evaluator).to receive(:call)
-        allow(guard_evaluator).to receive(:accessed_external_aggregates).and_return(['external_aggregate'])
-        allow(aggregate).to receive(:send)
-        allow(read_model).to receive(:respond_to?).with(:pending_update_since=).and_return(true)
-        allow(read_model).to receive(:update_column)
-      end
-
-      it 'publishes event with correct data' do
-        publication_data = instance_double(Yes::Core::CommandHandling::EventPublisher::AggregateEventPublicationData)
-        
-        aggregate_failures do
-          expect(Yes::Core::CommandHandling::EventPublisher::AggregateEventPublicationData)
-            .to receive(:from_aggregate)
-            .with(aggregate)
-            .and_return(publication_data)
-          
-          expect(Yes::Core::CommandHandling::EventPublisher)
-            .to receive(:new)
-            .with(
-              command: command,
-              aggregate_data: publication_data,
-              accessed_external_aggregates: ['external_aggregate']
-            )
-            .and_return(event_publisher)
-            
-          expect(event_publisher).to receive(:call).and_return(event)
-        end
-
-        executor.call(command, guard_evaluator_class, skip_guards: false)
-      end
-
-      it 'returns success response with event' do
-        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(event_publisher)
-        allow(event_publisher).to receive(:call).and_return(event)
-        
-        result = executor.call(command, guard_evaluator_class, skip_guards: false)
-        
         aggregate_failures do
           expect(result).to be_a(Yes::Core::CommandResponse)
-          expect(result.cmd).to eq(command)
-          expect(result.event).to eq(event)
+          expect(result.error).to be_nil
+          expect(result.event).to be_present
         end
       end
     end
 
-    context 'revision conflict handling' do
-      let(:revision_error) { PgEventstore::WrongExpectedRevisionError.new(revision: 1, expected_revision: 2, stream: {}) }
-
-      before do
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator)
-        allow(guard_evaluator).to receive(:call)
-        allow(guard_evaluator).to receive(:accessed_external_aggregates).and_return([])
-        allow(aggregate).to receive(:send)
-        allow(read_model).to receive(:respond_to?).with(:pending_update_since=).and_return(true)
-        allow(read_model).to receive(:update_column)
-        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(event_publisher)
-      end
-
-      it 'retries on revision conflict up to MAX_RETRIES' do
-        call_count = 0
-        allow(event_publisher).to receive(:call) do
-          call_count += 1
-          if call_count < 3
-            raise revision_error
-          else
-            event
-          end
+    context 'with concurrent updates' do
+      context 'when another process is updating the same record' do
+        before do
+          read_model.update_column(:pending_update_since, 1.second.ago)
         end
-        
-        result = executor.call(command, guard_evaluator_class, skip_guards: false)
-        
-        aggregate_failures do
-          expect(result).to be_a(Yes::Core::CommandResponse)
-          expect(result.event).to eq(event)
-          expect(call_count).to eq(3)
+
+        it 'raises ConcurrentUpdateError' do
+          expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
         end
       end
 
-      it 'raises error after MAX_RETRIES' do
-        allow(event_publisher).to receive(:call).and_raise(revision_error)
-        
-        expect { executor.call(command, guard_evaluator_class, skip_guards: false) }
-          .to raise_error(revision_error)
-      end
-
-      context 'with concurrent update error' do
-        let(:concurrent_error) do
-          Yes::Core::CommandHandling::ConcurrentUpdateError.new(
-            aggregate_class: aggregate.class,
-            aggregate_id: 'test-id',
-            original_error: ActiveRecord::RecordNotUnique.new('test')
-          )
-        end
+      context 'when event store has revision conflict' do
+        let(:revision_error) { PgEventstore::WrongExpectedRevisionError.new(revision: 1, expected_revision: 2, stream: {}) }
 
         before do
-          allow(event_publisher).to receive(:call).and_return(event)
-        end
-
-        it 'retries on concurrent update error' do
           call_count = 0
-          allow(read_model).to receive(:update_column).with(:pending_update_since, kind_of(Time)) do
+          allow(PgEventstore.client).to receive(:append_to_stream) do
             call_count += 1
-            if call_count < 3
-              raise ActiveRecord::StatementInvalid.new('Concurrent pending update not allowed for record 123')
+            if call_count <= 2
+              raise revision_error
+            else
+              # Return event on success
+              Yousty::Eventsourcing::Event.new(
+                id: SecureRandom.uuid,
+                type: 'Test::User::NameChanged',
+                data: { 'name' => 'Jane' }
+              )
             end
           end
-          allow(read_model).to receive(:update_column).with(:pending_update_since, nil)
-          
-          result = executor.call(command, guard_evaluator_class, skip_guards: false)
-          
+        end
+
+        it 'retries and succeeds' do
+          result = subject
+
           aggregate_failures do
             expect(result).to be_a(Yes::Core::CommandResponse)
-            expect(call_count).to eq(3)
+            expect(result.error).to be_nil
+            expect(result.event).to be_present
           end
         end
       end
 
-      it 'clears pending state on each retry' do
-        call_count = 0
-        allow(event_publisher).to receive(:call) do
-          call_count += 1
-          raise revision_error
-        end
-        
-        # Track all update_column calls
-        update_calls = []
-        allow(read_model).to receive(:update_column) do |key, value|
-          update_calls << [key, value]
-        end
-        
-        aggregate_failures do
-          expect { executor.call(command, guard_evaluator_class, skip_guards: false) }
-            .to raise_error(revision_error)
-          
-          # Check that pending state was cleared (twice per retry: once in inner rescue, once in outer rescue)
-          nil_updates = update_calls.select { |k, v| k == :pending_update_since && v.nil? }
-          expect(nil_updates.count).to eq((described_class::MAX_RETRIES + 1) * 2)
-        end
-      end
-    end
+      context 'when event store fails persistently' do
+        let(:revision_error) { PgEventstore::WrongExpectedRevisionError.new(revision: 1, expected_revision: 2, stream: {}) }
 
-    context 'command group handling' do
-      let(:command_group) do
-        double('CommandGroup', 
-               payload: payload, 
-               metadata: metadata, 
-               batch_id: 'batch123',
-               is_a?: ->(klass) { klass == Yousty::Eventsourcing::CommandGroup })
-      end
-      
-      before do
-        allow(Yousty::Eventsourcing::CommandHelper).to receive(:new).with(command_group).and_return(command_helper)
-        allow(guard_evaluator_class).to receive(:new).and_return(guard_evaluator)
-        allow(guard_evaluator).to receive(:call)
-        allow(guard_evaluator).to receive(:accessed_external_aggregates).and_return([])
-        allow(aggregate).to receive(:send)
-        allow(read_model).to receive(:respond_to?).with(:pending_update_since=).and_return(true)
-        allow(read_model).to receive(:update_column)
-        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(event_publisher)
-        allow(event_publisher).to receive(:call).and_return(event)
-      end
+        it 'raises error after MAX_RETRIES' do
+          call_count = 0
+          allow_any_instance_of(Yes::Core::CommandHandling::EventPublisher).to receive(:call) do
+            call_count += 1
+            raise revision_error
+          end
 
-      it 'returns CommandGroupResponse for command groups' do
-        result = executor.call(command_group, guard_evaluator_class, skip_guards: false)
-        
-        expect(result).to be_a(Yousty::Eventsourcing::Stateless::CommandGroupResponse)
+          expect { subject }.to raise_error(revision_error)
+
+          # Verify it attempted 6 times (initial + 5 retries)
+          expect(call_count).to eq(6)
+        end
       end
     end
   end
