@@ -1,15 +1,7 @@
 ## [Unreleased]
 
 # 1.1.0 - 2025-09-17
-* Bring read API up to date with latest specifications and setup
 * Add persisted filters to read API functionality
-* Add rake task for loading structure.sql
-* Clean up Gemfiles and database setup
-* Switch dummy app to SQL schema format for better database consistency
-* Update specs to use real models instead of mocks for improved test reliability
-* Improve command handling implementation following SOLID principles
-* Replace unique index with PostgreSQL trigger for concurrent update prevention
-* Refactor CommandHandling module for better maintainability
 
 # 1.0.1 - 2024.04.02
 * Extract auth_data helper to jwt_token_auth_client_rails
