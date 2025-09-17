@@ -30,6 +30,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'pagy', '~> 6.0'
   spec.add_dependency 'rails', '>= 7.1'
   spec.add_dependency 'yousty-eventsourcing', '>= 7'
+  spec.add_dependency 'yousty-api', '~> 1.5'
+  spec.add_dependency 'zeitwerk'
 
   spec.add_development_dependency 'dotenv-rails', '~> 2.8'
   spec.add_development_dependency 'factory_bot', '~> 6.0'

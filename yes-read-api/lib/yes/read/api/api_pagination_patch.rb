@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'pagy/extras/countless'
+require 'api-pagination'
 
 module Yes
   module Read

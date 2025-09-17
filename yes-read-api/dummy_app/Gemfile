@@ -32,8 +32,7 @@ group :development, :test do
   gem 'debug'
   gem 'dotenv-rails', '~> 2.8', '>= 2.8.1'
   gem 'factory_bot_rails', '~> 6.2'
-end
-
-source 'https://gem.fury.io/yousty-ag/' do
-  gem 'yousty-api', '~> 1.4'
+  if ENV['SETUP_DB'] == 'true'
+    gem 'yes-read-api', path: '../../yes-read-api'
+  end
 end
