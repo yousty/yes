@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+# 1.1.1 - 2025-09-17
+* Ensure filters hash is initialized in queries controller
+
 # 1.1.0 - 2025-09-17
 * Add persisted filters to read API functionality
 
