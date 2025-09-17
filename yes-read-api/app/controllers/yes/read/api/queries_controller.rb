@@ -37,6 +37,7 @@ module Yes
           request_authorizer.call(filter_options, auth_data)
           # TODO, use strong params filter_params
 
+          filter_options[:filters] ||= {}
           records = filter(read_model_name).new(filter_options, type: filter_type).call
           paginated_records = paginate(records, filter_options[:page] || {})
 
