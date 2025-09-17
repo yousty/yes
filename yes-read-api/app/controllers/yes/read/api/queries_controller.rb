@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'yes/read/api/advanced_filter_validator'
+
 module Yes
   module Read
     module Api
@@ -7,6 +9,7 @@ module Yes
         include JwtTokenAuthClientRails::JwtTokenAuthController
 
         before_action :authenticate_with_token
+        before_action :validate_advanced_payload, only: :advanced
 
         rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
 
@@ -17,20 +20,29 @@ module Yes
         )
 
         def call
-          render json: response_json.to_json
+          persisted_filter = filter(read_model_name).persisted_filter_scope.find_by(id: params[:filter_id]) if params[:filter_id].present?
+
+          render json: response_json(persisted_filter:, filter_type: persisted_filter ? :advanced : :basic).to_json
+        end
+
+        def advanced
+          render json: response_json(filter_type: :advanced).to_json
         end
 
         private
 
-        def response_json
-          request_authorizer.call(params, auth_data)
+        def response_json(filter_type: :basic, persisted_filter: nil)
+          filter_options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
+
+          request_authorizer.call(filter_options, auth_data)
           # TODO, use strong params filter_params
-          records = filter(read_model_name).new(params).call
-          paginated_records = paginate(records, params[:page] || {})
+
+          records = filter(read_model_name).new(filter_options, type: filter_type).call
+          paginated_records = paginate(records, filter_options[:page] || {})
 
           Yousty::Eventsourcing::ReadModelsAuthorizer.call(read_model_name, paginated_records, auth_data)
 
-          serialize(paginated_records)
+          serialize(paginated_records, filter_options)
         end
 
         def request_authorizer
@@ -51,9 +63,9 @@ module Yes
           Yousty::Eventsourcing::ReadModelFilter
         end
 
-        def serialize(records)
+        def serialize(records, filter_options)
           # TODO, use strong params not to pass all params
-          options = { params:, include: params[:include]&.split(',')&.map(&:to_sym) }.compact
+          options = { params: filter_options, include: filter_options[:include]&.split(',')&.map(&:to_sym) }.compact
 
           serializer.new(records, options)
         end
@@ -78,6 +90,18 @@ module Yes
           render(
             json: { title: 'Unauthorized', details: error.extra || error.message }.to_json,
             status: :unauthorized
+          )
+        end
+
+        def validate_advanced_payload
+          return if params[:filter_definition].blank?
+
+          validation_result = Yes::Read::Api::AdvancedFilterValidator.call(params)
+          return if validation_result.success?
+
+          render(
+            json: { title: 'Invalid Payload', details: validation_result.errors.to_h }.to_json,
+            status: :unprocessable_entity
           )
         end
       end

@@ -3,5 +3,6 @@
 Yes::Read::Api::Engine.routes.draw do
   constraints(Yes::Read::Api::ModelConstraints) do
     get '/:model', to: 'queries#call'
+    post '/:model', to: 'queries#advanced'
   end
 end
