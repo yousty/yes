@@ -53,6 +53,9 @@ module Yes
           end
 
           # @param cerbos [Boolean] Whether to use Cerbos authorizer.
+          # @param read_model_class [Class] The read model class to use for the authorizer.
+          # @param resource_name [String] The resource name to use for the authorizer.
+          # @param block [Proc] The block to use for the authorizer.
           # @return [Class] The authorizer class.
           def authorize(cerbos: false, read_model_class: nil, resource_name: nil, &block)
             authorizer_base_class = if cerbos
