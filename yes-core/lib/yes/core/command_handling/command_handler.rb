@@ -27,16 +27,15 @@ module Yes
         # @param guards [Boolean] Whether to evaluate guards (default: true)
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
         def call(command_name, payload, guards: true)
-          ReadModelRecoveryService.check_and_recover_with_retries(
-            read_model, 
-            aggregate: aggregate
-          )
-          
           prepared_payload = prepare_payload(command_name, payload)
           cmd = command_utilities.build_command(command_name, prepared_payload)
           
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
-          response = CommandExecutor.new(aggregate).call(cmd, command_name, guard_evaluator_class, skip_guards: !guards)
+
+          ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate:)
+
+          response = CommandExecutor.new(aggregate).
+            call(cmd, command_name, guard_evaluator_class, skip_guards: !guards)
 
           ReadModelUpdater.new(aggregate).call(response.event, prepared_payload, command_name) if response.success?
 

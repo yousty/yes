@@ -95,11 +95,11 @@ module Yes
 
           # Checks if a read model needs recovery and attempts it with retries
           # @param read_model [ActiveRecord::Base] The read model to check
-          # @param aggregate [Yes::Core::Aggregate] Optional aggregate instance to use for recovery
+          # @param aggregate [Yes::Core::Aggregate] Aggregate instance to use for recovery
           # @param threshold [ActiveSupport::Duration] Time threshold for recovery (default: 5 seconds)
           # @param max_retries [Integer] Maximum number of retry attempts (default: 3)
           # @return [void]
-          def check_and_recover_with_retries(read_model, aggregate: nil, threshold: 5.seconds, max_retries: 3)
+          def check_and_recover_with_retries(read_model, aggregate:, threshold: 5.seconds, max_retries: 3)
             return unless read_model.respond_to?(:pending_update_since)
             
             retrier = Yes::Core::Utils::ExponentialRetrier.new(
@@ -112,7 +112,7 @@ module Yes
             
             begin
               retrier.call(
-                condition_check: -> { attempt_recovery_if_pending(read_model, threshold, aggregate: aggregate) },
+                condition_check: -> { attempt_recovery_if_pending(read_model, threshold, aggregate:) },
                 failure_message: "Could not recover pending read model #{read_model.class.name}##{read_model.id}",
                 timeout_message: "Timeout waiting for read model recovery #{read_model.class.name}##{read_model.id}"
               ) do
@@ -131,9 +131,9 @@ module Yes
           # Checks state and attempts recovery in one go
           # @param read_model [ActiveRecord::Base] The read model to check
           # @param threshold [ActiveSupport::Duration] Time threshold for recovery
-          # @param aggregate [Yes::Core::Aggregate] Optional aggregate instance to use for recovery
+          # @param aggregate [Yes::Core::Aggregate] Aggregate instance to use for recovery
           # @return [Boolean] True if no recovery needed or recovery succeeded, false if recovery needed but failed
-          def attempt_recovery_if_pending(read_model, threshold, aggregate: nil)
+          def attempt_recovery_if_pending(read_model, threshold, aggregate:)
             read_model.reload
             
             # Not pending - we're good
@@ -144,29 +144,22 @@ module Yes
             
             # Pending and old enough - attempt recovery now
             Rails.logger.info("Read model #{read_model.class.name}##{read_model.id} is in pending state, attempting recovery")
-            
-            # If aggregate is provided (from command handling), use it directly
-            if aggregate
-              begin
-                updater = ReadModelUpdater.new(aggregate)
-                updater.call(
-                  aggregate.latest_event, 
-                  aggregate.latest_event.data
-                )
-                Rails.logger.info("Successfully recovered read model #{read_model.class.name}##{read_model.id}")
-                true
-              rescue ActiveRecord::ActiveRecordError, PgEventstore::Error => e
-                # Expected errors during recovery
-                Rails.logger.debug("Recovery attempt failed for #{read_model.class.name}##{read_model.id}: #{e.message}")
-                false
-              rescue => e
-                # Unexpected errors
-                Rails.logger.error("Unexpected error during recovery attempt for #{read_model.class.name}##{read_model.id}: #{e.class.name} - #{e.message}")
-                false
-              end
-            else
-              # This should not happen - aggregate should always be provided
-              Rails.logger.error("Cannot recover read model #{read_model.class.name}##{read_model.id} - no aggregate provided")
+
+            begin
+              updater = ReadModelUpdater.new(aggregate)
+              updater.call(
+                aggregate.latest_event,
+                aggregate.latest_event.data
+              )
+              Rails.logger.info("Successfully recovered read model #{read_model.class.name}##{read_model.id}")
+              true
+            rescue ActiveRecord::ActiveRecordError, PgEventstore::Error => e
+              # Expected errors during recovery
+              Rails.logger.debug("Recovery attempt failed for #{read_model.class.name}##{read_model.id}: #{e.message}")
+              false
+            rescue => e
+              # Unexpected errors
+              Rails.logger.error("Unexpected error during recovery attempt for #{read_model.class.name}##{read_model.id}: #{e.class.name} - #{e.message}")
               false
             end
           end
