@@ -135,6 +135,30 @@ module Yes
           append_locale_param(command_name, { payload_attributes.keys.first => payload }, aggregate_class)
         end
 
+        # Prefills default values in the payload if they are not provided
+        #
+        # @param command_name [Symbol] The command name
+        # @param payload [Hash] The command payload
+        # @param aggregate_class [Class] The aggregate class
+        # @return [Hash] The prepared payload
+        def prepare_default_payload(command_name, payload, aggregate_class)
+          return payload unless payload.is_a?(Hash)
+
+          attributes_with_defaults = aggregate_class.commands[command_name].payload_attributes.select do |_key, value|
+            value.is_a?(Hash) && value.key?(:default)
+          end
+
+          return payload unless attributes_with_defaults.any?
+
+          additions = {}
+          attributes_with_defaults.each do |key, value|
+            next if payload.key?(key)
+
+            additions[key] = value[:default]
+          end
+          payload.merge(additions)
+        end
+
         private
 
         attr_reader :context, :aggregate, :aggregate_id
@@ -184,7 +208,7 @@ module Yes
         # @return [String] The stream name
         def stream_name(aggregate_name, metadata = {})
           # TODO: remove this once edit template command is no longer used
-          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command) 
+          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
           return "#{aggregate_name}EditTemplate" if ENV['LEGACY_DRAFT_IS_EDIT_TEMPLATE'] && metadata&.dig(:draft)
           return "#{aggregate_name}Draft" if metadata&.dig(:draft)
 

@@ -36,8 +36,12 @@ module Yes
 
                       # Define payload attributes if any
                       payload_attributes.each do |attr_name, attr_type|
-                        if attr_type.is_a?(Hash) && attr_type[:optional]
-                          optional(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type[:type], context, :event))
+                        if attr_type.is_a?(Hash)
+                          if attr_type[:optional]
+                            optional(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type[:type], context, :event))
+                          else
+                            required(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type[:type], context, :event))
+                          end
                         else
                           required(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type, context, :event))
                         end

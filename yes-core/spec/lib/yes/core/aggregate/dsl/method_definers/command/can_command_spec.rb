@@ -74,6 +74,15 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
           expect(aggregate.can_test_command_with_locale?(payload)).to be(true)
         end
       end
+
+      context 'when command has default payload' do
+        let(:payload) { {} }
+        let(:payload_attributes) { { default_payload_test: { type: :string, default: 'foo' } } }
+
+        it 'returns true' do
+          expect(aggregate.can_test_command_with_default_payload?(payload)).to be(true)
+        end
+      end
     end
 
     context 'when using shorthand value payload' do

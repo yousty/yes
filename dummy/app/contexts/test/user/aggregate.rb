@@ -14,6 +14,7 @@ module Test
       attribute :age, :integer, command: true
       attribute :active, :boolean, command: true
       attribute :locale_test, :string, localized: true
+      attribute :default_payload_test, :string
 
       attribute :document_ids, :string
       attribute :another, :string
@@ -70,6 +71,18 @@ module Test
         payload locale_test: :string, locale: :locale
 
         event :locale_test_changed
+      end
+
+      command :test_command_with_default_payload do
+        payload default_payload_test: { type: :string, default: 'foo' }
+
+        event :default_payload_test_changed
+      end
+
+      command :test_command_with_default_payload_and_other_attribute do
+        payload name: :string, default_payload_test: { type: :string, default: 'bar' }
+
+        event :default_payload_test_changed
       end
     end
   end
