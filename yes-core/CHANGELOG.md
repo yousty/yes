@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.2] - 2025-09-26
+
+### Added
+- Added OpenTelemetry tracing to command handling pipeline
+
 ## [0.10.1] - 2025-09-26
 
 ### Fixed
