@@ -121,6 +121,7 @@ CREATE TABLE public.test_users (
     published boolean,
     locale_test character varying,
     default_payload_test character varying,
+    dynamic_default_test timestamp(6) without time zone,
     revision integer DEFAULT '-1'::integer NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,

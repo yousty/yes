@@ -154,7 +154,14 @@ module Yes
           attributes_with_defaults.each do |key, value|
             next if payload.key?(key)
 
-            additions[key] = value[:default]
+            default = value[:default]
+
+            additions[key] =
+              if default.respond_to?(:call)
+                default.call
+              else
+                default
+              end
           end
           payload.merge(additions)
         end

@@ -15,6 +15,7 @@ module Test
       attribute :active, :boolean, command: true
       attribute :locale_test, :string, localized: true
       attribute :default_payload_test, :string
+      attribute :dynamic_default_test, :datetime
 
       attribute :document_ids, :string
       attribute :another, :string
@@ -83,6 +84,12 @@ module Test
         payload name: :string, default_payload_test: { type: :string, default: 'bar' }
 
         event :default_payload_test_changed
+      end
+
+      command :test_dynamic_default do
+        payload dynamic_default_test: { type: :datetime, default: -> { (Time.zone.now + 1.day).strftime('%Y-%m-%d %H:%M:%S') } }
+
+        event :dynamic_default_test_changed
       end
     end
   end
