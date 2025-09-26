@@ -133,9 +133,9 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
     context 'failure cases' do
       context 'when read model update fails' do
         before do
-          allow_any_instance_of(Yes::Core::CommandHandling::ReadModelUpdater)
-            .to receive(:call)
-            .and_raise(StandardError, 'Some error')
+          updater_double = instance_double(Yes::Core::CommandHandling::ReadModelUpdater)
+          allow(updater_double).to receive(:call).and_raise(StandardError, 'Some error')
+          allow(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:new).and_return(updater_double)
         end
 
         it 're-raises the error and leaves pending state set' do

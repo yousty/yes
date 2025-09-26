@@ -70,7 +70,9 @@ RSpec.describe 'Yes::Core::Aggregate Command Handling with Pending State', integ
     
     context 'when read model update fails after event publication' do
       before do
-        allow_any_instance_of(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:call).and_raise('Some error')
+        updater_double = instance_double(Yes::Core::CommandHandling::ReadModelUpdater)
+        allow(updater_double).to receive(:call).and_raise('Some error')
+        allow(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:new).and_return(updater_double)
       end
       
       it 'leaves pending state set when read model update fails' do
