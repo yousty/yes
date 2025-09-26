@@ -1,5 +1,10 @@
 # Unreleased
 
+# 2.3.0 - 2025-09-26
+* Add OpenTelemetry instrumentation for command handling and event publishing
+* Clean up RSpec configuration and test file requires
+* Refactor command API specs
+
 # 2.2.0 - 2025.03.27
 * Add identity ID to command metadata so that it gets merged into event meta data. For use in process managers that can now use the identity_id as a message bus channel. That way, frontend can track commands executed from a process manager. 
 
