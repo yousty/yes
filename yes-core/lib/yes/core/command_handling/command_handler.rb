@@ -60,6 +60,7 @@ module Yes
           prepared = command_utilities.prepare_assign_command_payload(command_name, prepared)
           
           add_draft_metadata(prepared) if aggregate.draft?
+          add_otl_metadata(prepared)
           
           prepared
         end
@@ -71,6 +72,12 @@ module Yes
         def add_draft_metadata(payload)
           payload[:metadata] ||= {}
           payload[:metadata][:draft] = true
+        end
+
+        def add_otl_metadata(payload)
+          return if payload.dig(:metadata, :otl_contexts).blank?
+
+          payload[:metadata][:otl_contexts][:timestamps][:command_handling_started_at_ms] = (Time.now.utc.to_f * 1000).to_i 
         end
       end
     end

@@ -10,9 +10,12 @@ module Yes
           MAX_INLINE_COMMANDS_PER_REQ = 10
 
           include JwtTokenAuthClientRails::JwtTokenAuthController
+          include Yousty::Eventsourcing::OpenTelemetry::Trackable
 
           before_action :authenticate_with_token
           before_action :set_channel
+
+          rescue_from(StandardError, with: :handle_unexpected_error)
 
           rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
 
@@ -49,7 +52,7 @@ module Yes
             Yousty::Eventsourcing::CommandsAuthorizer.call(expanded_commands, auth_data)
             Yousty::Eventsourcing::CommandsValidator.call(expanded_commands)
             cmd_bus_response = command_bus.call(
-              add_identity_id_to_command_metadata(deserialize_commands),
+              add_metadata(deserialize_commands),
               notifier_options: { channel: @channel }
             )
 
@@ -86,10 +89,12 @@ module Yes
             end.flatten
           end
 
-          def add_identity_id_to_command_metadata(commands)
+          def add_metadata(commands)   
             commands.map do |command|
               command.class.new(
-                command.to_h.merge(metadata: (command.metadata || {}).merge(identity_id: auth_data[:identity_id]))
+                command.to_h.merge(
+                  metadata: (command.metadata || {}).merge(identity_id: auth_data[:identity_id], otl_contexts:)
+                )
               )
             end
           end
@@ -150,6 +155,34 @@ module Yes
             return if @channel.present?
 
             render json: { title: '"channel" param is required' }, status: :bad_request
+          end
+          otl_trackable :set_channel,
+                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(
+                          span_name: 'Set Channel',
+                          span_kind: :client
+                        )
+
+          # TODO: move to a shared library / helper
+          def handle_unexpected_error(error)
+            self.class.current_span&.status = OpenTelemetry::Trace::Status.error(error.message)
+            self.class.current_span&.record_exception(error)
+
+            raise error
+          end
+          otl_trackable :handle_unexpected_error,
+                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Handle Unexpected Error')
+                        
+          def command_request_started_at_ms
+            return nil unless request.env['HTTP_X_REQUEST_START']
+
+            (request.env['HTTP_X_REQUEST_START'].to_f * 1000).to_i
+          end
+
+          def otl_contexts
+            {
+              root: self.class.propagate_context(service_name: true),
+              timestamps: { command_request_started_at_ms: }.compact
+            }
           end
         end
       end

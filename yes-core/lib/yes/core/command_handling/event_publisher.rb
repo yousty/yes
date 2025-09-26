@@ -5,6 +5,8 @@ module Yes
     module CommandHandling
       # Handles publishing events with revision checks
       class EventPublisher
+        include Yousty::Eventsourcing::OpenTelemetry::Trackable
+
         # Value object containing aggregate data needed for event publication
         AggregateEventPublicationData = Struct.new(:id, :context, :name, :revision, keyword_init: true) do
           def self.from_aggregate(aggregate)
@@ -42,6 +44,11 @@ module Yes
           publish_event
         end
 
+        otl_trackable(
+          :call, 
+          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer)
+        )
+
         private
 
         # @return [Object] The command instance
@@ -64,9 +71,12 @@ module Yes
           revision = aggregate_data.revision.call
           expected_revision = revision == -1 ? :no_stream : revision
 
+          event = event_with_metadata
+          otl_record_event_data(event)
+
           PgEventstore.client.append_to_stream(
             command_utilities.build_stream(metadata:),
-            event_with_metadata,
+            event,
             options: { expected_revision: }
           )
         end
@@ -116,7 +126,22 @@ module Yes
           meta['batch_id'] = batch_id if batch_id.present?
           meta['yes-dsl'] = true
           meta.merge!(metadata) if metadata.present?
+
+          if meta[:otl_contexts].present?
+            meta[:otl_contexts][:publisher] = self.class.propagate_context(service_name: true) 
+          end
+          
           meta
+        end
+
+        def otl_record_event_data(event)
+          self.class.current_span&.add_attributes(
+            {
+              'event.type' => event.type,
+              'event.data' => event.data.to_json,
+              'event.metadata' => event.metadata.to_json
+            }
+          )
         end
       end
     end
