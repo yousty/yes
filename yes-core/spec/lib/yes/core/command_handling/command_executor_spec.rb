@@ -124,9 +124,13 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
 
         it 'raises error after MAX_RETRIES' do
           call_count = 0
-          allow_any_instance_of(Yes::Core::CommandHandling::EventPublisher).to receive(:call) do
-            call_count += 1
-            raise revision_error
+          allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_wrap_original do |original, **kwargs|
+            publisher = original.call(**kwargs)
+            allow(publisher).to receive(:call) do
+              call_count += 1
+              raise revision_error
+            end
+            publisher
           end
 
           expect { subject }.to raise_error(revision_error)
