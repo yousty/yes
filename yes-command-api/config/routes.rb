@@ -1,6 +1,6 @@
 class OtlTrackableRequest
   def call(env)
-    tracer = Yes::Eventsourcing.config.otl_tracer
+    tracer = Yousty::Eventsourcing.config.otl_tracer
     controller = Yes::Command::Api::V1::CommandsController
 
     return controller.action(:execute).call(env) unless tracer
