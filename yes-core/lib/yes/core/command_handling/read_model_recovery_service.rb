@@ -126,8 +126,11 @@ module Yes
               Rails.logger.warn(e.message)
             end
           end
-          otl_trackable :check_and_recover_with_retries,
-                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Check and Recover Readmodel with Retries')
+
+          otl_trackable(
+            :check_and_recover_with_retries,
+            Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Check and Recover Readmodel with Retries')
+          )
 
           private
 

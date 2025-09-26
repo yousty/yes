@@ -54,8 +54,11 @@ module Yes
             )
           end
         end
-        otl_trackable :call,
-                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model')
+        
+        otl_trackable(
+          :call,
+          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model', span_kind: :producer, track_sql: true)
+        )
 
         private
 

@@ -53,8 +53,11 @@ module Yes
           aggregate.send(:"#{command_name.to_s.underscore}_error=", e.message)
           raise e
         end
-        otl_trackable :call,
-                      Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Evaluating guards')
+        
+        otl_trackable(
+          :call,
+          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Evaluate guards')
+        )
 
         private
 
