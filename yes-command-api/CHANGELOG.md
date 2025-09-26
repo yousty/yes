@@ -1,5 +1,8 @@
 # Unreleased
 
+# 2.3.1 - 2025-09-26
+* Fix routing configuration
+
 # 2.3.0 - 2025-09-26
 * Add OpenTelemetry instrumentation for command handling and event publishing
 * Clean up RSpec configuration and test file requires
