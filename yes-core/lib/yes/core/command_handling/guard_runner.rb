@@ -11,6 +11,7 @@ module Yes
       #   evaluator = runner.call(cmd, command_name, guard_evaluator_class, skip_guards: false)
       #
       class GuardRunner
+        include Yousty::Eventsourcing::OpenTelemetry::Trackable
         # Initializes a new GuardRunner
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance for error management
@@ -52,6 +53,8 @@ module Yes
           aggregate.send(:"#{command_name.to_s.underscore}_error=", e.message)
           raise e
         end
+        otl_trackable :call,
+                      Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Evaluating guards')
 
         private
 

@@ -11,6 +11,7 @@ module Yes
       #   response = handler.call(:approve_documents, { document_ids: '123', another: 'value' })
       #
       class CommandHandler
+        include Yousty::Eventsourcing::OpenTelemetry::Trackable
         # Initializes a new CommandHandler
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance to handle commands for
@@ -41,6 +42,8 @@ module Yes
 
           response
         end
+        otl_trackable :call,
+                      Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Execute command')
 
         private
 

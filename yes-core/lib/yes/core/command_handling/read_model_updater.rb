@@ -11,6 +11,7 @@ module Yes
       #   updater.call(event, command_payload, :approve_documents)
       #
       class ReadModelUpdater
+        include Yousty::Eventsourcing::OpenTelemetry::Trackable
         # Initializes a new ReadModelUpdater
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance to update read model for
@@ -53,6 +54,8 @@ module Yes
             )
           end
         end
+        otl_trackable :call,
+                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model')
 
         private
 

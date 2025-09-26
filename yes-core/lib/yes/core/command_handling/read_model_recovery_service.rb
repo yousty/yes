@@ -14,6 +14,7 @@ module Yes
         RecoveryResult = Struct.new(:success, :read_model, :error_message, keyword_init: true)
 
         class << self
+          include Yousty::Eventsourcing::OpenTelemetry::Trackable
           # Finds and recovers all stuck read models
           # @param stuck_timeout [ActiveSupport::Duration] Time after which a model is considered stuck
           # @param batch_size [Integer] Number of read models to process at once
@@ -125,6 +126,8 @@ module Yes
               Rails.logger.warn(e.message)
             end
           end
+          otl_trackable :check_and_recover_with_retries,
+                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Check and Recover Readmodel with Retries')
 
           private
 
