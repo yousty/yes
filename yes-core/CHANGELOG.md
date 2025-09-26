@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2025-09-26
+
+### Added
+- Added OpenTelemetry instrumentation for command handling
+- Added missing YARD documentation for authorize method parameters
+
+### Changed
+- Refactored read model recovery service to require aggregate parameter
+- Cleaned up RSpec configuration and test file requires
+
+### Fixed
+- Fixed RSpec test incompatibility with prepended modules
+
 ## [0.9.7] - 2025-09-15
 
 ### Added
