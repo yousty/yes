@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
-
 RSpec.describe 'MessageBus filters' do
   subject do
     post "/message-bus/#{client_id}/poll?#{params.to_param}",

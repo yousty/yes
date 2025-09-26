@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
-
 RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
   include_context :request_header_variables
 
