@@ -46,7 +46,7 @@ module Yes
 
         otl_trackable(
           :call, 
-          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer)
+          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer, track_sql: true)
         )
 
         private
@@ -78,7 +78,7 @@ module Yes
             command_utilities.build_stream(metadata:),
             event,
             options: { expected_revision: }
-          )
+          ).tap { otl_record_response(_1) }
         end
 
         # Verifies revisions of all accessed external aggregates
@@ -140,6 +140,33 @@ module Yes
               'event.type' => event.type,
               'event.data' => event.data.to_json,
               'event.metadata' => event.metadata.to_json
+            }
+          )
+        end
+
+        def otl_record_response(result)
+          StatsD.increment(
+            'events_processing_total',
+            tags: {
+              service: Rails.application.class.module_parent.name,
+              source: "#{Rails.application.class.module_parent.name}-#{result.type}",
+              target: "#{Rails.application.class.module_parent.name}-#{result.type}",
+              type: 'producer',
+              event: result.type
+            }
+          ) if ENV['STATSD_ADDR'].present?
+
+          self.class.current_span&.status = ::OpenTelemetry::Trace::Status.ok
+          self.class.current_span&.add_event(
+            'Event Published to PgEventstore',
+            timestamp: result.created_at,
+            attributes: {
+              'event.type' => result.type,
+              'event.link_id' => result.link_id || '',
+              'global_position' => result.global_position,
+              'stream' => result.stream.to_json,
+              'stream.revision' => result.stream_revision,
+              'timestamp_ms' => (result.created_at.to_f * 1000).to_i
             }
           )
         end
