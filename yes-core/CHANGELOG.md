@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.3] - 2025-09-26
+
+### Changed
+- Improved OpenTelemetry span configuration formatting for better readability
+- Enhanced event publisher telemetry with SQL tracking and response recording
+
 ## [0.10.2] - 2025-09-26
 
 ### Added
