@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.1] - 2025-09-26
+
+### Fixed
+- Patch release with dependency updates
+
 ## [0.10.0] - 2025-09-26
 
 ### Added
