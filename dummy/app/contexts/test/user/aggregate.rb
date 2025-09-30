@@ -4,7 +4,7 @@ module Test
   module User
     class Aggregate < Yes::Core::Aggregate
       read_model 'test_user'
-      
+
       authorize do
         command.user_id == auth_data[:user_id]
       end
@@ -47,7 +47,19 @@ module Test
       # end
 
       command :change, :shortcut_description do
-        guard(:test_guard) { payload.shortcut_description.size > 3 }
+        guard(
+          :test_guard,
+          error_extra: proc do
+            {
+              current_value: shortcut_description,
+              new_value: payload.shortcut_description,
+              expected_min_length: 4,
+              new_value_length: payload.shortcut_description.size
+            }
+          end
+        ) do
+          payload.shortcut_description.size > 3
+        end
       end
       command :change, :shortcuts_used, :integer
       command :activate, :shorcut_usage, attribute: :shortcut_usage_enabled

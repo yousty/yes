@@ -181,12 +181,13 @@ module Yes
             # Defines a guard for the command
             #
             # @param name [Symbol] The name of the guard
+            # @param error_extra [Proc] The extra information to be added to the error message payload
             # @yield The guard evaluation block
             # @yieldreturn [Boolean] True if the guard passes, false otherwise
             # @return [void]
-            def guard(name, &)
+            def guard(name, error_extra: nil, &)
               command_data.add_guard(name)
-              guard_evaluator_class.guard(name, &)
+              guard_evaluator_class.guard(name, error_extra:, &)
             end
 
             # Defines the payload for the command
