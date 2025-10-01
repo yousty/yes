@@ -6,7 +6,6 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added support for disabling read models in aggregates by passing `read_model false` in aggregate class definition
-- Read model operations can now be safely bypassed when not needed, reducing overhead for aggregates that don't require materialized views
 
 ### Changed
 - Attribute accessors return nil when read model is disabled
