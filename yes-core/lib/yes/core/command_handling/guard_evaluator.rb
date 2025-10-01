@@ -18,11 +18,11 @@ module Yes
           # Defines a new guard with a name and evaluation block
           #
           # @param name [Symbol] Name of the guard
-          # @param error_extra [Proc] The extra information to be added to the error message payload
+          # @param error_extra [Hash, Proc] The extra information to be added to the error message payload
           # @yield Block to evaluate the guard condition
           # @yieldreturn [Boolean] True if the guard passes, false otherwise
           # @return [void]
-          def guard(name, error_extra: nil, &block)
+          def guard(name, error_extra: {}, &block)
             guards[name] = { block:, error_extra: }
           end
         end
@@ -67,28 +67,19 @@ module Yes
         # Evaluates a single guard and raises appropriate error if it fails
         #
         # @param name [Symbol] The name of the guard
-        # @param error_extra [Proc] The extra information to be added to the error message payload
+        # @param error_extra [Hash, Proc] The extra information to be added to the error message payload
         # @param block [Proc] The guard block to evaluate
         # @return [void]
         # @raise [InvalidTransition] When the guard fails with an invalid transition
         # @raise [NoChangeTransition] When the guard fails with a no change transition
-        def evaluate_guard(name, block:, error_extra: nil)
+        def evaluate_guard(name, block:, error_extra: {})
           result = evaluate_with_locale(&block)
           return if result
 
-          extra =
-            if error_extra.present?
-              if error_extra.respond_to?(:call)
-                evaluate_with_locale(&error_extra)
-              else
-                error_extra
-              end
-            else
-              {}
-            end
+          extra = error_extra.respond_to?(:call) ? evaluate_with_locale(&error_extra) : error_extra
 
           error_class = name == :no_change ? NoChangeTransition : InvalidTransition
-          raise error_class.new(error_message(name), extra: extra)
+          raise error_class.new(error_message(name), extra:)
         end
 
         def value_changed?(val1, val2)
