@@ -77,6 +77,8 @@ module Yes
           lookup_type('ROLES')
         when :user_authorization_roles
           lookup_type('USER_AUTHORIZATION_ROLES')
+        when :array
+          Yousty::Eventsourcing::Types::Array
         else
           raise "Unknown type #{@type}"
         end
