@@ -5,7 +5,7 @@ module Yes
     module CommandHandling
       # Base class for evaluating guards on command attributes
       class GuardEvaluator
-        class TransitionError < StandardError; end
+        class TransitionError < Yes::Core::Error; end
         class InvalidTransition < TransitionError; end
         class NoChangeTransition < TransitionError; end
 
@@ -18,11 +18,12 @@ module Yes
           # Defines a new guard with a name and evaluation block
           #
           # @param name [Symbol] Name of the guard
+          # @param error_extra [Hash, Proc] The extra information to be added to the error message payload
           # @yield Block to evaluate the guard condition
           # @yieldreturn [Boolean] True if the guard passes, false otherwise
           # @return [void]
-          def guard(name, &block)
-            guards[name] = block
+          def guard(name, error_extra: {}, &block)
+            guards[name] = { block:, error_extra: }
           end
         end
 
@@ -51,8 +52,8 @@ module Yes
         # @raise [InvalidTransition] When a guard fails with an invalid transition
         # @raise [NoChangeTransition] When a guard fails with a no change transition
         def call
-          self.class.guards.each do |name, block|
-            evaluate_guard(name, block)
+          self.class.guards.each do |name, guard_data|
+            evaluate_guard(name, error_extra: guard_data[:error_extra], block: guard_data[:block])
           end
         end
 
@@ -66,22 +67,25 @@ module Yes
         # Evaluates a single guard and raises appropriate error if it fails
         #
         # @param name [Symbol] The name of the guard
+        # @param error_extra [Hash, Proc] The extra information to be added to the error message payload
         # @param block [Proc] The guard block to evaluate
         # @return [void]
         # @raise [InvalidTransition] When the guard fails with an invalid transition
         # @raise [NoChangeTransition] When the guard fails with a no change transition
-        def evaluate_guard(name, block)
+        def evaluate_guard(name, block:, error_extra: {})
           result = evaluate_with_locale(&block)
           return if result
 
+          extra = error_extra.respond_to?(:call) ? evaluate_with_locale(&error_extra) : error_extra
+
           error_class = name == :no_change ? NoChangeTransition : InvalidTransition
-          raise error_class, error_message(name)
+          raise error_class.new(error_message(name), extra:)
         end
 
         def value_changed?(val1, val2)
           return val1 != val2 unless val1.is_a?(Hash) && val2.is_a?(Hash)
 
-          val1.with_indifferent_access != val2.with_indifferent_access 
+          val1.with_indifferent_access != val2.with_indifferent_access
         end
 
         # Looks up the error message for a guard from I18n translations
