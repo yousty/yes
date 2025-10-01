@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2025-10-01
+
+### Added
+- Added array type to type lookup
+
+### Changed
+- Improved guard evaluator implementation with cleaner code structure
+
+### Fixed
+- Added support for extra payload in guard errors
+
 ## [0.10.3] - 2025-09-26
 
 ### Changed
