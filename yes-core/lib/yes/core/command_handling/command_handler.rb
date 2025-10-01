@@ -18,7 +18,7 @@ module Yes
         def initialize(aggregate)
           @aggregate = aggregate
           @command_utilities = aggregate.send(:command_utilities)
-          @read_model = aggregate.read_model
+          @read_model = aggregate.read_model if aggregate.class.read_model_enabled?
         end
 
         # Executes a command and updates the aggregate state
@@ -30,15 +30,19 @@ module Yes
         def call(command_name, payload, guards: true)
           prepared_payload = prepare_payload(command_name, payload)
           cmd = command_utilities.build_command(command_name, prepared_payload)
-          
+
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
-          ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate:)
+          if aggregate.class.read_model_enabled?
+            ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate:)
+          end
 
           response = CommandExecutor.new(aggregate).
             call(cmd, command_name, guard_evaluator_class, skip_guards: !guards)
 
-          ReadModelUpdater.new(aggregate).call(response.event, prepared_payload, command_name) if response.success?
+          if aggregate.class.read_model_enabled? && response.success?
+            ReadModelUpdater.new(aggregate).call(response.event, prepared_payload, command_name)
+          end
 
           response
         end

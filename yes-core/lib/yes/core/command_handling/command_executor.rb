@@ -63,7 +63,7 @@ module Yes
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance to execute commands for
         def initialize(aggregate)
           @aggregate = aggregate
-          @read_model = aggregate.read_model
+          @read_model = aggregate.read_model if aggregate.class.read_model_enabled?
         end
 
         # Executes a command with retry logic and error handling
@@ -78,9 +78,9 @@ module Yes
 
           begin
             evaluator = GuardRunner.new(aggregate).call(cmd, command_name, guard_evaluator_class, skip_guards:)
-            
-            set_pending_update_state
-            
+
+            set_pending_update_state if aggregate.class.read_model_enabled?
+
             begin
               event = EventPublisher.new(
                 command: cmd,
@@ -88,14 +88,14 @@ module Yes
                 accessed_external_aggregates: evaluator&.accessed_external_aggregates || []
               ).call
             rescue StandardError => e
-              clear_pending_update_state
+              clear_pending_update_state if aggregate.class.read_model_enabled?
               raise e
             end
 
             command_response_class(cmd).new(cmd:, event:)
           rescue PgEventstore::WrongExpectedRevisionError => e
             retries += 1
-            clear_pending_update_state
+            clear_pending_update_state if aggregate.class.read_model_enabled?
 
             retries <= MAX_RETRIES ? retry : raise(e)
           rescue ConcurrentUpdateError => e
@@ -118,11 +118,13 @@ module Yes
         # @return [void]
         # @raise [ConcurrentUpdateError] If another process is already updating
         def set_pending_update_state
+          return unless read_model
+
           begin
             read_model.update_column(:pending_update_since, Time.current)
           rescue ActiveRecord::StatementInvalid => e
             raise e unless e.message.include?('Concurrent pending update not allowed')
-            
+
             raise ConcurrentUpdateError.new(
               aggregate_class: aggregate.class,
               aggregate_id: read_model.id,
@@ -135,6 +137,8 @@ module Yes
         #
         # @return [void]
         def clear_pending_update_state
+          return unless read_model
+
           read_model.update_column(:pending_update_since, nil)
         end
 

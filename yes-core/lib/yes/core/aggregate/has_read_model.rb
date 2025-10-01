@@ -15,8 +15,11 @@ module Yes
         included do
           class << self
             attr_accessor :_read_model_name, :_read_model_public, :_read_model_class, :_read_model_filter_class,
-                          :_read_model_serializer_class
+                          :_read_model_serializer_class, :_read_model_enabled
           end
+
+          # Default to enabled
+          self._read_model_enabled = true
         end
 
         class_methods do # rubocop:disable Metrics/BlockLength
@@ -48,10 +51,15 @@ module Yes
             self._read_model_name ||= "#{context}_#{aggregate}".underscore
           end
 
-          # Sets the read model name for this aggregate
-          # @param name [String] The name for the read model
+          # Sets the read model configuration for this aggregate
+          # @param name [String, false] The name for the read model, or false to disable read models
           # @param public [Boolean] Whether the read model should be public via read API
           def read_model(name, public: true)
+            if name == false
+              self._read_model_enabled = false
+              return
+            end
+
             self._read_model_name = name.to_s.underscore
             self._read_model_public = public
           end
@@ -59,6 +67,11 @@ module Yes
           # @return [Boolean] Whether the read model is public
           def read_model_public?
             _read_model_public.nil? || _read_model_public
+          end
+
+          # @return [Boolean] Whether the read model is enabled
+          def read_model_enabled?
+            _read_model_enabled != false
           end
 
           private
@@ -104,11 +117,13 @@ module Yes
 
         # Retrieves or creates a read model instance for this aggregate
         #
-        # @return [ApplicationRecord] The read model instance associated with this aggregate's ID
+        # @return [ApplicationRecord, nil] The read model instance associated with this aggregate's ID, or nil if disabled
         # @example
         #   user_aggregate = UserAggregate.new(1)
         #   user_aggregate.read_model #=> #<User id: 1>
         def read_model
+          return nil unless self.class.read_model_enabled?
+
           @read_model ||= self.class.read_model_class.find_or_create_by(id:)
         end
 
@@ -125,6 +140,8 @@ module Yes
         end
 
         def revision_column
+          return :revision unless self.class.read_model_enabled?
+
           aggregate_revision_column = "#{self.class.context.underscore}_#{self.class.aggregate.underscore}_revision"
           return aggregate_revision_column.to_sym if read_model.class.column_names.include?(aggregate_revision_column)
 
@@ -132,8 +149,10 @@ module Yes
         end
 
         # Returns the current revision number from the read model
-        # @return [Integer, nil] The revision number stored in the read model
+        # @return [Integer, nil] The revision number stored in the read model, or -1 if read models are disabled
         def revision
+          return -1 unless self.class.read_model_enabled?
+
           read_model.send(revision_column)
         end
 

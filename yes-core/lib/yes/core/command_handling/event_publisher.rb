@@ -14,7 +14,20 @@ module Yes
               id: aggregate.id,
               context: aggregate.class.context,
               name: aggregate.class.name.split('::')[1],
-              revision: -> { aggregate.reload.revision }
+              revision: lambda {
+                if aggregate.class.read_model_enabled?
+                  aggregate.reload.revision
+                else
+                  # When read models are disabled, get revision directly from event stream
+                  begin
+                    latest = aggregate.latest_event
+                    latest ? latest.stream_revision : -1
+                  rescue PgEventstore::StreamNotFoundError
+                    # Stream doesn't exist yet - this is the first event
+                    -1
+                  end
+                end
+              }
             )
           end
         end

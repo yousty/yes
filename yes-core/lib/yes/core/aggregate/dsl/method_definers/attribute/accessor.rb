@@ -14,6 +14,8 @@ module Yes
                 name = @name
 
                 aggregate_class.define_method(name) do
+                  return nil unless self.class.read_model_enabled?
+
                   read_model.public_send(name)
                 end
               end

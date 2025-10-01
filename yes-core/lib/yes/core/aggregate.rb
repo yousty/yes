@@ -64,7 +64,7 @@ module Yes
           # the class definition is complete.
           TracePoint.new(:end) do |tp|
             if tp.self == subclass
-              subclass.setup_read_model_classes
+              subclass.setup_read_model_classes if subclass.read_model_enabled?
               subclass.setup_authorizer_classes
               tp.disable
             end
@@ -331,7 +331,7 @@ module Yes
       # Reloads the aggregate and its read model
       # @return [Yes::Core::Aggregate] The reloaded aggregate
       def reload
-        read_model.reload
+        read_model&.reload
 
         self
       end

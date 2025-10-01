@@ -23,6 +23,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
     allow(aggregate).to receive(:send).with(:command_utilities).and_return(command_utilities)
     allow(aggregate).to receive(:send).with(:revision_column).and_return(revision_column)
     allow(aggregate).to receive(:class).and_return(aggregate_class)
+    allow(aggregate_class).to receive(:read_model_enabled?).and_return(true)
   end
 
   describe '#call' do
