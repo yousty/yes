@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.1] - 2025-10-02
+
+### Fixed
+- Fixed locale handling in ReadModelUpdater to avoid mutating command payload
+
 ## [0.12.0] - 2025-10-01
 
 ### Added
