@@ -73,7 +73,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
       end
 
       it 'instantiates state updater with filtered payload' do
-        filtered_payload = command_payload.except(:locale, *Yousty::Eventsourcing::Command::RESERVED_KEYS)
+        filtered_payload = command_payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS)
         
         expect(state_updater_class)
           .to receive(:new)
@@ -111,14 +111,6 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
           .with(expected_attributes)
         
         updater.call(event, command_payload, command_name)
-      end
-
-      it 'removes locale from command payload' do
-        payload_after = command_payload.dup
-        
-        updater.call(event, payload_after, command_name)
-        
-        expect(payload_after).not_to have_key(:locale)
       end
 
       context 'when locale is not present' do

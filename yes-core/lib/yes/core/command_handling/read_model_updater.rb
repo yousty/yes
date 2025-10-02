@@ -32,7 +32,7 @@ module Yes
           return unless aggregate.class.read_model_enabled?
 
           command_name ||= command_utilities.command_name_from_event(event, aggregate.class)
-          locale = command_payload.delete(:locale)
+          locale = command_payload[:locale]
 
           state_updater_class = command_utilities.fetch_state_updater_class(command_name)
 
