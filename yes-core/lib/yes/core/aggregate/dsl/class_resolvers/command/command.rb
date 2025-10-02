@@ -32,17 +32,20 @@ module Yes
                   # Define the aggregate_id attribute for the command
                   attribute :"#{aggregate.underscore}_id", Yousty::Eventsourcing::Types::UUID
 
+                  define_singleton_method :optional_attribute do |attr_name, type|
+                    attribute? attr_name, Yes::Core::TypeLookup.type_for(type, context).optional
+                  end
+
+                  define_singleton_method :required_attribute do |attr_name, type|
+                    attribute attr_name, Yes::Core::TypeLookup.type_for(type, context)
+                  end
+
                   # Define payload attributes if any
                   payload_attributes.each do |attr_name, attr_type|
-                    if attr_type.is_a?(Hash)
-                      if attr_type[:optional]
-                        attribute? attr_name, Yes::Core::TypeLookup.type_for(attr_type[:type], context).optional
-                      else
-                        attribute attr_name, Yes::Core::TypeLookup.type_for(attr_type[:type], context)
-                      end
-                    else
-                      attribute attr_name, Yes::Core::TypeLookup.type_for(attr_type, context)
-                    end
+                    next required_attribute attr_name, attr_type unless attr_type.is_a?(Hash)
+                    next optional_attribute attr_name, attr_type[:type] if attr_type[:optional]
+
+                    required_attribute attr_name, attr_type[:type]
                   end
 
                   # TODO: Legacy: Change to :aggregate_id - requires chnage in yousty es in many places

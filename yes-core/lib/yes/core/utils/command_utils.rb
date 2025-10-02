@@ -155,13 +155,7 @@ module Yes
             next if payload.key?(key)
 
             default = value[:default]
-
-            additions[key] =
-              if default.respond_to?(:call)
-                default.call
-              else
-                default
-              end
+            additions[key] = default.respond_to?(:call) ? default.call : default
           end
           payload.merge(additions)
         end
