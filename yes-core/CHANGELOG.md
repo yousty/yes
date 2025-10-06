@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0] - 2025-10-06
+
+### Added
+- Added draft read model support to aggregate authorizers
+
 ## [0.12.1] - 2025-10-02
 
 ### Fixed
