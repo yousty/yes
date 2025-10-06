@@ -20,6 +20,8 @@ module Yes
           :read_model_class,
           :resource_name,
           :authorizer_block,
+          :draftable,
+          :changes_read_model_class,
           keyword_init: true
         )
 
@@ -44,6 +46,10 @@ module Yes
 
             authorizer_options.read_model_class ||= read_model_class
             authorizer_options.resource_name ||= aggregate.underscore
+
+            # Set draftable and changes read model class if the aggregate is draftable
+            authorizer_options.draftable ||= draftable?
+            authorizer_options.changes_read_model_class ||= changes_read_model_class if draftable?
 
             self.authorizer_class = Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer.new(authorizer_options).call
 

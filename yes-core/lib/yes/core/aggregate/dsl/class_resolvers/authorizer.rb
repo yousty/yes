@@ -35,6 +35,8 @@ module Yes
               @read_model_class = options.read_model_class
               @authorizer_class = options.authorizer_base_class
               @custom_call_logic = options.authorizer_block
+              @draftable = options.draftable
+              @changes_read_model_class = options.changes_read_model_class
               # Base class expects context_name and aggregate_name parameters
               super(options.context, options.aggregate)
             end
@@ -58,11 +60,20 @@ module Yes
             #   @return [Class] The read model class associated with the resource.
             # @!attribute [r] custom_call_logic
             #   @return [Proc, nil] The custom block provided for the call method logic.
-            attr_reader :resource_name, :read_model_class, :authorizer_class, :custom_call_logic
+            # @!attribute [r] changes_read_model_class
+            #   @return [Class, nil] The changes read model class for draftable aggregates.
+            attr_reader :resource_name, :read_model_class, :authorizer_class, :custom_call_logic, :changes_read_model_class
 
             # @return [Symbol] Returns :authorizer as the class type
             def class_type
               :authorizer
+            end
+
+            # Checks if the aggregate is draftable
+            #
+            # @return [Boolean] true if the aggregate is draftable, false otherwise
+            def draftable?
+              @draftable == true
             end
 
             # Generates a new authorizer class dynamically.
@@ -77,7 +88,9 @@ module Yes
               klass = Class.new(authorizer_class)
 
               if authorizer_class == Yousty::Eventsourcing::CommandCerbosAuthorizer
-                klass.const_set(:RESOURCE, { read_model: read_model_class, name: resource_name }.freeze)
+                resource_attributes = { read_model: read_model_class, name: resource_name }
+                resource_attributes[:draft_read_model] = changes_read_model_class if draftable?
+                klass.const_set(:RESOURCE, resource_attributes.freeze)
               else
                 define_custom_call_logic(klass)
               end

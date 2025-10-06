@@ -238,6 +238,75 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
         end
       end
     end
+
+    context 'when aggregate is draftable' do
+      let(:base_authorizer_class) { base_cerbos_authorizer_class }
+      let(:draft_read_model_class) { Class.new }
+      let(:is_draftable) { true }
+
+      let(:authorizer_options) do
+        Yes::Core::Aggregate::HasAuthorizer::AuthorizerOptions.new(
+          authorizer_base_class: base_authorizer_class,
+          context: context_name,
+          aggregate: aggregate_name,
+          read_model_class: read_model_class,
+          resource_name: resource_name,
+          authorizer_block: custom_call_logic,
+          draftable: is_draftable,
+          changes_read_model_class: draft_read_model_class
+        )
+      end
+
+      it 'includes draft_read_model in RESOURCE constant' do
+        aggregate_failures do
+          result = generated_class
+          expect(result::RESOURCE[:read_model]).to eq(read_model_class)
+          expect(result::RESOURCE[:name]).to eq(resource_name)
+          expect(result::RESOURCE[:draft_read_model]).to eq(draft_read_model_class)
+        end
+      end
+
+      it 'freezes the RESOURCE constant' do
+        aggregate_failures do
+          result = generated_class
+          expect(result::RESOURCE).to be_frozen
+        end
+      end
+
+      it 'registers the authorizer with draft support' do
+        aggregate_failures do
+          generated_class
+          expect(Yes::Core.configuration).to have_received(:register_aggregate_authorizer_class)
+            .with(context_name, aggregate_name, kind_of(Class))
+        end
+      end
+    end
+
+    context 'when aggregate is not draftable' do
+      let(:base_authorizer_class) { base_cerbos_authorizer_class }
+      let(:is_draftable) { false }
+
+      let(:authorizer_options) do
+        Yes::Core::Aggregate::HasAuthorizer::AuthorizerOptions.new(
+          authorizer_base_class: base_authorizer_class,
+          context: context_name,
+          aggregate: aggregate_name,
+          read_model_class: read_model_class,
+          resource_name: resource_name,
+          authorizer_block: custom_call_logic,
+          draftable: is_draftable,
+          changes_read_model_class: nil
+        )
+      end
+
+      it 'does not include draft_read_model in RESOURCE constant' do
+        aggregate_failures do
+          result = generated_class
+          expect(result::RESOURCE).to eq({ read_model: read_model_class, name: resource_name }.freeze)
+          expect(result::RESOURCE).not_to have_key(:draft_read_model)
+        end
+      end
+    end
   end
 
   describe '#class_type' do

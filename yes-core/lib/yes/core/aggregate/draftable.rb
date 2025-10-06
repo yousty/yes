@@ -88,6 +88,19 @@ module Yes
             _changes_read_model_name
           end
 
+          # Returns the changes read model class
+          #
+          # @return [Class, nil] the changes read model class
+          def changes_read_model_class
+            return nil unless changes_read_model_name
+
+            Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel.new(
+              changes_read_model_name,
+              context,
+              aggregate
+            ).call
+          end
+
           # Returns whether the changes read model is public
           #
           # @return [Boolean] true if public, false otherwise
