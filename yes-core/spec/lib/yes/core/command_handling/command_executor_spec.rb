@@ -135,8 +135,50 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
 
           expect { subject }.to raise_error(revision_error)
 
-          # Verify it attempted 6 times (initial + 5 retries)
-          expect(call_count).to eq(6)
+          # Verify it attempted 11 times (initial + 10 retries, MAX_RETRIES = 10)
+          expect(call_count).to eq(11)
+        end
+      end
+
+      context 'when ConcurrentUpdateError occurs repeatedly' do
+        before do
+          allow(aggregate).to receive(:read_model).and_return(read_model)
+          allow(read_model).to receive(:update_column) do |column, value|
+            if column == :pending_update_since && value.present?
+              raise ActiveRecord::StatementInvalid, 'Concurrent pending update not allowed'
+            else
+              read_model.class.where(id: read_model.id).update_all(column => value)
+            end
+          end
+        end
+
+        it 'attempts inline recovery after INLINE_RECOVERY_RETRY_THRESHOLD retries' do
+          expect(Yes::Core::CommandHandling::ReadModelRecoveryService)
+            .to receive(:attempt_inline_recovery)
+            .at_least(:once)
+            .and_return(false)
+
+          expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
+        end
+
+        it 'sleeps with exponential backoff between retries' do
+          allow(Yes::Core::CommandHandling::ReadModelRecoveryService)
+            .to receive(:attempt_inline_recovery)
+            .and_return(false)
+
+          expect(executor).to receive(:sleep).at_least(:once)
+
+          expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
+        end
+
+        it 'reloads read model after inline recovery attempt' do
+          allow(Yes::Core::CommandHandling::ReadModelRecoveryService)
+            .to receive(:attempt_inline_recovery)
+            .and_return(false)
+
+          expect(read_model).to receive(:reload).at_least(:once)
+
+          expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
         end
       end
     end

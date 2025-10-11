@@ -190,6 +190,106 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         expect(results.size).to eq 2
         expect(results.all? { |r| r.is_a?(described_class::RecoveryResult) }).to be true
       end
-    end 
+    end
+  end
+
+  describe '.attempt_inline_recovery' do
+    subject(:attempt_inline_recovery) do
+      described_class.attempt_inline_recovery(read_model, aggregate:, threshold: 2.seconds)
+    end
+
+    let(:mock_updater) { instance_double(Yes::Core::CommandHandling::ReadModelUpdater) }
+
+    before do
+      allow(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:new).and_return(mock_updater)
+      allow(mock_updater).to receive(:call)
+    end
+
+    context 'when read model is not in pending state' do
+      before do
+        read_model.update_column(:pending_update_since, nil)
+      end
+
+      it 'returns true without attempting recovery' do
+        expect(attempt_inline_recovery).to be true
+      end
+
+      it 'does not call ReadModelUpdater' do
+        attempt_inline_recovery
+        expect(Yes::Core::CommandHandling::ReadModelUpdater).not_to have_received(:new)
+      end
+    end
+
+    context 'when read model is in recent pending state' do
+      before do
+        read_model.update_column(:pending_update_since, 1.second.ago)
+      end
+
+      it 'returns true without attempting recovery' do
+        expect(attempt_inline_recovery).to be true
+      end
+
+      it 'does not attempt recovery for recent pending state' do
+        attempt_inline_recovery
+        expect(Yes::Core::CommandHandling::ReadModelUpdater).not_to have_received(:new)
+      end
+    end
+
+    context 'when read model is in stuck pending state' do
+      let(:stream) do
+        PgEventstore::Stream.new(
+          context: 'Test',
+          stream_name: 'User',
+          stream_id: aggregate_id
+        )
+      end
+
+      before do
+        read_model.update_column(:pending_update_since, 5.seconds.ago)
+
+        PgEventstore.client.append_to_stream(
+          stream,
+          PgEventstore::Event.new(
+            type: 'Test::UserDocumentsApproved',
+            data: { user_id: aggregate_id, document_ids: 'doc-123', another: 'test' }
+          )
+        )
+      end
+
+      it 'attempts recovery and returns true on success' do
+        expect(attempt_inline_recovery).to be true
+      end
+
+      it 'calls ReadModelUpdater with latest event' do
+        attempt_inline_recovery
+        expect(mock_updater).to have_received(:call)
+      end
+
+      context 'when recovery fails with database error' do
+        before do
+          allow(mock_updater).to receive(:call).and_raise(ActiveRecord::ActiveRecordError, 'DB error')
+        end
+
+        it 'returns false on failure' do
+          expect(attempt_inline_recovery).to be false
+        end
+      end
+
+      context 'when recovery fails with RevisionAlreadyAppliedError' do
+        before do
+          allow(mock_updater).to receive(:call)
+            .and_raise(Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError)
+        end
+
+        it 'returns true as another thread already recovered' do
+          expect(attempt_inline_recovery).to be true
+        end
+
+        it 'clears the pending_update_since flag' do
+          attempt_inline_recovery
+          expect(read_model.reload.pending_update_since).to be_nil
+        end
+      end
+    end
   end
 end

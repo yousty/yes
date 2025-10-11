@@ -56,7 +56,8 @@ module Yes
       #   response = executor.call(command, guard_evaluator_class)
       #
       class CommandExecutor
-        MAX_RETRIES = 5
+        MAX_RETRIES = 10
+        INLINE_RECOVERY_RETRY_THRESHOLD = 5
 
         # Initializes a new CommandExecutor
         #
@@ -101,6 +102,16 @@ module Yes
           rescue ConcurrentUpdateError => e
             retries += 1
             # Don't clear pending state - another process owns it
+            # Sleep with exponential backoff to give the other process time to finish
+            sleep([0.01 * (2 ** (retries - 1)), 1.0].min) if retries <= MAX_RETRIES
+
+            # After several retries, check if pending state is stuck and attempt recovery
+            # This prevents infinite retry loops when a process crashes leaving the flag set
+            if aggregate.class.read_model_enabled? && retries >= INLINE_RECOVERY_RETRY_THRESHOLD
+              ReadModelRecoveryService.attempt_inline_recovery(read_model, aggregate: aggregate)
+              read_model.reload
+            end
+
             retries <= MAX_RETRIES ? retry : raise(e)
           rescue GuardEvaluator::InvalidTransition,
                  GuardEvaluator::NoChangeTransition,

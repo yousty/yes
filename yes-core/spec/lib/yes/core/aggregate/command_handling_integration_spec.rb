@@ -89,12 +89,12 @@ RSpec.describe 'Yes::Core::Aggregate Command Handling with Pending State', integ
       let(:concurrent_aggregate) { aggregate_class.new(aggregate_id) }
       
       before do
-        # Simulate another process already setting pending state (but recent, < 5 seconds)
-        read_model.update_column(:pending_update_since, 2.seconds.ago)
+        # Simulate another process already setting pending state (but recent, < 2 seconds to avoid triggering recovery)
+        read_model.update_column(:pending_update_since, 0.5.seconds.ago)
       end
       
       it 'handles concurrent updates gracefully' do
-        # Since we retry up to 5 times, and the pending state is still set,
+        # Since we retry up to MAX_RETRIES (10) times, and the pending state is still set,
         # it should eventually fail with ConcurrentUpdateError after exhausting retries
         expect {
           concurrent_aggregate.approve_documents(valid_payload)

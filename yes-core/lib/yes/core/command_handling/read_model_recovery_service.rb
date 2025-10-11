@@ -97,33 +97,29 @@ module Yes
           # Checks if a read model needs recovery and attempts it with retries
           # @param read_model [ActiveRecord::Base] The read model to check
           # @param aggregate [Yes::Core::Aggregate] Aggregate instance to use for recovery
-          # @param threshold [ActiveSupport::Duration] Time threshold for recovery (default: 5 seconds)
-          # @param max_retries [Integer] Maximum number of retry attempts (default: 3)
+          # @param threshold [ActiveSupport::Duration] Time threshold for recovery (default: 2 seconds)
+          # @param max_retries [Integer] Maximum number of retry attempts (default: 10)
           # @return [void]
-          def check_and_recover_with_retries(read_model, aggregate:, threshold: 5.seconds, max_retries: 3)
+          # @raise [Yes::Core::Utils::ExponentialRetrier::RetryFailedError] If recovery fails after max retries
+          # @raise [Yes::Core::Utils::ExponentialRetrier::TimeoutError] If recovery times out
+          def check_and_recover_with_retries(read_model, aggregate:, threshold: 2.seconds, max_retries: 10)
             return unless read_model.respond_to?(:pending_update_since)
-            
+
             retrier = Yes::Core::Utils::ExponentialRetrier.new(
               max_retries: max_retries,
               base_sleep_time: 0.1,
               max_sleep_time: 1.0,
-              timeout: 5,
+              timeout: 30,
               logger: Rails.logger
             )
-            
-            begin
-              retrier.call(
-                condition_check: -> { attempt_recovery_if_pending(read_model, threshold, aggregate:) },
-                failure_message: "Could not recover pending read model #{read_model.class.name}##{read_model.id}",
-                timeout_message: "Timeout waiting for read model recovery #{read_model.class.name}##{read_model.id}"
-              ) do
-                # Success - either not pending or recovered
-                true
-              end
-            rescue Yes::Core::Utils::ExponentialRetrier::RetryFailedError,
-                   Yes::Core::Utils::ExponentialRetrier::TimeoutError => e
-              # Log warning but continue - background job will handle it
-              Rails.logger.warn(e.message)
+
+            retrier.call(
+              condition_check: -> { attempt_recovery_if_pending(read_model, threshold, aggregate:) },
+              failure_message: "Could not recover pending read model #{read_model.class.name}##{read_model.id}",
+              timeout_message: "Timeout waiting for read model recovery #{read_model.class.name}##{read_model.id}"
+            ) do
+              # Success - either not pending or recovered
+              true
             end
           end
 
@@ -131,6 +127,18 @@ module Yes
             :check_and_recover_with_retries,
             Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Check and Recover Readmodel with Retries')
           )
+
+          # Attempts inline recovery during command execution retry loops
+          # This method is designed to be called from CommandExecutor when stuck in retry loops
+          # @param read_model [ActiveRecord::Base] The read model to check and recover
+          # @param aggregate [Yes::Core::Aggregate] Aggregate instance to use for recovery
+          # @param threshold [ActiveSupport::Duration] Time threshold for considering state stuck (default: 2 seconds)
+          # @return [Boolean] True if recovery succeeded or not needed, false if recovery failed
+          def attempt_inline_recovery(read_model, aggregate:, threshold: 2.seconds)
+            return true unless read_model.respond_to?(:pending_update_since)
+
+            attempt_recovery_if_pending(read_model, threshold, aggregate: aggregate)
+          end
 
           private
 
@@ -144,8 +152,8 @@ module Yes
             
             # Not pending - we're good
             return true unless read_model.pending_update_since.present?
-            
-            # Pending but too recent - don't attempt recovery yet
+
+            # Pending but too recent - another process is working on it, proceed
             return true unless read_model.pending_update_since < threshold.ago
             
             # Pending and old enough - attempt recovery now
@@ -158,6 +166,18 @@ module Yes
                 aggregate.latest_event.data
               )
               Rails.logger.info("Successfully recovered read model #{read_model.class.name}##{read_model.id}")
+              true
+            rescue Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError => e
+              # Another thread already recovered - this is a successful outcome
+              Rails.logger.info("Recovery already completed by another thread for #{read_model.class.name}##{read_model.id}")
+
+              # Ensure pending flag is cleared if still set
+              read_model.reload
+              if read_model.pending_update_since.present?
+                read_model.update_column(:pending_update_since, nil)
+                Rails.logger.debug("Cleared lingering pending_update_since flag for #{read_model.class.name}##{read_model.id}")
+              end
+
               true
             rescue ActiveRecord::ActiveRecordError, PgEventstore::Error => e
               # Expected errors during recovery
