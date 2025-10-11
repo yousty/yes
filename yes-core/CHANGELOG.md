@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0] - 2025-10-11
+
+### Changed
+- Increased MAX_RETRIES from 5 to 10 in CommandExecutor for better handling of transient failures
+- Added inline recovery attempt after 5 retries to prevent infinite loops from stuck pending states
+- Implemented exponential backoff sleep between concurrent update retries
+- Reduced recovery threshold from 5 to 2 seconds for faster detection of stuck states
+- Increased recovery timeout from 5 to 30 seconds
+
+### Added
+- Added attempt_inline_recovery method to ReadModelRecoveryService for inline recovery during command execution
+
+### Fixed
+- Fixed infinite retry loops when process crashes leave pending flags set
+- Improved handling of RevisionAlreadyAppliedError by clearing lingering pending flags
+
 ## [0.13.0] - 2025-10-06
 
 ### Added
