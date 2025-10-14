@@ -170,6 +170,24 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         end
       end
 
+      context 'when revision is already applied' do
+        let(:error) { Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError.new('Already applied') }
+
+        before do
+          allow(Yes::Core::CommandHandling::ReadModelRevisionGuard)
+            .to receive(:call)
+            .and_raise(error)
+          allow(Rails.logger).to receive(:warn)
+        end
+
+        it 'rescues the error and logs a warning' do
+          aggregate_failures do
+            expect { updater.call(event, command_payload, command_name) }.not_to raise_error
+            expect(Rails.logger).to have_received(:warn).with("Read model revision already applied: Already applied")
+          end
+        end
+      end
+
       context 'when state updater fails' do
         let(:error) { StandardError.new('State update failed') }
 

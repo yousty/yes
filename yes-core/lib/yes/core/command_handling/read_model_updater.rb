@@ -55,6 +55,8 @@ module Yes
               )
             )
           end
+        rescue ReadModelRevisionGuard::RevisionAlreadyAppliedError => e
+          Rails.logger.warn("Read model revision already applied: #{e.message}")
         end
         
         otl_trackable(
