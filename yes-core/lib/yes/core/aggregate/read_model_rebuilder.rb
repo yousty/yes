@@ -12,7 +12,7 @@ module Yes
         attr_reader :aggregate
         private :aggregate
 
-        delegate :events, :remove_read_model, to: :aggregate
+        delegate :events, :remove_read_model, :read_model, :revision_column, to: :aggregate
 
         # @param aggregate [Yes::Core::Aggregate] The aggregate whose read model needs rebuilding
         def initialize(aggregate)
@@ -23,7 +23,11 @@ module Yes
         # @param remove [Boolean] Whether to remove the read model before rebuilding
         # @return [void]
         def call(remove: true)
-          remove_read_model if remove
+          if remove
+            remove_read_model 
+          else
+            read_model.update(revision_column => -1)
+          end
           events.each { |events_page| events_page.each { |event| process_event(event) } }
         end
 
