@@ -188,6 +188,36 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         end
       end
 
+      context 'when command is not found' do
+        let(:error) { Yes::Core::Utils::CommandUtils::CommandNotFoundError.new('Command not found') }
+        let(:event) { instance_double(Yousty::Eventsourcing::Event, stream_revision: 5, type: 'SomeUnknownEvent', data: event_data) }
+
+        before do
+          allow(command_utilities)
+            .to receive(:command_name_from_event)
+            .with(event, aggregate_class)
+            .and_raise(error)
+          allow(Rails.logger).to receive(:warn)
+        end
+
+        it 'logs a warning and updates only the revision' do
+          aggregate_failures do
+            expect(Rails.logger)
+              .to receive(:warn)
+              .with("Command not found for event SomeUnknownEvent: Command not found")
+
+            expect(aggregate)
+              .to receive(:update_read_model)
+              .with(revision: 5)
+
+            expect(command_utilities).not_to receive(:fetch_state_updater_class)
+            expect(state_updater_class).not_to receive(:new)
+          end
+
+          updater.call(event, command_payload)
+        end
+      end
+
       context 'when state updater fails' do
         let(:error) { StandardError.new('State update failed') }
 

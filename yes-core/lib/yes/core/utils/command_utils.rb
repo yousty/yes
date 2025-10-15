@@ -8,6 +8,8 @@ module Yes
       # @since 0.1.0
       # @api private
       class CommandUtils
+        class CommandNotFoundError < Yes::Core::Error; end
+        
         ASSIGN_COMMAND_PREFIX = 'assign_'
 
         # @param context [String] The context namespace
@@ -113,9 +115,16 @@ module Yes
           payload
         end
 
+        # @param event [PgEventstore::Event] The event
+        # @param aggregate_class [Class] The aggregate class
+        # @return [Symbol] The command name
+        # @raise [CommandNotFoundError] If the command is not found
         def command_name_from_event(event, aggregate_class)
           event_name = event.type.split('::').last.sub(event.stream.stream_name.sub(/(Draft|EditTemplate)/, ''), '').underscore
-          aggregate_class.commands.values.find { _1.event_name.to_s == event_name }.name
+          command = aggregate_class.commands.values.find { _1.event_name.to_s == event_name }
+          raise CommandNotFoundError, "Command not found for event #{event_name}" unless command
+
+          command.name
         end
 
         # Prepares the payload for a command

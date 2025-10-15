@@ -31,7 +31,15 @@ module Yes
         def call(event, command_payload, command_name = nil)
           return unless aggregate.class.read_model_enabled?
 
-          command_name ||= command_utilities.command_name_from_event(event, aggregate.class)
+          begin
+            command_name ||= command_utilities.command_name_from_event(event, aggregate.class)
+          rescue Yes::Core::Utils::CommandUtils::CommandNotFoundError => e
+            Rails.logger.warn("Command not found for event #{event.type}: #{e.message}")
+
+            # update revision only in case event is unknown to aggregate
+            return update_revision(event.stream_revision)
+          end
+
           locale = command_payload[:locale]
 
           state_updater_class = command_utilities.fetch_state_updater_class(command_name)
@@ -67,6 +75,10 @@ module Yes
         private
 
         attr_reader :aggregate, :read_model, :command_utilities, :revision_column
+
+        def update_revision(revision)
+          aggregate.update_read_model(revision_column => revision)
+        end
       end
     end
   end
