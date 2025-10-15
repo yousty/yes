@@ -134,9 +134,10 @@ module Yes
         end
 
         # Rebuilds the read model by processing all events
+        # @param remove [Boolean] Whether to remove the read model before rebuilding
         # @return [void]
-        def rebuild_read_model
-          Yes::Core::Aggregate::ReadModelRebuilder.new(self).call
+        def rebuild_read_model(remove: true)
+          Yes::Core::Aggregate::ReadModelRebuilder.new(self).call(remove:)
         end
 
         def revision_column
