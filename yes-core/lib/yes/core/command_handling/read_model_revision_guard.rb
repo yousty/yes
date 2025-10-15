@@ -110,7 +110,7 @@ module Yes
               failure_message: revision_mismatch_message,
               timeout_message: timeout_message,
               &
-            )
+            ) 
           rescue Yes::Core::Utils::ExponentialRetrier::RetryFailedError => e
             raise RevisionMismatchError, e.message
           rescue Yes::Core::Utils::ExponentialRetrier::TimeoutError => e
@@ -127,7 +127,7 @@ module Yes
         # @return [Yes::Core::Utils::ExponentialRetrier] Configured retrier instance
         def create_retrier
           Yes::Core::Utils::ExponentialRetrier.new(
-            max_retries: 6,
+            max_retries: 10,
             base_sleep_time: 0.1,
             max_sleep_time: 5.0,
             jitter_factor: 0.1,

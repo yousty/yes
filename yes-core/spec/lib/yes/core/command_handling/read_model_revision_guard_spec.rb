@@ -56,7 +56,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
         guard.call { 'success' }
 
         expect(Yes::Core::Utils::ExponentialRetrier).to have_received(:new).with(
-          max_retries: 6,
+          max_retries: 10,
           base_sleep_time: 0.1,
           max_sleep_time: 5.0,
           jitter_factor: 0.1,
