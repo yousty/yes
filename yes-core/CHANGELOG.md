@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [0.15.1] - 2025-10-15
 
 ### Changed
-- Patch release with version bump
+- Read model rebuilder: Reset revision to -1 when remove is false
 
 ## [0.15.0] - 2025-10-15
 
