@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0] - 2025-10-15
+
+### Added
+- Added optional remove parameter to rebuild_read_model to control whether the read model should be removed before rebuilding
+- Added CommandNotFoundError to CommandUtils for handling unknown events
+
+### Changed
+- Refactored ReadModelRebuilder to delegate event processing to ReadModelUpdater for consistent behavior
+- Increased max_retries from 6 to 10 in ReadModelRevisionGuard for better resilience in high-concurrency scenarios
+
+### Fixed
+- Fixed ReadModelUpdater to gracefully handle unknown events by catching CommandNotFoundError and updating only the revision
+
 ## [0.14.1] - 2025-10-14
 
 ### Fixed
