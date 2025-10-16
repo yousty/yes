@@ -1,4 +1,5 @@
 ## [Unreleased]
+* Add OpenTelemetry tracing to read API
 
 # 1.1.1 - 2025-09-17
 * Ensure filters hash is initialized in queries controller
