@@ -89,7 +89,7 @@ module Yes
 
         def read_models_unauthorized_response(error)
           render(
-            json: { title: 'Unauthorized', details: error.extra || error.message }.to_json,
+            json: { title: 'Unauthorized', details: error.message }.to_json,
             status: :unauthorized
           )
         end
