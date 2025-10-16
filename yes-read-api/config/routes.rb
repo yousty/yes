@@ -10,24 +10,31 @@
 # get '/:model', to: OtlTrackableRequest.new
 # post '/:model', to: OtlTrackableRequest.new
 class OtlTrackableRequest
+  attr_accessor :action, :controller
+
+  def initialize(action:, controller:)
+    @action = action
+    @controller = controller
+  end
+
   def call(env)
     tracer = Yousty::Eventsourcing.config.otl_tracer
     request = ActionDispatch::Request.new(env)
 
-    controller = request.controller_class
-    action = request.params[:action] || :index
+    controller ||= request.controller_class
+    action ||= request.params[:action] || :index
 
     return controller.action(action).call(env) unless tracer
 
-    otl_auth_data = request.get? || request.delete? ? get_otl_auth_data(request, env) : otl_auth_data(request, env)
+    otl_request_data = request.get? || request.delete? ? get_otl_auth_data(request, env) : otl_auth_data(request, env)
 
     if tracer.current_span
-      tracer.current_span.add_attributes(otl_auth_data)
+      tracer.current_span.add_attributes(otl_request_data)
 
       controller.action(action).call(env)
     else
       tracer.in_span("Request #{controller}", kind: :client) do |request_span|
-        request_span.add_attributes(otl_auth_data)
+        request_span.add_attributes(otl_request_data)
 
         controller.action(action).call(env)
       end
@@ -63,7 +70,7 @@ end
 
 Yes::Read::Api::Engine.routes.draw do
   constraints(Yes::Read::Api::ModelConstraints) do
-    get '/:model', to: OtlTrackableRequest.new
-    post '/:model', to: OtlTrackableRequest.new
+    get '/:model', to: OtlTrackableRequest.new(action: :call, controller: Yes::Read::Api::QueriesController)
+    post '/:model', to: OtlTrackableRequest.new(action: :advanced, controller: Yes::Read::Api::QueriesController)
   end
 end
