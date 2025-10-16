@@ -9,35 +9,37 @@
 # It’s being used as a route handler directly in Rails routes:
 # get '/:model', to: OtlTrackableRequest.new
 # post '/:model', to: OtlTrackableRequest.new
-class OtlTrackableRequest
-  attr_accessor :action, :controller
+#
 
-  def initialize(action:, controller:)
-    @action = action
-    @controller = controller
+require 'jwt_token_auth_client_rails'
+class OtlTrackableRequest
+  attr_accessor :action_name, :controller_class
+
+  def initialize(action_name:, controller_class:)
+    @action_name = action_name
+    @controller_class = controller_class
   end
 
   def call(env)
-    tracer = Yousty::Eventsourcing.config.otl_tracer
+    tracer = Yousty::Eventsourcing.config.try(:otl_tracer)
     request = ActionDispatch::Request.new(env)
 
-    controller ||= request.controller_class
-    action ||= request.params[:action] || :index
+    self.controller_class ||= request.controller_class
+    self.action_name ||= request.params[:action] || :index
 
-    return controller.action(action).call(env) unless tracer
+    return controller_class.action(action_name).call(env) if tracer.nil?
 
     otl_request_data = request.get? || request.delete? ? get_otl_auth_data(request, env) : otl_auth_data(request, env)
 
-    if tracer.current_span
-      tracer.current_span.add_attributes(otl_request_data)
+    if ::OpenTelemetry::Trace.current_span&.recording?
+      ::OpenTelemetry::Trace.current_span.add_attributes(otl_request_data)
+      return controller_class.action(action_name).call(env)
+    end
 
-      controller.action(action).call(env)
-    else
-      tracer.in_span("Request #{controller}", kind: :client) do |request_span|
-        request_span.add_attributes(otl_request_data)
+    tracer.in_span("Request #{controller_class.name}", kind: :client) do |request_span|
+      request_span.add_attributes(otl_request_data)
 
-        controller.action(action).call(env)
-      end
+      return controller_class.action(action_name).call(env)
     end
   end
 
@@ -70,7 +72,7 @@ end
 
 Yes::Read::Api::Engine.routes.draw do
   constraints(Yes::Read::Api::ModelConstraints) do
-    get '/:model', to: OtlTrackableRequest.new(action: :call, controller: Yes::Read::Api::QueriesController)
-    post '/:model', to: OtlTrackableRequest.new(action: :advanced, controller: Yes::Read::Api::QueriesController)
+    get '/:model', to: OtlTrackableRequest.new(action_name: :call, controller_class: Yes::Read::Api::QueriesController)
+    post '/:model', to: OtlTrackableRequest.new(action_name: :advanced, controller_class: Yes::Read::Api::QueriesController)
   end
 end
