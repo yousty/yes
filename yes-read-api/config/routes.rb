@@ -31,11 +31,6 @@ class OtlTrackableRequest
 
     otl_request_data = request.get? || request.delete? ? get_otl_auth_data(request, env) : otl_auth_data(request, env)
 
-    if ::OpenTelemetry::Trace.current_span&.recording?
-      ::OpenTelemetry::Trace.current_span.add_attributes(otl_request_data)
-      return controller_class.action(action_name).call(env)
-    end
-
     tracer.in_span("Request #{controller_class.name}", kind: :client) do |request_span|
       request_span.add_attributes(otl_request_data)
 
