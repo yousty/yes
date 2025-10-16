@@ -31,16 +31,23 @@ module Yes
                 Class.new(Yes::Core::Event) do
                   define_method :schema do
                     Dry::Schema.Params do
+                      required_attribute = proc do |attr_name, type|
+                        required(attr_name).value(Yes::Core::TypeLookup.type_for(type, context, :event))
+                      end
+
+                      optional_attribute = proc do |attr_name, type|
+                        optional(attr_name).value(Yes::Core::TypeLookup.type_for(type, context, :event))
+                      end
+
                       # Define the aggregate_id attribute for the event
                       required(:"#{aggregate.underscore}_id").value(Yousty::Eventsourcing::Types::UUID)
 
                       # Define payload attributes if any
                       payload_attributes.each do |attr_name, attr_type|
-                        if attr_type.is_a?(Hash) && attr_type[:optional]
-                          optional(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type[:type], context, :event))
-                        else
-                          required(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type, context, :event))
-                        end
+                        next required_attribute.call(attr_name, attr_type) unless attr_type.is_a?(Hash)
+                        next optional_attribute.call(attr_name, attr_type[:type]) if attr_type[:optional]
+
+                        required_attribute.call(attr_name, attr_type[:type])
                       end
                     end
                   end

@@ -25,13 +25,13 @@ CREATE FUNCTION public.prevent_concurrent_pending_update() RETURNS trigger
     AS $$
       BEGIN
         -- If trying to set pending_update_since when it's already set
-        IF NEW.pending_update_since IS NOT NULL AND 
+        IF NEW.pending_update_since IS NOT NULL AND
            OLD.pending_update_since IS NOT NULL AND
            NEW.pending_update_since != OLD.pending_update_since THEN
           RAISE EXCEPTION 'Concurrent pending update not allowed for record %', NEW.id
             USING ERRCODE = 'unique_violation';
         END IF;
-        
+
         -- Allow clearing pending_update_since (setting to NULL)
         -- Allow initial setting when OLD value is NULL
         RETURN NEW;
@@ -120,6 +120,8 @@ CREATE TABLE public.test_users (
     shortcut_toggle boolean,
     published boolean,
     locale_test character varying,
+    default_payload_test character varying,
+    dynamic_default_test timestamp(6) without time zone,
     revision integer DEFAULT '-1'::integer NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,

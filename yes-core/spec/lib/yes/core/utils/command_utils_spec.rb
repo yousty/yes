@@ -232,4 +232,58 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
       expect(subject).to eq({ location_id: })
     end
   end
+
+  describe '#prepare_default_payload' do
+    subject { instance.prepare_default_payload(command_name, payload, Test::User::Aggregate) }
+    let(:command_name) { :test_command_with_default_payload }
+    let(:payload) { {} }
+
+    context 'when command has only one argument with default value' do
+      context 'when the argument is not provided' do
+        it 'returns the default value' do
+          expect(subject).to eq({ default_payload_test: 'foo' })
+        end
+
+        context 'when the default value is a proc' do
+          let(:command_name) { :test_dynamic_default }
+          let(:time) { DateTime.new(2025, 9, 27, 12, 0, 0) }
+          it 'returns the run-time determined default value' do
+            # subject is memoized, so we need explicit call for second value
+            aggregate_failures do
+              allow(Time.zone).to receive(:now).and_return(time)
+              expect(subject).to eq({ dynamic_default_test: '2025-09-28 12:00:00' })
+              allow(Time.zone).to receive(:now).and_return(time + 1.day)
+              second_call = instance.prepare_default_payload(command_name, payload, Test::User::Aggregate)
+              expect(second_call).to eq({ dynamic_default_test: '2025-09-29 12:00:00' })
+            end
+          end
+        end
+      end
+
+      context 'when the argument is provided' do
+        let(:payload) { { default_payload_test: 'bar' } }
+        it 'returns the provided value' do
+          expect(subject).to eq({ default_payload_test: 'bar' })
+        end
+      end
+    end
+
+    context 'when command has multiple arguments with default values' do
+      let(:command_name) { :test_command_with_default_payload_and_other_attribute }
+      let(:payload) { { name: 'foo' } }
+
+      context 'when the argument with default value is not provided' do
+        it 'returns the default value' do
+          expect(subject).to eq({ name: 'foo', default_payload_test: 'bar' })
+        end
+      end
+
+      context 'when the argument with default value is provided' do
+        let(:payload) { { name: 'foo', default_payload_test: 'baz' } }
+        it 'returns the provided value' do
+          expect(subject).to eq({ name: 'foo', default_payload_test: 'baz' })
+        end
+      end
+    end
+  end
 end
