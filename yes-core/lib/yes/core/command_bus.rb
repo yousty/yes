@@ -34,7 +34,6 @@ module Yes
         perform_method = perform_inline ? :perform_now : :perform_later
         self.class.current_span&.add_attributes({ perform_method: perform_method.to_s, origin: }.stringify_keys)
 
-        binding.irb
         command_processor.public_send(
           perform_method, origin, command_or_commands, notifier_options, batch_id
         )

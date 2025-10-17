@@ -94,7 +94,7 @@ module Yes
       # @raise [UnregisteredCommand] if no guard evaluator is found for the command
       def guard_evaluator_exists?(cmd)
         command_helper = Yousty::Eventsourcing::CommandHelper.new(cmd)
-        binding.irb
+
         klass = Yes::Core.configuration.guard_evaluator_class(command_helper.command_context,
                                                               command_helper.subject,
                                                               command_helper.command_name)
