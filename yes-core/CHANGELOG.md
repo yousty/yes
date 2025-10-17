@@ -1,6 +1,6 @@
-# Changelog
-
-All notable changes to this project will be documented in this file.
+# Unreleased
+* Bump yousty-eventsourcing dependency to 15.0.1-alpha8
+* Add observability support in the CommandBus
 
 ## [0.15.1] - 2025-10-15
 

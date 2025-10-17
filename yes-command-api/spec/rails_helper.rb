@@ -1,6 +1,5 @@
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
-
 ENV['RAILS_ENV'] = 'test'
 require_relative 'dummy/config/environment'
 # Prevent database truncation if the environment is production
@@ -75,6 +74,7 @@ RSpec.configure do |config|
 
   config.after(:each) do
     REDIS.flushdb
+    DummyRepository.reset
     TestHelper.clean_up_config
     PgEventstore::TestHelpers.clean_up_db
   end

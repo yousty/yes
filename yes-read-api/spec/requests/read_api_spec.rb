@@ -86,11 +86,11 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             end
             let(:company1) { FactoryBot.create(:company) }
 
-            before do
-              subject
-            end
-
             context 'when filter_id is provided' do
+              before do
+                subject
+              end
+
               let(:params) { { filter_id: persisted_filter.id } }
               let(:persisted_filter) do
                 FactoryBot.create(
@@ -116,6 +116,10 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             end
 
             context 'when no filter params are given' do
+              before do
+                subject
+              end
+
               it 'returns correct records' do
                 expect(json_data.map { |record| record['id'] }).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
@@ -133,7 +137,37 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
             end
 
+            context 'when OpenTelemetry tracer is configured' do
+              include_context :opentelemetry_memory_exporter
+
+              before do
+                Yousty::Eventsourcing.config.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
+
+                subject
+              end
+
+              it_behaves_like 'open telemetry trackable' do
+                let(:expected_spans_name) { ['Request Yes::Read::Api::QueriesController'] }
+                let(:expected_spans_kind) { [:client] }
+                let(:expected_spans_amount) { 1 }
+                let(:default_attribute_keys) { {} }
+                let(:extra_attribute_keys) do
+                  {
+                    'Request Yes::Read::Api::QueriesController' => {
+                      'auth_token' => "Bearer #{access_token}",
+                      'params' => { model: 'apprenticeships' }.to_json,
+                      'auth_data' => JWT.decode(access_token.gsub('Bearer ', access_token), nil, false).to_json
+                    }
+                  }
+                end
+              end
+            end
+
             context 'when filters params are given' do
+              before do
+                subject
+              end
+
               context 'when filter by ids' do
                 let(:params) { { filters: { ids: [apprenticeship.id, apprenticeship1.id].join(',') } } }
 
@@ -185,6 +219,10 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
 
               context 'when order filter and filtering filter are provided' do
+                before do
+                  subject
+                end
+
                 let(:params) do
                   { filters: { ids: [apprenticeship.id, apprenticeship1.id].join(',') }, order: { created_at: 'desc' } }
                 end
@@ -196,6 +234,10 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             end
 
             context 'when include params are given' do
+              before do
+                subject
+              end
+
               let(:params) { { include: 'company' } }
 
               it 'returns correct records' do
@@ -308,11 +350,11 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             end
             let(:company1) { FactoryBot.create(:company) }
 
-            before do
-              subject
-            end
-
             context 'when no filter params are given' do
+              before do
+                subject
+              end
+
               it 'returns correct records' do
                 expect(json_data.map { |record| record['id'] }).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
@@ -331,6 +373,10 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             end
 
             context 'when filters params are given' do
+              before do
+                subject
+              end
+
               let(:params) do
                 {
                   filter_definition: {
@@ -391,7 +437,59 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
             end
 
+            context 'when OpenTelemetry tracer is configured' do
+              include_context :opentelemetry_memory_exporter
+
+              let(:params) do
+                {
+                  filter_definition: {
+                    type: 'filter_set',
+                    logical_operator: 'or',
+                    filters: [
+                      {
+                        type: 'filter',
+                        attribute: 'ids',
+                        operator: 'is',
+                        value: [apprenticeship.id, apprenticeship1.id].join(',')
+                      },
+                      {
+                        type: 'filter',
+                        attribute: 'dropout_enabled',
+                        operator: 'is',
+                        value: true
+                      }
+                    ]
+                  }
+                }
+              end
+
+              before do
+                Yousty::Eventsourcing.config.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
+
+                subject
+              end
+
+              it_behaves_like 'open telemetry trackable' do
+                let(:expected_spans_name) { ['Request Yes::Read::Api::QueriesController'] }
+                let(:expected_spans_kind) { [:client] }
+                let(:expected_spans_amount) { 1 }
+                let(:default_attribute_keys) { {} }
+                let(:extra_attribute_keys) do
+                  {
+                    'Request Yes::Read::Api::QueriesController' => {
+                      'auth_token' => "Bearer #{access_token}",
+                      'params' => params.to_json,
+                      'auth_data' => JWT.decode(access_token.gsub('Bearer ', access_token), nil, false).to_json
+                    }
+                  }
+                end
+              end
+            end
+
             context 'when include params are given' do
+              before do
+                subject
+              end
               let(:params) { { include: 'company' } }
 
               it 'returns correct records' do

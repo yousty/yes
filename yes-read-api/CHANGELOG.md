@@ -1,4 +1,7 @@
 ## [Unreleased]
+* Bump yousty-eventsourcing dependency to 15.0.1-alpha8
+* Add OpenTelemetry tracing to read API
+* Refactor read_models_unauthorized_response - return error message as details - to keep backward compatibility with existing clients
 
 # 1.1.1 - 2025-09-17
 * Ensure filters hash is initialized in queries controller

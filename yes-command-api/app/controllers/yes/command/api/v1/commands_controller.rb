@@ -89,7 +89,7 @@ module Yes
             end.flatten
           end
 
-          def add_metadata(commands)   
+          def add_metadata(commands)
             commands.map do |command|
               command.class.new(
                 command.to_h.merge(
@@ -152,6 +152,8 @@ module Yes
 
           def set_channel
             @channel = params[:channel].presence || auth_data[:identity_id]
+
+            self.class.current_span&.set_attribute('channel', @channel)
             return if @channel.present?
 
             render json: { title: '"channel" param is required' }, status: :bad_request
@@ -171,7 +173,7 @@ module Yes
           end
           otl_trackable :handle_unexpected_error,
                         Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Handle Unexpected Error')
-                        
+
           def command_request_started_at_ms
             return nil unless request.env['HTTP_X_REQUEST_START']
 

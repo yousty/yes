@@ -40,7 +40,7 @@ module APIHelpers
     end
 
     it 'has correct content type' do
-      expect(response.content_type).to match(%r{application/json})
+      expect(response.content_type.downcase).to include('application/json; charset=utf-8')
     end
 
     it 'responds has batch id' do
@@ -58,7 +58,7 @@ module APIHelpers
     end
 
     it 'has correct content type' do
-      expect(response.content_type).to match(%r{application/json})
+      expect(response.content_type.downcase).to include('application/json; charset=utf-8')
     end
 
     it 'responds has command response data' do
@@ -76,7 +76,7 @@ module APIHelpers
     end
 
     it 'has correct content type' do
-      expect(response.content_type).to match(%r{application/json})
+      expect(response.content_type.downcase).to include('application/json; charset=utf-8')
     end
 
     it 'has correct error body' do
@@ -98,7 +98,7 @@ module APIHelpers
     end
 
     it 'has correct content type' do
-      expect(response.content_type).to match(%r{application/json})
+      expect(response.content_type.downcase).to include('application/json; charset=utf-8')
     end
 
     it 'has correct error body' do
@@ -122,7 +122,7 @@ module APIHelpers
     end
 
     it 'has correct content type' do
-      expect(response.content_type).to match(%r{application/json})
+      expect(response.content_type.downcase).to include('application/json; charset=utf-8')
     end
 
     it 'has correct error body' do
@@ -145,7 +145,7 @@ module APIHelpers
     end
 
     it 'has correct content type' do
-      expect(response.content_type).to match(%r{application/json})
+      expect(response.content_type.downcase).to include('application/json; charset=utf-8')
     end
 
     it 'returns errors' do

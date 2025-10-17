@@ -3,6 +3,8 @@
 module Yes
   module Core
     class CommandBus
+      include Yousty::Eventsourcing::OpenTelemetry::Trackable
+
       attr_reader :command_processor, :perform_inline
       private :command_processor, :perform_inline
 
@@ -30,10 +32,13 @@ module Yes
         origin ||= Utils::CallerUtils.origin_from_caller(caller_locations(1..1).first)
 
         perform_method = perform_inline ? :perform_now : :perform_later
+        self.class.current_span&.add_attributes({ perform_method: perform_method.to_s, origin: }.stringify_keys)
+
         command_processor.public_send(
           perform_method, origin, command_or_commands, notifier_options, batch_id
         )
       end
+      otl_trackable :call, Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Command Bus Schedule')
     end
   end
 end
