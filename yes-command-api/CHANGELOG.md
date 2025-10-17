@@ -1,4 +1,6 @@
 # Unreleased
+
+# 2.4.0 - 2025-10-17
 * Bump yousty-eventsourcing dependency to 15.0.1-alpha8
 * Add channel log in observability
 * Refactor routes.rb
