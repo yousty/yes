@@ -21,7 +21,7 @@ GEM_FURY_URL="https://${GEM_FURY_PUSH_TOKEN}@push.fury.io/yousty-ag/"
 # === STEP 1: BUMP VERSION ===
 # echo "🔢 Bumping version for ${GEM_NAME} (${BUMP_ARGUMENT})..."
 pushd "${GEM_DIR}" > /dev/null
-# bump "${BUMP_ARGUMENT}" --tag --tag-prefix "${TAG_PREFIX}"
+bump "${BUMP_ARGUMENT}" --tag --tag-prefix "${TAG_PREFIX}"
 VERSION=$(bump current | tail -n 1)
 popd > /dev/null
 # echo "📦 New version for ${GEM_NAME}: ${VERSION}"
