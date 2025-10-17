@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.17.0 - 2025-10-17
+- Fixed command payload cloning in command handler to prevent mutating the original payload'
+
 # 0.16.0 - 2025-10-17
 * Bump yousty-eventsourcing dependency to 15.0.1-alpha8
 * Add observability support in the CommandBus
