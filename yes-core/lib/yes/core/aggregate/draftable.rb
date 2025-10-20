@@ -97,7 +97,8 @@ module Yes
             Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel.new(
               changes_read_model_name,
               context,
-              aggregate
+              aggregate,
+              draft: true
             ).call
           end
 

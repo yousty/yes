@@ -38,9 +38,10 @@ module Yes
       # @param klass [Class] The class to register
       # @example
       #   register_read_model_class(:authentication, :user, UserReadModel)
-      def register_read_model_class(context_name, aggregate_name, klass)
+      def register_read_model_class(context_name, aggregate_name, klass, draft: false)
         key = [context_name, aggregate_name]
-        @registered_classes[key][:read_model] = klass
+        read_model_key = draft ? :draft_read_model : :read_model
+        @registered_classes[key][read_model_key] = klass
       end
 
       # Register a read model filter class for a specific aggregate
@@ -160,13 +161,19 @@ module Yes
       # Retrieve a registered class for a given aggregate, action, and type
       # @param context_name [Symbol, String] The context for the aggregate
       # @param aggregate_name [Symbol, String] The name of the aggregate
-      # @param action_name [Symbol, String] The name of the action (command/event)
-      # @param type [Symbol] The type of the class (:command, :event, or :guard_evaluator)
+      # @param action_name [Symbol, String, nil] The name of the action (command/event), nil for read_model types
+      # @param type [Symbol] The type of the class (:command, :event, :guard_evaluator, :read_model, :draft_read_model)
       # @return [Class, nil] The registered class or nil if not found
       # @example Get a command class
       #   command_class = aggregate_class(:authentication, :user, :create, :command)
+      # @example Get a read model class
+      #   read_model_class = aggregate_class(:authentication, :user, nil, :read_model)
       def aggregate_class(context_name, aggregate_name, action_name, type)
-        @registered_classes.dig([context_name, aggregate_name], type, action_name)
+        if action_name.nil?
+          @registered_classes.dig([context_name, aggregate_name], type)
+        else
+          @registered_classes.dig([context_name, aggregate_name], type, action_name)
+        end
       end
 
       # List all registered classes for a specific aggregate in a context
