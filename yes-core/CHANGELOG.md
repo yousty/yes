@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.17.1 - 2025-10-20
+- Add draft parameter support to read model registration
+
 # 0.17.0 - 2025-10-17
 - Fixed command payload cloning in command handler to prevent mutating the original payload'
 
