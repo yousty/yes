@@ -46,6 +46,47 @@ RSpec.describe Yes::Core::Configuration do
     end
   end
 
+  describe '#register_read_model_class' do
+    subject { configuration.register_read_model_class(context_name, aggregate_name, test_class, draft:) }
+
+    context 'when draft is false' do
+      let(:draft) { false }
+
+      it 'registers the class under :read_model key' do
+        subject
+        expect(configuration.aggregate_class(context_name, aggregate_name, nil, :read_model)).to eq(test_class)
+      end
+
+      it 'does not register under :draft_read_model key' do
+        subject
+        expect(configuration.aggregate_class(context_name, aggregate_name, nil, :draft_read_model)).not_to eq(test_class)
+      end
+    end
+
+    context 'when draft is true' do
+      let(:draft) { true }
+
+      it 'registers the class under :draft_read_model key' do
+        subject
+        expect(configuration.aggregate_class(context_name, aggregate_name, nil, :draft_read_model)).to eq(test_class)
+      end
+
+      it 'does not register under :read_model key' do
+        subject
+        expect(configuration.aggregate_class(context_name, aggregate_name, nil, :read_model)).not_to eq(test_class)
+      end
+    end
+
+    context 'when draft is not specified (default)' do
+      subject { configuration.register_read_model_class(context_name, aggregate_name, test_class) }
+
+      it 'registers the class under :read_model key by default' do
+        subject
+        expect(configuration.aggregate_class(context_name, aggregate_name, nil, :read_model)).to eq(test_class)
+      end
+    end
+  end
+
   describe '#aggregate_class' do
     subject { configuration.aggregate_class(context_name, aggregate_name, action_name, :command) }
 

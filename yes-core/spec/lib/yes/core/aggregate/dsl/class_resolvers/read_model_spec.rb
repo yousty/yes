@@ -26,5 +26,56 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel do
 
       expect(relation.to_sql).to include("WHERE \"#{subject.table_name}\".\"id\" IN")
     end
+
+    context 'with draft parameter' do
+      let(:configuration) { Yes::Core.configuration }
+
+      before do
+        allow(Yes::Core).to receive(:configuration).and_return(configuration)
+        allow(configuration).to receive(:register_read_model_class)
+      end
+
+      context 'when draft is false' do
+        subject { described_class.new(read_model_name, context, aggregate, draft: false).call }
+
+        it 'registers the class with draft: false' do
+          subject
+          expect(configuration).to have_received(:register_read_model_class).with(
+            context,
+            aggregate,
+            kind_of(Class),
+            draft: false
+          )
+        end
+      end
+
+      context 'when draft is true' do
+        subject { described_class.new(read_model_name, context, aggregate, draft: true).call }
+
+        it 'registers the class with draft: true' do
+          subject
+          expect(configuration).to have_received(:register_read_model_class).with(
+            context,
+            aggregate,
+            kind_of(Class),
+            draft: true
+          )
+        end
+      end
+
+      context 'when draft is not specified' do
+        subject { described_class.new(read_model_name, context, aggregate).call }
+
+        it 'registers the class with draft: false by default' do
+          subject
+          expect(configuration).to have_received(:register_read_model_class).with(
+            context,
+            aggregate,
+            kind_of(Class),
+            draft: false
+          )
+        end
+      end
+    end
   end
 end

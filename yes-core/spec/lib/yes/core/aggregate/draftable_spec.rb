@@ -123,6 +123,49 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     end
   end
 
+  describe '.changes_read_model_class' do
+    subject { draftable_aggregate_class }
+
+    let(:resolver_double) { double('ReadModelResolver') }
+    let(:resolved_class) { Class.new }
+
+    before do
+      allow(Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel).to receive(:new).and_return(resolver_double)
+      allow(resolver_double).to receive(:call).and_return(resolved_class)
+    end
+
+    it 'creates a ReadModel resolver with draft: true' do
+      subject.changes_read_model_class
+
+      expect(Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel).to have_received(:new).with(
+        'test_aggregate_change',
+        'TestContext',
+        'TestAggregate',
+        draft: true
+      )
+    end
+
+    it 'returns the resolved class' do
+      expect(subject.changes_read_model_class).to eq(resolved_class)
+    end
+
+    context 'when changes_read_model_name is nil' do
+      before do
+        allow(subject).to receive(:changes_read_model_name).and_return(nil)
+      end
+
+      it 'returns nil' do
+        expect(subject.changes_read_model_class).to be_nil
+      end
+
+      it 'does not create a resolver' do
+        subject.changes_read_model_class
+
+        expect(Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModel).not_to have_received(:new)
+      end
+    end
+  end
+
   describe 'changes_read_model_public configuration' do
     context 'when not specified (default)' do
       subject { draftable_aggregate_class }
