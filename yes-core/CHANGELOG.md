@@ -1,5 +1,10 @@
 # Unreleased
 
+# 0.18.0 - 2025-10-21
+- Add aggregate shortcuts functionality for Rails console to provide convenient shortcut aliases for aggregate classes
+- Enable aggregate shortcuts automatically when Rails console starts
+- Support custom abbreviations via YAML configuration file
+
 # 0.17.1 - 2025-10-20
 - Add draft parameter support to read model registration
 
