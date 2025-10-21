@@ -11,12 +11,26 @@ module Yes
       @configuration ||= Configuration.new
     end
 
+    # Configures Yes::Core
+    # @yield [Yes::Core::Configuration] The configuration instance
+    # @example
+    #   Yes::Core.configure do |config|
+    #     config.aggregate_shortcuts = true
+    #   end
+    def self.configure
+      yield configuration
+    end
+
     class Configuration
+      # @return [Boolean] Enable aggregate shortcuts in Rails console (default: false)
+      attr_accessor :aggregate_shortcuts
+
       # Initializes a new configuration instance with nested hashes for class storage.
       def initialize
         @registered_classes = Hash.new do |h, k|
           h[k] = Hash.new { |h2, k2| h2[k2] = {} }
         end
+        @aggregate_shortcuts = false
       end
 
       # Register a class for a specific aggregate and type
