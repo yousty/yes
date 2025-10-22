@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.18.3 - 2025-10-22
+- Revert string key support from PayloadProxy
+
 # 0.18.2 - 2025-10-22
 - Handle RecordNotFound in ReadModelRevisionGuard reload
 
