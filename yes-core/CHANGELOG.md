@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.19.0 - 2025-10-22
+- Add OpenTelemetry instrumentation to CommandProcessor
+
 # 0.18.3 - 2025-10-22
 - Revert string key support from PayloadProxy
 
