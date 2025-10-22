@@ -147,12 +147,16 @@ module Yes
         # Checks revision status and returns whether revision matches
         # Also handles the revision already applied error
         #
-        # @return [Boolean] True if revision matches
+        # @return [Boolean] True if revision matches, false if record not found (retry)
         # @raise [RevisionAlreadyAppliedError] When revision has already been applied
         def check_revision_and_return_match_status
           read_model.reload
           check_revision_status!
           revision_matches?
+        rescue ActiveRecord::RecordNotFound
+          # Record was just created but not yet visible due to transaction timing,
+          # read replica lag, or isolation levels. Return false to trigger retry.
+          false
         end
 
         # Checks if the current read model revision + 1 equals the expected revision

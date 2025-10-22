@@ -195,6 +195,40 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
         end.to raise_error(described_class::RevisionAlreadyAppliedError)
       end
     end
+
+    context 'when reload raises RecordNotFound' do
+      before do
+        allow(read_model).to receive(:reload).and_raise(ActiveRecord::RecordNotFound)
+      end
+
+      it 'returns false to trigger retry' do
+        result = guard.send(:check_revision_and_return_match_status)
+
+        expect(result).to be false
+      end
+    end
+
+    context 'when record becomes visible after initial RecordNotFound' do
+      before do
+        call_count = 0
+        allow(read_model).to receive(:reload) do
+          call_count += 1
+          raise ActiveRecord::RecordNotFound if call_count == 1
+
+          read_model
+        end
+      end
+
+      it 'eventually succeeds when record is visible' do
+        # First call returns false due to RecordNotFound
+        first_result = guard.send(:check_revision_and_return_match_status)
+        expect(first_result).to be false
+
+        # Second call succeeds when record is visible
+        second_result = guard.send(:check_revision_and_return_match_status)
+        expect(second_result).to be true
+      end
+    end
   end
 
   describe '#revision_matches?' do
