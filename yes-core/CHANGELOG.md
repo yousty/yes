@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.18.2 - 2025-10-22
+- Handle RecordNotFound in ReadModelRevisionGuard reload
+
 # 0.18.1 - 2025-10-22
 - Add string key support to PayloadProxy for event replay compatibility
 
