@@ -5,6 +5,8 @@ module Yes
     # Processes commands asynchronously through ActiveJob
     # @since 0.1.0
     class CommandProcessor < ActiveJob::Base
+      include Yousty::Eventsourcing::OpenTelemetry::Trackable
+
       queue_as :commands
 
       # Error raised when a command is not registered with a handler
@@ -23,18 +25,28 @@ module Yes
       # @raise [UnregisteredCommand] if any command lacks a handler
       def perform(origin, command_or_commands, notifier_options, custom_batch_id = nil)
         setup(notifier_options, custom_batch_id)
+        singleton_class.current_span&.add_event('Command Processor Setup Done')
 
         commands = [*command_or_commands]
         ensure_guard_evaluators_exist?(commands)
+        singleton_class.current_span&.add_event('Ensured Guard Evaluators Exist')
 
         commands.map! { |cmd| cmd.class.new(cmd.to_h.merge(origin:, batch_id:)) }
+        singleton_class.current_span&.add_event('Commands Mapped')
 
         if command_notifiers.any?
-          CommandNotifier.with_batch_notification(command_notifiers, batch_id, commands) { run_commands(commands) }
+          singleton_class.with_otl_span 'Run Commands With Notifiers' do
+            CommandNotifier.with_batch_notification(command_notifiers, batch_id, commands) do 
+              singleton_class.with_otl_span 'Run Commands' do
+                run_commands(commands) 
+              end
+            end
+          end
         else
           run_commands(commands)
         end
       end
+      otl_trackable :perform, Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Command Processor Perform')
 
       private
 
