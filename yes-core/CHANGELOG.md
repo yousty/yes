@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.18.1 - 2025-10-22
+- Add string key support to PayloadProxy for event replay compatibility
+
 # 0.18.0 - 2025-10-21
 - Add aggregate shortcuts functionality for Rails console to provide convenient shortcut aliases for aggregate classes
 - Enable aggregate shortcuts automatically when Rails console starts
