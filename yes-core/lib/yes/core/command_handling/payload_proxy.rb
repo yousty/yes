@@ -42,9 +42,11 @@ module Yes
         # @yieldreturn [void]
         # @return [Object] The payload value or resolved aggregate
         def method_missing(method_name, *args, &)
-          if raw_payload.key?(method_name)
-            raw_payload[method_name]
-          elsif raw_payload.key?(:"#{method_name}_id")
+          method_str = method_name.to_s
+
+          if raw_payload.key?(method_name) || raw_payload.key?(method_str)
+            raw_payload[method_name] || raw_payload[method_str]
+          elsif raw_payload.key?(:"#{method_name}_id") || raw_payload.key?("#{method_name}_id")
             resolve_aggregate(method_name)
           else
             super
@@ -57,8 +59,12 @@ module Yes
         # @param include_private [Boolean] Whether to include private methods
         # @return [Boolean] True if method can be handled
         def respond_to_missing?(method_name, include_private = false)
+          method_str = method_name.to_s
+
           raw_payload.key?(method_name) ||
+            raw_payload.key?(method_str) ||
             raw_payload.key?(:"#{method_name}_id") ||
+            raw_payload.key?("#{method_name}_id") ||
             super
         end
 
