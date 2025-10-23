@@ -28,7 +28,7 @@ module Yes
         # @param command_payload [Hash] The command payload
         # @param command_name [Symbol, String] The command name (optional, will be derived from event if not provided)
         # @return [void]
-        def call(event, command_payload, command_name = nil)
+        def call(event, command_payload, command_name = nil, resolve_payload: false)
           return unless aggregate.class.read_model_enabled?
 
           begin
@@ -40,17 +40,19 @@ module Yes
             return update_revision(event.stream_revision)
           end
 
-          locale = command_payload[:locale]
+          payload = command_payload ? command_payload : payload_from_event(event, resolve_payload)
+          
+          locale = payload[:locale]
 
           state_updater_class = command_utilities.fetch_state_updater_class(command_name)
 
           ReadModelRevisionGuard.call(
             read_model,
             event.stream_revision,
-            revision_column: revision_column
+            revision_column:
           ) do
             state_changes = state_updater_class.new(
-              payload: command_payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS),
+              payload: payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS),
               aggregate:,
               event:
             ).call
@@ -79,6 +81,17 @@ module Yes
         def update_revision(revision)
           aggregate.update_read_model(revision_column => revision)
         end
+
+        def payload_from_event(event, resolve_payload)
+          return event.data if !resolve_payload
+          return event.data unless event.data.values.any? { _1.start_with?(Yes::Core::Event::PAYLOAD_STORE_VALUE_PREFIX) }
+
+          Yousty::Eventsourcing::PayloadStore::Lookup.new.call(event).each do |key, value|
+            event.data[key.to_s] = value
+          end
+
+          event.data
+        end  
       end
     end
   end

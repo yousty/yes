@@ -34,13 +34,73 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
       allow(aggregate).to receive(:update_read_model).with(anything)
     end
 
+    context 'when command_payload is nil and resolve_payload is false' do
+      before do
+        allow(Yes::Core::CommandHandling::ReadModelRevisionGuard).to receive(:call).and_yield
+      end
+
+      it 'uses event.data as payload' do
+        filtered_payload = event_data.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS)
+
+        expect(state_updater_class)
+          .to receive(:new)
+          .with(
+            payload: filtered_payload,
+            aggregate: aggregate,
+            event: event
+          )
+          .and_return(state_updater)
+
+        updater.call(event, nil, command_name, resolve_payload: false)
+      end
+    end
+
+    context 'when command_payload is nil and resolve_payload is true' do
+      let(:event_data) do
+        {
+          'document_ids' => SecureRandom.uuid,
+          'another' => "#{Yes::Core::Event::PAYLOAD_STORE_VALUE_PREFIX}some-key"
+        }
+      end
+      let(:resolved_value) { 'resolved_value' }
+      let(:payload_lookup) { instance_double(Yousty::Eventsourcing::PayloadStore::Lookup) }
+
+      before do
+        allow(Yes::Core::CommandHandling::ReadModelRevisionGuard).to receive(:call).and_yield
+        allow(Yousty::Eventsourcing::PayloadStore::Lookup).to receive(:new).and_return(payload_lookup)
+        allow(payload_lookup).to receive(:call).with(event).and_return({ 'another' => resolved_value })
+      end
+
+      it 'resolves payload from payload store' do
+        expect(payload_lookup).to receive(:call).with(event)
+
+        updater.call(event, nil, command_name, resolve_payload: true)
+      end
+
+      it 'uses resolved payload in state updater' do
+        expected_event_data = event_data.merge('another' => resolved_value)
+        filtered_payload = expected_event_data.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS)
+
+        expect(state_updater_class)
+          .to receive(:new)
+          .with(
+            payload: filtered_payload,
+            aggregate: aggregate,
+            event: event
+          )
+          .and_return(state_updater)
+
+        updater.call(event, nil, command_name, resolve_payload: true)
+      end
+    end
+
     context 'with revision guard' do
       it 'calls ReadModelRevisionGuard with correct parameters' do
         expect(Yes::Core::CommandHandling::ReadModelRevisionGuard)
           .to receive(:call)
-          .with(read_model, 5, revision_column: :revision)
+          .with(read_model, 5, { revision_column: :revision })
           .and_yield
-        
+
         updater.call(event, command_payload, command_name)
       end
 
@@ -50,9 +110,9 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         it 'passes custom revision column to guard' do
           expect(Yes::Core::CommandHandling::ReadModelRevisionGuard)
             .to receive(:call)
-            .with(read_model, 5, revision_column: :test_user_revision)
+            .with(read_model, 5, { revision_column: :test_user_revision })
             .and_yield
-          
+
           updater.call(event, command_payload, command_name)
         end
       end

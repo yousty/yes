@@ -36,7 +36,7 @@ module Yes
         # @param event [Object] The event to process for read model rebuilding
         # @return [void]
         def process_event(event)
-          CommandHandling::ReadModelUpdater.new(aggregate).call(event, event.data)
+          CommandHandling::ReadModelUpdater.new(aggregate).call(event, nil, resolve_payload: true)
         end
       end
     end
