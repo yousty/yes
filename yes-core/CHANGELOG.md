@@ -1,5 +1,9 @@
 # Unreleased
 
+# 0.20.0 - 2025-10-23
+- Add payload resolution support to ReadModelUpdater for handling large payloads stored externally
+- Add inline mode support to CommandProcessor to support command execution without notifiers
+
 # 0.19.0 - 2025-10-22
 - Add OpenTelemetry instrumentation to CommandProcessor
 
