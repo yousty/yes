@@ -41,7 +41,7 @@ module Yes
           end
 
           payload = command_payload ? command_payload : payload_from_event(event, resolve_payload)
-          
+
           locale = payload[:locale]
 
           state_updater_class = command_utilities.fetch_state_updater_class(command_name)
@@ -68,7 +68,7 @@ module Yes
         rescue ReadModelRevisionGuard::RevisionAlreadyAppliedError => e
           Rails.logger.warn("Read model revision already applied: #{e.message}")
         end
-        
+
         otl_trackable(
           :call,
           Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model', span_kind: :producer, track_sql: true)
@@ -83,15 +83,19 @@ module Yes
         end
 
         def payload_from_event(event, resolve_payload)
-          return event.data if !resolve_payload
-          return event.data unless event.data.values.any? { _1.start_with?(Yes::Core::Event::PAYLOAD_STORE_VALUE_PREFIX) }
+          return event.data unless resolve_payload
+          return event.data unless event.data.values.any? do |value|
+            next false unless value.is_a?(String)
+
+            value.start_with?(Yes::Core::Event::PAYLOAD_STORE_VALUE_PREFIX)
+          end
 
           Yousty::Eventsourcing::PayloadStore::Lookup.new.call(event).each do |key, value|
             event.data[key.to_s] = value
           end
 
           event.data
-        end  
+        end
       end
     end
   end
