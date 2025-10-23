@@ -23,8 +23,8 @@ module Yes
       # @param custom_batch_id [String] Custom batch ID
       # @return [Array<CommandResponse>] the responses from the performed commands
       # @raise [UnregisteredCommand] if any command lacks a handler
-      def perform(origin, command_or_commands, notifier_options, custom_batch_id = nil)
-        setup(notifier_options, custom_batch_id)
+      def perform(origin, command_or_commands, notifier_options, custom_batch_id = nil, inline = false)
+        setup(notifier_options, custom_batch_id, inline)
         singleton_class.current_span&.add_event('Command Processor Setup Done')
 
         commands = [*command_or_commands]
@@ -43,7 +43,9 @@ module Yes
             end
           end
         else
-          run_commands(commands)
+          singleton_class.with_otl_span 'Run Commands' do
+            run_commands(commands)
+          end
         end
       end
       otl_trackable :perform, Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Command Processor Perform')
@@ -53,9 +55,12 @@ module Yes
       # Instantiates the command notifier from the config, using the given options.
       # @param notifier_options [Hash] the options to pass to the command notifier
       # @param custom_batch_id [String] Custom batch ID
+      # @param inline [Boolean] whether to process the commands inline
       # @return [void]
-      def setup(notifier_options, custom_batch_id)
-        @command_notifiers = Yousty::Eventsourcing.config.command_notifier_classes&.map do |notifier_class|
+      def setup(notifier_options, custom_batch_id, inline = false)
+        @command_notifiers = [] if inline
+
+        @command_notifiers ||= Yousty::Eventsourcing.config.command_notifier_classes&.map do |notifier_class|
           notifier_class.new(notifier_options)
         end || []
         @custom_batch_id = custom_batch_id
@@ -64,7 +69,7 @@ module Yes
       # Runs the given commands through their respective aggregates.
       # @param commands [Array<Command>] the commands to run
       # @return [Array<CommandResponse>] responses from the performed commands
-      def run_commands(commands)
+      def run_commands(commands, inline = false)
         commands.map do |cmd|
           cmd_response = run_command(cmd)
           command_notifiers.each { _1.notify_command_response(cmd_response) }

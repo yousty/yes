@@ -158,5 +158,55 @@ RSpec.describe Yes::Core::CommandProcessor do
         )
       end
     end
+
+    context 'with inline parameter set to true' do
+      subject { processor.perform(origin, commands, notifier_options, nil, true) }
+
+      it 'does not call any notifiers' do
+        expect(Yes::Core::CommandNotifier).not_to receive(:with_batch_notification)
+        expect(command_notifier).not_to receive(:notify_command_response)
+
+        subject
+      end
+
+      it 'adds origin and batch_id to commands' do
+        allow(Test::User::Aggregate).to receive(:new) do |user_id, **_opts|
+          aggregate_instance = instance_double(Test::User::Aggregate, public_send: nil)
+          allow(aggregate_instance).to receive(:public_send) do |_method_name, cmd_hash, **_kwargs|
+            # Verify the command hash passed to aggregate has origin and batch_id
+            aggregate_failures do
+              expect(cmd_hash[:origin]).to eq(origin)
+              expect(cmd_hash[:batch_id]).to eq(processor.job_id)
+            end
+          end
+          aggregate_instance
+        end
+
+        subject
+      end
+
+      it 'returns command responses' do
+        result = subject
+
+        aggregate_failures do
+          expect(result).to be_an(Array)
+          expect(result.first).to be_a(Yes::Core::CommandResponse)
+        end
+      end
+    end
+
+    context 'with inline parameter set to false or not provided' do
+      subject { processor.perform(origin, commands, notifier_options, nil, false) }
+
+      it 'uses batch notification when notifiers are configured' do
+        expect(Yes::Core::CommandNotifier).to receive(:with_batch_notification).
+          with([command_notifier], processor.job_id, [kind_of(Test::User::Commands::ChangeName::Command)]).
+          and_yield
+
+        expect(command_notifier).to receive(:notify_command_response)
+
+        subject
+      end
+    end
   end
 end

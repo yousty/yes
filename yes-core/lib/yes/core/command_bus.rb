@@ -35,7 +35,7 @@ module Yes
         self.class.current_span&.add_attributes({ perform_method: perform_method.to_s, origin: }.stringify_keys)
 
         command_processor.public_send(
-          perform_method, origin, command_or_commands, notifier_options, batch_id
+          perform_method, origin, command_or_commands, notifier_options, batch_id, perform_inline
         )
       end
       otl_trackable :call, Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Command Bus Schedule')
