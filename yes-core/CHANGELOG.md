@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.20.1 - 2025-10-23
+- Fix payload store check to handle non-string values in ReadModelUpdater
+
 # 0.20.0 - 2025-10-23
 - Add payload resolution support to ReadModelUpdater for handling large payloads stored externally
 - Add inline mode support to CommandProcessor to support command execution without notifiers
