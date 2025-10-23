@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.20.3 - 2025-10-23
+- Move RESERVED_KEYS constant inside Command class
+
 # 0.20.2 - 2025-10-23
 - Add es_encrypted to reserved keys in Command class
 
