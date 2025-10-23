@@ -40,7 +40,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
       end
 
       it 'uses event.data as payload' do
-        filtered_payload = event_data.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS)
+        filtered_payload = event_data.except(*Yes::Core::Command::RESERVED_KEYS)
 
         expect(state_updater_class)
           .to receive(:new)
@@ -79,7 +79,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
 
       it 'uses resolved payload in state updater' do
         expected_event_data = event_data.merge('another' => resolved_value)
-        filtered_payload = expected_event_data.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS)
+        filtered_payload = expected_event_data.except(*Yes::Core::Command::RESERVED_KEYS)
 
         expect(state_updater_class)
           .to receive(:new)
@@ -133,8 +133,8 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
       end
 
       it 'instantiates state updater with filtered payload' do
-        filtered_payload = command_payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS)
-        
+        filtered_payload = command_payload.except(*Yes::Core::Command::RESERVED_KEYS)
+
         expect(state_updater_class)
           .to receive(:new)
           .with(
@@ -143,8 +143,26 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
             event: event
           )
           .and_return(state_updater)
-        
+
         updater.call(event, command_payload, command_name)
+      end
+
+      it 'excludes es_encrypted from payload passed to state updater' do
+        command_payload_with_encrypted = command_payload.merge(es_encrypted: { secret: 'value' })
+        filtered_payload = command_payload_with_encrypted.except(*Yes::Core::Command::RESERVED_KEYS)
+
+        expect(state_updater_class)
+          .to receive(:new)
+          .with(
+            payload: filtered_payload,
+            aggregate: aggregate,
+            event: event
+          )
+          .and_return(state_updater)
+
+        expect(filtered_payload).not_to have_key(:es_encrypted)
+
+        updater.call(event, command_payload_with_encrypted, command_name)
       end
 
       it 'executes state updater' do

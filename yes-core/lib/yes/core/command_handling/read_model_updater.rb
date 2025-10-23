@@ -52,7 +52,7 @@ module Yes
             revision_column:
           ) do
             state_changes = state_updater_class.new(
-              payload: payload.except(*Yousty::Eventsourcing::Command::RESERVED_KEYS),
+              payload: payload.except(*Yes::Core::Command::RESERVED_KEYS),
               aggregate:,
               event:
             ).call
