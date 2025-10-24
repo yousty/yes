@@ -27,6 +27,7 @@ module Yes
                 aggregate = aggregate_name
                 context = context_name
                 payload_attributes = command_data.payload_attributes || {}
+                encrypted_attributes = command_data.encrypted_attributes || []
 
                 Class.new(Yes::Core::Event) do
                   define_method :schema do
@@ -49,6 +50,16 @@ module Yes
 
                         required_attribute.call(attr_name, attr_type[:type])
                       end
+                    end
+                  end
+
+                  # Add encryption_schema class method if there are encrypted attributes
+                  if encrypted_attributes.any?
+                    define_singleton_method :encryption_schema do
+                      {
+                        key: ->(data) { data[:"#{aggregate.underscore}_id"] },
+                        attributes: encrypted_attributes
+                      }
                     end
                   end
                 end
