@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.21.0 - 2025-10-24
+- Add encrypted attribute support to aggregate attributes and commands
+- Add encryption_schema class method generation for events with encrypted attributes
+- Add populate_encrypted_attributes method to CommandDefiner
+- Propagate encrypted option through command shortcuts
+
 # 0.20.3 - 2025-10-23
 - Move RESERVED_KEYS constant inside Command class
 
