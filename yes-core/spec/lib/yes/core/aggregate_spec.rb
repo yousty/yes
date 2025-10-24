@@ -493,7 +493,86 @@ RSpec.describe Yes::Core::Aggregate do
             it_behaves_like 'expanded shortcut'
           end
         end
+
+        context 'with encrypted option' do
+          subject { subject_class.command(:change, :ssn, :string, encrypted: true) }
+
+          let(:expanded_code) do
+            proc do
+              attribute :ssn, :string, encrypted: true
+              command :change_ssn do
+                payload ssn: :string
+              end
+            end
+          end
+
+          it_behaves_like 'expanded shortcut'
+
+          it 'stores encrypted option in attribute_options' do
+            subject
+            expect(subject_class.attribute_options[:ssn][:encrypted]).to be true
+          end
+
+          it 'populates encrypted_attributes in command_data' do
+            subject
+            command_data = subject_class.commands[:change_ssn]
+            expect(command_data.encrypted_attributes).to eq([:ssn])
+          end
+
+          after do
+            subject_class.instance_variable_set(:@attribute_options, {})
+          end
+        end
       end
+    end
+  end
+
+  describe 'encrypted attributes integration' do
+    let(:aggregate_class) do
+      Class.new(Yes::Core::Aggregate) do
+        def self.name
+          'EncryptedTest::User::Aggregate'
+        end
+
+        primary_context 'EncryptedTest'
+        attribute :first_name, :string, command: true, encrypted: true
+        attribute :last_name, :string, command: true, encrypted: true
+        attribute :email, :email, command: true
+      end
+    end
+
+    let(:aggregate) { aggregate_class.new }
+
+    it 'tracks encrypted attributes correctly' do
+      aggregate_failures do
+        expect(aggregate_class.attribute_options[:first_name][:encrypted]).to be true
+        expect(aggregate_class.attribute_options[:last_name][:encrypted]).to be true
+        expect(aggregate_class.attribute_options[:email][:encrypted]).to be_falsey
+      end
+    end
+
+    it 'generates events with encryption_schema for encrypted attributes' do
+      first_name_event = EncryptedTest::User::Events::FirstNameChanged
+      last_name_event = EncryptedTest::User::Events::LastNameChanged
+      email_event = EncryptedTest::User::Events::EmailChanged
+
+      aggregate_failures do
+        expect(first_name_event).to respond_to(:encryption_schema)
+        expect(first_name_event.encryption_schema[:attributes]).to eq([:first_name])
+
+        expect(last_name_event).to respond_to(:encryption_schema)
+        expect(last_name_event.encryption_schema[:attributes]).to eq([:last_name])
+
+        expect(email_event).not_to respond_to(:encryption_schema)
+      end
+    end
+
+    it 'encryption_schema key lambda returns correct aggregate_id' do
+      event_class = EncryptedTest::User::Events::FirstNameChanged
+      user_id = SecureRandom.uuid
+      data = { user_id:, first_name: 'John' }
+
+      expect(event_class.encryption_schema[:key].call(data)).to eq(user_id)
     end
   end
 end
