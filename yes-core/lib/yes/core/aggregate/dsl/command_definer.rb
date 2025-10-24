@@ -55,6 +55,7 @@ module Yes
             evaluate_dsl_block(&block) if block
             validate_event_name
             validate_accessed_attributes
+            populate_encrypted_attributes
             create_and_register_command_classes
             register_command_events
           end
@@ -116,6 +117,21 @@ module Yes
           # @return [Array<Symbol>] The attribute names
           def extract_payload_attribute_names
             command_data.payload_attributes.keys.without(:locale)
+          end
+
+          # Populates the encrypted_attributes array in command_data based on aggregate attribute options
+          #
+          # @return [void]
+          def populate_encrypted_attributes
+            return if command_data.update_state_block # Only process payload attributes
+
+            payload_attrs = extract_payload_attribute_names
+            attribute_options = command_data.aggregate_class.attribute_options
+
+            # Only include attributes that are both in the payload AND defined on the aggregate
+            command_data.encrypted_attributes = payload_attrs.select do |attr_name|
+              attribute_options.dig(attr_name, :encrypted) == true
+            end
           end
 
           # Validates that all given attributes are defined on the aggregate
