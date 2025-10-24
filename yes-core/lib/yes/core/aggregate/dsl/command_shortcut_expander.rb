@@ -125,6 +125,7 @@ module Yes
             attribute_name = kwargs[:attribute].presence || command_subject
             attribute_type = args[2].presence || :string
             localized = kwargs[:localized] || false
+            encrypted = kwargs[:encrypted] || false
             additional_block = block # needs to be captured in a local variable to ensure proper closure in this scope
 
             payload_options = { attribute_name => attribute_type }
@@ -138,7 +139,7 @@ module Yes
                   AttributeSpecification.new(
                     name: attribute_name,
                     type: attribute_type,
-                    options: { localized: }
+                    options: { localized:, encrypted: }
                   )
                 ]
               end
