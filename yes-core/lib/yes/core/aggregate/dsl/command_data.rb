@@ -11,7 +11,8 @@ module Yes
         #
         class CommandData
           attr_reader :name, :context_name, :aggregate_name, :aggregate_class
-          attr_accessor :event_name, :payload_attributes, :update_state_block, :guard_names, :authorizer_block
+          attr_accessor :event_name, :payload_attributes, :update_state_block, :guard_names, :authorizer_block,
+                        :encrypted_attributes
 
           # @param name [Symbol] The name of the command
           # @param aggregate_class [Class] The aggregate class this command belongs to
@@ -34,6 +35,9 @@ module Yes
 
             # Store guard names
             @guard_names = []
+
+            # Track encrypted attributes for event schema generation
+            @encrypted_attributes = []
           end
 
           # Add a guard name to the list of guards

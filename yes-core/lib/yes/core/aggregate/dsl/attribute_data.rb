@@ -11,7 +11,7 @@ module Yes
         #
         class AttributeData
           attr_reader :name, :type, :context_name,
-                      :aggregate_name, :aggregate_class, :localized
+                      :aggregate_name, :aggregate_class, :localized, :encrypted
 
           # @param name [Symbol] The name of the attribute
           # @param type [Symbol] The type of the attribute
@@ -20,6 +20,7 @@ module Yes
           # @option options [String] :context The context name for the attribute
           # @option options [String] :aggregate The aggregate name
           # @option options [Boolean] :localized Whether the attribute is localized
+          # @option options [Boolean] :encrypted Whether the attribute should be encrypted
           def initialize(name, type, aggregate_class, options = {})
             @name = name
             @type = type
@@ -27,6 +28,7 @@ module Yes
             @context_name = options.delete(:context)
             @aggregate_name = options.delete(:aggregate)
             @localized = options.delete(:localized) || false
+            @encrypted = options.delete(:encrypted) || false
           end
         end
       end
