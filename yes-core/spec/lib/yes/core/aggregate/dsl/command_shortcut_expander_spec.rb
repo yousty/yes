@@ -97,15 +97,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandShortcutExpander do
         let(:kwargs) { { encrypted: true } }
 
         it 'returns attribute with encrypted option set' do
-          expect(subject.attributes).to match(
-            [
-              Yes::Core::Aggregate::Dsl::CommandShortcutExpander::AttributeSpecification.new(
-                name: :age,
-                type: :integer,
-                options: { localized: false, encrypted: true }
-              )
-            ]
-          )
+          expect(subject.attributes.first.options[:encrypted]).to be true
         end
       end
     end

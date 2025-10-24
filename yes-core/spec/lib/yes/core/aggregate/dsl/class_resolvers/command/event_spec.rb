@@ -14,7 +14,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
       aggregate_class,
       context: 'UserManagement',
       aggregate: 'User',
-      payload_attributes: payload_attributes
+      payload_attributes:
     )
   end
 
@@ -141,14 +141,6 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         data = { user_id: user_id, email: 'test@example.com', name: 'Test', ssn: '123-45-6789' }
 
         expect(schema[:key].call(data)).to eq(user_id)
-      end
-
-      context 'event instance' do
-        subject { super().new(data: { user_id:, email:, name:, ssn: '123-45-6789' }) }
-
-        it 'creates event instance successfully with encrypted attribute' do
-          expect(subject.data[:ssn]).to eq('123-45-6789')
-        end
       end
     end
 

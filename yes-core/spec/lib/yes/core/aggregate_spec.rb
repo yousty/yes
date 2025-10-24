@@ -520,7 +520,7 @@ RSpec.describe Yes::Core::Aggregate do
           end
 
           after do
-            subject_class.instance_variable_set(:@attribute_options, {})
+            subject_class.instance_variable_set(:@attribute_options, subject_class.attribute_options.except(:ssn))
           end
         end
       end
