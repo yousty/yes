@@ -79,5 +79,21 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
         end
       end
     end
+
+    context 'with encrypted attribute' do
+      subject { aggregate_class.attribute(:encrypted_field, :string, encrypted: true) }
+
+      it 'stores the encrypted option in attribute_options' do
+        subject
+        expect(aggregate_class.attribute_options[:encrypted_field][:encrypted]).to be true
+      end
+
+      after do
+        # Remove only the attribute we added, not the entire hash
+        aggregate_class.attribute_options.delete(:encrypted_field)
+        aggregate_class.attributes.delete(:encrypted_field)
+        aggregate_class.remove_method(:encrypted_field) if aggregate_class.method_defined?(:encrypted_field)
+      end
+    end
   end
 end

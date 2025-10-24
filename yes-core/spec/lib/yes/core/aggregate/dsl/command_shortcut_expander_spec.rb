@@ -69,7 +69,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandShortcutExpander do
             Yes::Core::Aggregate::Dsl::CommandShortcutExpander::AttributeSpecification.new(
               name: :age,
               type: :integer,
-              options: { localized: true }
+              options: { localized: true, encrypted: false }
             )
           ]
         )
@@ -91,6 +91,22 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandShortcutExpander do
         expect(command).to be_a(Yes::Core::Aggregate::Dsl::CommandShortcutExpander::CommandSpecification)
         expect(command.name).to eq(:change_age)
         expect(command.block).to be_a(Proc)
+      end
+
+      context 'with encrypted option' do
+        let(:kwargs) { { encrypted: true } }
+
+        it 'returns attribute with encrypted option set' do
+          expect(subject.attributes).to match(
+            [
+              Yes::Core::Aggregate::Dsl::CommandShortcutExpander::AttributeSpecification.new(
+                name: :age,
+                type: :integer,
+                options: { localized: false, encrypted: true }
+              )
+            ]
+          )
+        end
       end
     end
 

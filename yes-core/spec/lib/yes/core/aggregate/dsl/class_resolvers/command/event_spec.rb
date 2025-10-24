@@ -108,5 +108,54 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         end
       end
     end
+
+    context 'with encrypted attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          ssn: :string
+        }
+      end
+
+      before do
+        # Mark ssn as encrypted in command_data
+        command_data.encrypted_attributes = [:ssn]
+      end
+
+      it 'generates event class with encryption_schema class method' do
+        expect(subject).to respond_to(:encryption_schema)
+      end
+
+      it 'encryption_schema returns correct structure' do
+        schema = subject.encryption_schema
+
+        aggregate_failures do
+          expect(schema[:key]).to be_a(Proc)
+          expect(schema[:attributes]).to eq([:ssn])
+        end
+      end
+
+      it 'encryption_schema key lambda returns aggregate_id from data' do
+        schema = subject.encryption_schema
+        data = { user_id: user_id, email: 'test@example.com', name: 'Test', ssn: '123-45-6789' }
+
+        expect(schema[:key].call(data)).to eq(user_id)
+      end
+
+      context 'event instance' do
+        subject { super().new(data: { user_id:, email:, name:, ssn: '123-45-6789' }) }
+
+        it 'creates event instance successfully with encrypted attribute' do
+          expect(subject.data[:ssn]).to eq('123-45-6789')
+        end
+      end
+    end
+
+    context 'without encrypted attributes' do
+      it 'does not define encryption_schema class method' do
+        expect(subject).not_to respond_to(:encryption_schema)
+      end
+    end
   end
 end
