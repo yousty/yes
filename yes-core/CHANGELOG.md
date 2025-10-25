@@ -1,5 +1,9 @@
 # Unreleased
 
+# 0.22.0 - 2025-10-25
+- Refactor encryption to apply at command/payload level instead of attribute level
+- Update terminology from 'encrypted' to 'encrypt' in read model updater
+
 # 0.21.0 - 2025-10-24
 - Add encrypted attribute support to aggregate attributes and commands
 - Add encryption_schema class method generation for events with encrypted attributes
