@@ -55,7 +55,6 @@ module Yes
             evaluate_dsl_block(&block) if block
             validate_event_name
             validate_accessed_attributes
-            populate_encrypted_attributes
             create_and_register_command_classes
             register_command_events
           end
@@ -117,21 +116,6 @@ module Yes
           # @return [Array<Symbol>] The attribute names
           def extract_payload_attribute_names
             command_data.payload_attributes.keys.without(:locale)
-          end
-
-          # Populates the encrypted_attributes array in command_data based on aggregate attribute options
-          #
-          # @return [void]
-          def populate_encrypted_attributes
-            return if command_data.update_state_block # Only process payload attributes
-
-            payload_attrs = extract_payload_attribute_names
-            attribute_options = command_data.aggregate_class.attribute_options
-
-            # Only include attributes that are both in the payload AND defined on the aggregate
-            command_data.encrypted_attributes = payload_attrs.select do |attr_name|
-              attribute_options.dig(attr_name, :encrypted) == true
-            end
           end
 
           # Validates that all given attributes are defined on the aggregate
@@ -207,11 +191,41 @@ module Yes
             end
 
             # Defines the payload for the command
+            # Supports inline encryption declaration: payload email: { type: :email, encrypt: true }
             #
             # @param attributes [Hash] The attributes for the payload
             # @return [void]
             def payload(attributes)
-              command_data.payload_attributes = attributes
+              normalized = attributes.transform_values do |value|
+                case value
+                when Hash
+                  # Extract encrypt flag if present, pass everything else through
+                  value.except(:encrypt)
+                else
+                  # Handle simple syntax: :email or :string
+                  value
+                end
+              end
+
+              # Collect encrypted attributes
+              attributes.each do |key, value|
+                command_data.encrypted_attributes << key if value.is_a?(Hash) && value[:encrypt]
+              end
+
+              command_data.payload_attributes = normalized
+            end
+
+            # Declares which payload attributes should be encrypted in the generated event
+            #
+            # @param attribute_names [Array<Symbol>] The names of payload attributes to encrypt
+            # @return [void]
+            # @example
+            #   command :update_contact_info do
+            #     payload email: :email, phone: :phone
+            #     encrypt :email, :phone
+            #   end
+            def encrypt(*attribute_names)
+              command_data.encrypted_attributes.concat(attribute_names)
             end
 
             # Defines how the state should be updated

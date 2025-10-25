@@ -166,8 +166,8 @@ module Yes
         #     end
         #   end
         #
-        # @example Define an encrypted attribute
-        #   attribute :ssn, :string, command: true, encrypted: true
+        # @example Define a localized attribute
+        #   attribute :description, :string, command: true, localized: true
         def attribute(name, type, **options, &)
           if type == :aggregate && options[:command]
             raise 'Aggregate attribute definition with command: true is not allowed'
@@ -177,7 +177,7 @@ module Yes
           @attributes[name] = type
 
           @attribute_options ||= {}
-          @attribute_options[name] = options.slice(:localized, :encrypted)
+          @attribute_options[name] = options.slice(:localized)
 
           options = options.merge(context:, aggregate:)
           Dsl::AttributeDefiner.new(

@@ -125,7 +125,7 @@ module Yes
             attribute_name = kwargs[:attribute].presence || command_subject
             attribute_type = args[2].presence || :string
             localized = kwargs[:localized] || false
-            encrypted = kwargs[:encrypted] || false
+            should_encrypt = kwargs[:encrypt] || false
             additional_block = block # needs to be captured in a local variable to ensure proper closure in this scope
 
             payload_options = { attribute_name => attribute_type }
@@ -139,7 +139,7 @@ module Yes
                   AttributeSpecification.new(
                     name: attribute_name,
                     type: attribute_type,
-                    options: { localized:, encrypted: }
+                    options: { localized: }
                   )
                 ]
               end
@@ -150,6 +150,7 @@ module Yes
                 block: proc do
                   guard(:no_change) { value_changed?(send(attribute_name), payload.send(attribute_name)) }
                   payload(**payload_options)
+                  encrypt(attribute_name) if should_encrypt
                   instance_eval(&additional_block) if additional_block.present?
                 end
               )
