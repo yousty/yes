@@ -494,85 +494,140 @@ RSpec.describe Yes::Core::Aggregate do
           end
         end
 
-        context 'with encrypted option' do
-          subject { subject_class.command(:change, :ssn, :string, encrypted: true) }
-
-          let(:expanded_code) do
-            proc do
-              attribute :ssn, :string, encrypted: true
-              command :change_ssn do
-                payload ssn: :string
+        context 'with encrypt option' do
+          let(:encrypt_aggregate_class) do
+            Class.new(Yes::Core::Aggregate) do
+              def self.name
+                'EncryptShortcut::User::Aggregate'
               end
+
+              command :change, :ssn, :string, encrypt: true
             end
           end
 
-          it_behaves_like 'expanded shortcut'
-
-          it 'stores encrypted option in attribute_options' do
-            subject
-            expect(subject_class.attribute_options[:ssn][:encrypted]).to be true
-          end
+          let(:event_class) { EncryptShortcut::User::Events::SsnChanged }
+          let(:command_data) { encrypt_aggregate_class.commands[:change_ssn] }
 
           it 'populates encrypted_attributes in command_data' do
-            subject
-            command_data = subject_class.commands[:change_ssn]
             expect(command_data.encrypted_attributes).to eq([:ssn])
           end
 
-          after do
-            subject_class.instance_variable_set(:@attribute_options, subject_class.attribute_options.except(:ssn))
+          it 'generates event with encryption_schema' do
+            aggregate_failures do
+              expect(event_class).to respond_to(:encryption_schema)
+              expect(event_class.encryption_schema[:attributes]).to eq([:ssn])
+            end
+          end
+
+          it 'encryption_schema key lambda returns correct aggregate_id' do
+            aggregate_id = SecureRandom.uuid
+            data = { user_id: aggregate_id, ssn: '123-45-6789' }
+
+            expect(event_class.encryption_schema[:key].call(data)).to eq(aggregate_id)
           end
         end
       end
     end
   end
 
-  describe 'encrypted attributes integration' do
+  describe 'inline payload encryption syntax' do
     let(:aggregate_class) do
       Class.new(Yes::Core::Aggregate) do
         def self.name
-          'EncryptedTest::User::Aggregate'
+          'InlineEncryption::Contact::Aggregate'
         end
 
-        primary_context 'EncryptedTest'
-        attribute :first_name, :string, command: true, encrypted: true
-        attribute :last_name, :string, command: true, encrypted: true
-        attribute :email, :email, command: true
+        attribute :email, :email
+        attribute :phone, :string
+
+        command :update_contact_info do
+          payload email: { type: :email, encrypt: true }, phone: :string
+        end
       end
     end
 
-    let(:aggregate) { aggregate_class.new }
+    let(:event_class) { InlineEncryption::Contact::Events::ContactInfoUpdated }
+    let(:command_data) { aggregate_class.commands[:update_contact_info] }
 
-    it 'tracks encrypted attributes correctly' do
+    it 'tracks encrypted attributes from inline payload syntax' do
+      expect(command_data.encrypted_attributes).to eq([:email])
+    end
+
+    it 'generates event with encryption_schema for inline encrypted fields' do
       aggregate_failures do
-        expect(aggregate_class.attribute_options[:first_name][:encrypted]).to be true
-        expect(aggregate_class.attribute_options[:last_name][:encrypted]).to be true
-        expect(aggregate_class.attribute_options[:email][:encrypted]).to be_falsey
+        expect(event_class).to respond_to(:encryption_schema)
+        expect(event_class.encryption_schema[:attributes]).to eq([:email])
       end
     end
 
-    it 'generates events with encryption_schema for encrypted attributes' do
-      first_name_event = EncryptedTest::User::Events::FirstNameChanged
-      last_name_event = EncryptedTest::User::Events::LastNameChanged
-      email_event = EncryptedTest::User::Events::EmailChanged
+    it 'stores payload attributes with inline syntax' do
+      expect(command_data.payload_attributes).to eq({ email: { type: :email }, phone: :string })
+    end
+  end
 
+  describe 'separate encrypt DSL method' do
+    let(:aggregate_class) do
+      Class.new(Yes::Core::Aggregate) do
+        def self.name
+          'SeparateEncrypt::User::Aggregate'
+        end
+
+        attribute :email, :email
+        attribute :phone, :string
+        attribute :address, :string
+
+        command :update_details do
+          payload email: :email, phone: :string, address: :string
+          encrypt :email, :phone
+        end
+      end
+    end
+
+    let(:event_class) { SeparateEncrypt::User::Events::DetailsUpdated }
+    let(:command_data) { aggregate_class.commands[:update_details] }
+
+    it 'tracks multiple encrypted attributes from encrypt DSL method' do
+      expect(command_data.encrypted_attributes).to contain_exactly(:email, :phone)
+    end
+
+    it 'generates event with encryption_schema for DSL-declared encrypted fields' do
       aggregate_failures do
-        expect(first_name_event).to respond_to(:encryption_schema)
-        expect(first_name_event.encryption_schema[:attributes]).to eq([:first_name])
+        expect(event_class).to respond_to(:encryption_schema)
+        expect(event_class.encryption_schema[:attributes]).to contain_exactly(:email, :phone)
+      end
+    end
+  end
 
-        expect(last_name_event).to respond_to(:encryption_schema)
-        expect(last_name_event.encryption_schema[:attributes]).to eq([:last_name])
+  describe 'hybrid encryption syntax' do
+    let(:aggregate_class) do
+      Class.new(Yes::Core::Aggregate) do
+        def self.name
+          'Hybrid::Account::Aggregate'
+        end
 
-        expect(email_event).not_to respond_to(:encryption_schema)
+        attribute :ssn, :string
+        attribute :email, :email
+        attribute :phone, :string
+
+        command :update_sensitive_data do
+          payload ssn: { type: :string, encrypt: true }, email: :email, phone: :string
+          encrypt :phone
+        end
       end
     end
 
-    it 'encryption_schema key lambda returns correct aggregate_id' do
-      event_class = EncryptedTest::User::Events::FirstNameChanged
-      user_id = SecureRandom.uuid
-      data = { user_id:, first_name: 'John' }
+    let(:event_class) { Hybrid::Account::Events::SensitiveDataUpdated }
+    let(:command_data) { aggregate_class.commands[:update_sensitive_data] }
 
-      expect(event_class.encryption_schema[:key].call(data)).to eq(user_id)
+    it 'combines inline and DSL encryption declarations' do
+      expect(command_data.encrypted_attributes).to contain_exactly(:ssn, :phone)
+    end
+
+    it 'generates event with encryption_schema combining both approaches' do
+      aggregate_failures do
+        expect(event_class).to respond_to(:encryption_schema)
+        expect(event_class.encryption_schema[:attributes]).to contain_exactly(:ssn, :phone)
+      end
     end
   end
 end
