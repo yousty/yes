@@ -293,6 +293,42 @@ end
 
 When no custom event name is provided, *Yes* automatically generates an event name based on the command name. Currently, only standard command prefixes are supported. If you use a command that doesn't start with a supported prefix, you must specify the event name explicitly. For a list of supported prefixes, see [lib/yes/core/utils/event_name_resolver.rb](yes-core/lib/yes/core/utils/event_name_resolver.rb).
 
+#### Encrypting Event Payload Attributes
+
+Yes supports encrypting sensitive data in events. You can mark payload attributes for encryption using three approaches:
+
+**1. Inline Encryption Declaration (Recommended for mixed payloads)**
+
+```ruby
+command :update_contact_info do
+  payload email: { type: :email, encrypt: true },
+          phone: { type: :phone, encrypt: true },
+          address: :string  # not encrypted
+end
+```
+
+**2. Separate `encrypt` Method (Recommended for multiple encrypted fields)**
+
+```ruby
+command :update_sensitive_data do
+  payload ssn: :string, email: :email, phone: :phone
+  encrypt :ssn, :email, :phone
+end
+```
+
+**3. Command Shortcut with `encrypt` Option**
+
+```ruby
+# For simple attribute commands
+command :change, :ssn, :string, encrypt: true
+```
+
+**Important Notes:**
+- Encryption applies to the event payload stored in the event store, not to the aggregate state or read models
+- Encrypted attributes are tracked in the generated event class via an `encryption_schema` class method
+- You can combine inline and separate encryption declarations in the same command
+- The encryption key is automatically derived from the aggregate ID
+
 #### Custom State Updates
 
 Define exactly how state should change:
