@@ -28,7 +28,7 @@ module Yes
         # @param command_payload [Hash] The command payload
         # @param command_name [Symbol, String] The command name (optional, will be derived from event if not provided)
         # @return [void]
-        def call(event, command_payload, command_name = nil, resolve_payload: false)
+        def call(event, command_payload = nil, command_name = nil, resolve_payload: false)
           return unless aggregate.class.read_model_enabled?
 
           begin
