@@ -1,5 +1,9 @@
 # Unreleased
 
+# 0.22.1 - 2025-10-28
+- Update revision guard error classes to inherit from Yes::Core::Error
+- Update DSL error classes to inherit from Yes::Core::Error
+
 # 0.22.0 - 2025-10-25
 - Refactor encryption to apply at command/payload level instead of attribute level
 - Update terminology from 'encrypted' to 'encrypt' in read model updater
