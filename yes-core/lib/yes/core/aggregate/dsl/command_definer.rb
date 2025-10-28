@@ -25,10 +25,10 @@ module Yes
         #
         class CommandDefiner
           # Error raised when attributes are used in the command that are not defined on the aggregate
-          class UndefinedAttributeError < StandardError; end
+          class UndefinedAttributeError < Yes::Core::Error; end
 
           # Error raised when event name cannot be resolved
-          class EventNameResolverError < StandardError; end
+          class EventNameResolverError < Yes::Core::Error; end
 
           # @return [CommandData] The data object containing command configuration
           attr_reader :command_data

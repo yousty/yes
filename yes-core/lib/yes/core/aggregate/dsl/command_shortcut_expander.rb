@@ -12,7 +12,7 @@ module Yes
           ExpandedCommandShortcut = Data.define(:attributes, :commands)
           CommandSpecification = Data.define(:name, :block)
           AttributeSpecification = Data.define(:name, :type, :options)
-          class InvalidShortcut < StandardError; end
+          class InvalidShortcut < Yes::Core::Error; end
 
           SPECIAL_CASE_NAMES = {
             change: :change,
