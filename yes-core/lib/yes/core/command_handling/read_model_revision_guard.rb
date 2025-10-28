@@ -10,13 +10,13 @@ module Yes
       # This handles eventual consistency between the event store and read model databases
       class ReadModelRevisionGuard
         # Error raised when revision guard fails after maximum retries
-        class RevisionMismatchError < Yes::Core::Utils::ExponentialRetrier::RetryFailedError; end
+        class RevisionMismatchError < Yes::Core::Error; end
 
         # Error raised when timeout is exceeded
         class TimeoutError < Yes::Core::Utils::ExponentialRetrier::TimeoutError; end
 
         # Error raised when revision has already been applied
-        class RevisionAlreadyAppliedError < StandardError; end
+        class RevisionAlreadyAppliedError < Yes::Core::Error; end
 
         # Logger wrapper that adds revision context to log messages
         class ContextualLogger

@@ -378,16 +378,16 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
   end
 
   describe 'error class inheritance' do
-    it 'RevisionMismatchError inherits from ExponentialRetrier::RetryFailedError' do
-      expect(described_class::RevisionMismatchError).to be < Yes::Core::Utils::ExponentialRetrier::RetryFailedError
+    it 'RevisionMismatchError inherits from Yes::Core::Error' do
+      expect(described_class::RevisionMismatchError).to be < Yes::Core::Error
     end
 
     it 'TimeoutError inherits from ExponentialRetrier::TimeoutError' do
       expect(described_class::TimeoutError).to be < Yes::Core::Utils::ExponentialRetrier::TimeoutError
     end
 
-    it 'RevisionAlreadyAppliedError inherits from StandardError' do
-      expect(described_class::RevisionAlreadyAppliedError).to be < StandardError
+    it 'RevisionAlreadyAppliedError inherits from Yes::Core::Error' do
+      expect(described_class::RevisionAlreadyAppliedError).to be < Yes::Core::Error
     end
   end
 end
