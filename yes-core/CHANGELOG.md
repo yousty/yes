@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.22.2 - 2025-11-03
+- Fix event type naming for draft and edit template events to include Draft/EditTemplate suffix
+
 # 0.22.1 - 2025-10-28
 - Update revision guard error classes to inherit from Yes::Core::Error
 - Update DSL error classes to inherit from Yes::Core::Error
