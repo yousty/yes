@@ -139,6 +139,32 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
         expect(subject.metadata).to eq(metadata)
       end
     end
+
+    context 'with edit_template_command metadata' do
+      let(:metadata) { { user_id:, edit_template_command: true } }
+
+      it 'builds an event with EditTemplate in the type' do
+        aggregate_failures do
+          expect(subject).to be_a(event_class)
+          expect(subject.type).to eq('Test::UserEditTemplateDocumentsApproved')
+          expect(subject.data).to eq(payload)
+          expect(subject.metadata).to eq(metadata)
+        end
+      end
+    end
+
+    context 'with draft metadata' do
+      let(:metadata) { { user_id:, draft: true } }
+
+      it 'builds an event with Draft in the type' do
+        aggregate_failures do
+          expect(subject).to be_a(event_class)
+          expect(subject.type).to eq('Test::UserDraftDocumentsApproved')
+          expect(subject.data).to eq(payload)
+          expect(subject.metadata).to eq(metadata)
+        end
+      end
+    end
   end
 
   describe '#build_stream' do

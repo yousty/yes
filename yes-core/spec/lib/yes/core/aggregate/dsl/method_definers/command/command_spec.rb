@@ -446,7 +446,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
 
           aggregate_failures do
             expect(draft_latest_event.metadata).to include('draft' => true)
-            expect(draft_latest_event.type).to eq('Test::UserDocumentsApproved')
+            expect(draft_latest_event.type).to eq('Test::UserDraftDocumentsApproved')
           end
         end
 
@@ -536,7 +536,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
 
           aggregate_failures do
             expect(draft_latest_event.metadata).to include('draft' => true)
-            expect(draft_latest_event.type).to eq('Test::UserSomeCustomEvent')
+            expect(draft_latest_event.type).to eq('Test::UserDraftSomeCustomEvent')
             expect(draft_latest_event.data).to include('another' => payload)
           end
         end

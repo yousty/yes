@@ -68,7 +68,7 @@ module Yes
         def build_event(command_name:, payload:, metadata: {})
           event_class = Yes::Core.configuration.event_classes_for_command(context, aggregate, command_name).first
           event_class.new(
-            type: "#{context}::#{aggregate}#{event_class.name.demodulize}",
+            type: "#{context}::#{aggregate_name_with_draft_suffix(aggregate, metadata)}#{event_class.name.demodulize}",
             data: payload,
             metadata:
           )
@@ -83,7 +83,7 @@ module Yes
         def build_stream(context: @context, name: @aggregate, id: @aggregate_id, metadata: {})
           PgEventstore::Stream.new(
             context:,
-            stream_name: stream_name(name, metadata),
+            stream_name: aggregate_name_with_draft_suffix(name, metadata),
             stream_id: id
           )
         end
@@ -211,12 +211,12 @@ module Yes
           payload.merge(locale: I18n.locale.to_s)
         end
 
-        # Builds the stream name for the aggregate
+        # Builds the aggregate name with the draft suffix
         #
         # @param aggregate_name [String] The name of the aggregate
         # @param metadata [Hash] The command metadata
         # @return [String] The stream name
-        def stream_name(aggregate_name, metadata = {})
+        def aggregate_name_with_draft_suffix(aggregate_name, metadata = {})
           # TODO: remove this once edit template command is no longer used
           return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
           return "#{aggregate_name}EditTemplate" if ENV['LEGACY_DRAFT_IS_EDIT_TEMPLATE'] && metadata&.dig(:draft)

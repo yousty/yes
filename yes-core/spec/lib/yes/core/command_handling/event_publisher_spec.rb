@@ -83,14 +83,14 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
 
         it 'publishes event to draft stream' do
           event = event_publisher.call
-          
+
           # Verify the event was published
           expect(event).to be_a(PgEventstore::Event)
-          
+
           # The event should have been published to UserDraft stream
           # We can verify this by checking the event's stream property
           expect(event.stream.stream_name).to eq('UserDraft')
-          expect(event.type).to eq('Test::UserLocationIdChanged')
+          expect(event.type).to eq('Test::UserDraftLocationIdChanged')
         end
 
         it 'preserves draft metadata in the event' do
@@ -112,14 +112,14 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
 
         it 'publishes event to edit template stream' do
           event = event_publisher.call
-          
+
           # Verify the event was published
           expect(event).to be_a(PgEventstore::Event)
-          
+
           # The event should have been published to UserEditTemplate stream
           # We can verify this by checking the event's stream property
           expect(event.stream.stream_name).to eq('UserEditTemplate')
-          expect(event.type).to eq('Test::UserLocationIdChanged')
+          expect(event.type).to eq('Test::UserEditTemplateLocationIdChanged')
         end
 
         it 'preserves edit_template_command metadata in the event' do
