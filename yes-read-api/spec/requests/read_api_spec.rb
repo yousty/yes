@@ -115,6 +115,40 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
             end
 
+            context 'when own param is true' do
+              let(:params) { { own: true } }
+
+              context 'when read model does not support own filter' do
+                let(:read_model) { 'companies' }
+
+                before do
+                  subject
+                end
+
+                it 'returns 400' do
+                  expect(response.status).to eq(400)
+                end
+              end
+
+              context 'when read model supports own filter' do
+                let(:identity_user_stub) do
+                  double(own_apprenticeship_ids: [apprenticeship.id, apprenticeship3.id])
+                end
+                let(:class_stub) { double }
+                before do
+                  allow(class_stub).to receive(:find).with(auth_user_uuid).and_return(identity_user_stub)
+                  allow(ReadModels::Apprenticeship::Filter).to receive(:identity_user_class).and_return(class_stub)
+                  subject
+                end
+
+                it 'returns correct records' do
+                  expect(json_data.map { |record| record['id'] }).to match_array(
+                    [apprenticeship.id, apprenticeship3.id]
+                  )
+                end
+              end
+            end
+
             context 'when no filter params are given' do
               before do
                 subject
