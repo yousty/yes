@@ -39,6 +39,7 @@ module Yes
 
           filter_options[:filters] ||= {}
           records = filter(read_model_name).new(filter_options, type: filter_type).call
+          records = records.where(id: own_ids) if params[:own] == 'true'
           paginated_records = paginate(records, filter_options[:page] || {})
 
           Yousty::Eventsourcing::ReadModelsAuthorizer.call(read_model_name, paginated_records, auth_data)
@@ -104,6 +105,14 @@ module Yes
             json: { title: 'Invalid Payload', details: validation_result.errors.to_h }.to_json,
             status: :unprocessable_entity
           )
+        end
+
+        def identity_user
+          @identity_user ||= filter(read_model_name).identity_user_class.find(auth_data[:identity_id])
+        end
+
+        def own_ids
+          identity_user.public_send("own_#{read_model_name.singularize}_ids")
         end
       end
     end
