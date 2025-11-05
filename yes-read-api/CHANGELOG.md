@@ -1,4 +1,6 @@
 ## [Unreleased]
+
+# 1.3.0 - 2025-11-05
 * Add 'own' filter implementation to read API
 
 # 1.2.0 - 2025-10-17
