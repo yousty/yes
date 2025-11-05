@@ -10,6 +10,7 @@ module Yes
 
         before_action :authenticate_with_token
         before_action :validate_advanced_payload, only: :advanced
+        before_action :validate_own_param
 
         rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
 
@@ -113,6 +114,17 @@ module Yes
 
         def own_ids
           identity_user.public_send("own_#{read_model_name.singularize}_ids")
+        end
+
+        def validate_own_param
+          return unless params[:own] == 'true'
+          return if filter(read_model_name).respond_to?(:identity_user_class) &&
+            identity_user&.respond_to?("own_#{read_model_name.singularize}_ids")
+
+          render(
+            json: { title: 'Own filter is not supported for this read model', details: 'own filter not allowed' }.to_json,
+            status: :bad_request
+          )
         end
       end
     end
