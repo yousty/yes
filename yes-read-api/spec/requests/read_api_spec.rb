@@ -208,6 +208,91 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                 end
               end
 
+            end
+
+            context 'when own filter is provided' do
+              let(:params) { { filters: { own: true } } }
+
+              context 'when IdentityUser is not defined' do
+                before do
+                  subject
+                end
+
+                it 'returns all records' do
+                  expect(json_data.map { |record| record['id'] }).to match_array(
+                    [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
+                  )
+                end
+              end
+
+              context 'when IdentityUser is defined' do
+                let!(:identity_user_class) do
+                  stub_const('IdentityUser', Class.new do
+                    def self.own_apprenticeship_ids
+                      []
+                    end
+                  end)
+                end
+
+                context 'when IdentityUser does not respond to own_apprenticeship_ids' do
+                  before do
+                    allow(::IdentityUser).to receive(:respond_to?)
+                      .with('own_apprenticeship_ids')
+                      .and_return(false)
+                    subject
+                  end
+
+                  it 'returns all records' do
+                    expect(json_data.map { |record| record['id'] }).to match_array(
+                      [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
+                    )
+                  end
+                end
+
+                context 'when IdentityUser responds to own_apprenticeship_ids' do
+                  let(:owned_ids) { [apprenticeship.id, apprenticeship1.id] }
+
+                  before do
+                    allow(::IdentityUser).to receive(:own_apprenticeship_ids).and_return(owned_ids)
+                    subject
+                  end
+
+                  it 'calls IdentityUser.own_apprenticeship_ids' do
+                    expect(::IdentityUser).to have_received(:own_apprenticeship_ids)
+                  end
+
+                  it 'returns only owned records' do
+                    expect(json_data.map { |record| record['id'] }).to match_array(owned_ids)
+                  end
+
+                  it_behaves_like 'correctly paginated response' do
+                    let(:page) { '1' }
+                    let(:total) { '2' }
+                    let(:per_page) { '20' }
+                  end
+
+                  context 'when owned_ids is empty' do
+                    let(:owned_ids) { [] }
+
+                    it 'returns no records' do
+                      expect(json_data).to be_empty
+                    end
+
+                    it_behaves_like 'correctly paginated response' do
+                      let(:page) { '1' }
+                      let(:total) { '0' }
+                      let(:per_page) { '20' }
+                    end
+                  end
+                end
+              end
+            end
+
+            context 'when filters params are given' do
+              before do
+                subject
+              end
+
               context 'when order filter is provided' do
                 let(:params) { { order: { created_at: 'desc' } } }
 

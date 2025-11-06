@@ -10,6 +10,7 @@ module Yes
 
         before_action :authenticate_with_token
         before_action :validate_advanced_payload, only: :advanced
+        before_action :process_own_filter, only: :call
 
         rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
 
@@ -30,6 +31,15 @@ module Yes
         end
 
         private
+
+        def process_own_filter
+          return if params.dig(:filters, :own).blank?
+          return unless defined?(::IdentityUser)
+          return unless ::IdentityUser.respond_to?("own_#{read_model_name.singularize}_ids")
+
+          owned_ids = ::IdentityUser.send("own_#{read_model_name.singularize}_ids")
+          params[:filters][:ids] = owned_ids.presence&.join(',') || 'none'
+        end
 
         def response_json(filter_type: :basic, persisted_filter: nil)
           filter_options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
@@ -77,7 +87,7 @@ module Yes
         end
 
         def params
-          request.parameters.deep_symbolize_keys
+          @params ||= request.parameters.deep_symbolize_keys
         end
 
         def jwt_token_error_response(error)
