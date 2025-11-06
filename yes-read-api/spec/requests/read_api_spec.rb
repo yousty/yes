@@ -231,6 +231,10 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                     def self.own_apprenticeship_ids
                       []
                     end
+
+                    def self.find_by(*)
+                      nil
+                    end
                   end)
                 end
 
