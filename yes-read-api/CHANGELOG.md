@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+# 1.4.2 - 2025-11-06
+* Fix own filter to call method on instance instead of class
+
 # 1.4.1 - 2025-11-06
 * Add identity_user validation guard to process_own_filter
 * Update specs for identity_user lookup in own filter
