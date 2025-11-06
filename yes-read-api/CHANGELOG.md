@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+# 1.4.1 - 2025-11-06
+* Add identity_user validation guard to process_own_filter
+* Update specs for identity_user lookup in own filter
+* Update Ruby version from 3.2.2 to 3.4.5
+
 # 1.4.0 - 2025-11-06
 * Add 'own' filter functionality to queries controller
 * Memoize params method to persist modifications across request lifecycle
