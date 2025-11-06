@@ -250,38 +250,55 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                 end
 
                 context 'when IdentityUser responds to own_apprenticeship_ids' do
-                  let(:owned_ids) { [apprenticeship.id, apprenticeship1.id] }
+                  context 'when identity_user is not found' do
+                    before do
+                      allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(nil)
+                      subject
+                    end
 
-                  before do
-                    allow(::IdentityUser).to receive(:own_apprenticeship_ids).and_return(owned_ids)
-                    subject
+                    it 'returns all records' do
+                      expect(json_data.map { |record| record['id'] }).to match_array(
+                        [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
+                      )
+                    end
                   end
 
-                  it 'calls IdentityUser.own_apprenticeship_ids' do
-                    expect(::IdentityUser).to have_received(:own_apprenticeship_ids)
-                  end
+                  context 'when identity_user is found' do
+                    let(:identity_user) { double('IdentityUser') }
+                    let(:owned_ids) { [apprenticeship.id, apprenticeship1.id] }
 
-                  it 'returns only owned records' do
-                    expect(json_data.map { |record| record['id'] }).to match_array(owned_ids)
-                  end
+                    before do
+                      allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(identity_user)
+                      allow(::IdentityUser).to receive(:own_apprenticeship_ids).and_return(owned_ids)
+                      subject
+                    end
 
-                  it_behaves_like 'correctly paginated response' do
-                    let(:page) { '1' }
-                    let(:total) { '2' }
-                    let(:per_page) { '20' }
-                  end
+                    it 'calls IdentityUser.own_apprenticeship_ids' do
+                      expect(::IdentityUser).to have_received(:own_apprenticeship_ids)
+                    end
 
-                  context 'when owned_ids is empty' do
-                    let(:owned_ids) { [] }
-
-                    it 'returns no records' do
-                      expect(json_data).to be_empty
+                    it 'returns only owned records' do
+                      expect(json_data.map { |record| record['id'] }).to match_array(owned_ids)
                     end
 
                     it_behaves_like 'correctly paginated response' do
                       let(:page) { '1' }
-                      let(:total) { '0' }
+                      let(:total) { '2' }
                       let(:per_page) { '20' }
+                    end
+
+                    context 'when owned_ids is empty' do
+                      let(:owned_ids) { [] }
+
+                      it 'returns no records' do
+                        expect(json_data).to be_empty
+                      end
+
+                      it_behaves_like 'correctly paginated response' do
+                        let(:page) { '1' }
+                        let(:total) { '0' }
+                        let(:per_page) { '20' }
+                      end
                     end
                   end
                 end
