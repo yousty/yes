@@ -35,12 +35,12 @@ module Yes
         def process_own_filter
           return if params.dig(:filters, :own).blank?
           return unless defined?(::IdentityUser)
-          return unless ::IdentityUser.respond_to?("own_#{read_model_name.singularize}_ids")
 
           identity_user = ::IdentityUser.find_by(id: auth_data[:identity_id])
           return if identity_user.blank?
-          
-          owned_ids = ::IdentityUser.send("own_#{read_model_name.singularize}_ids")
+          return unless identity_user.respond_to?("own_#{read_model_name.singularize}_ids")
+
+          owned_ids = identity_user.send("own_#{read_model_name.singularize}_ids")
           params[:filters][:ids] = owned_ids.presence&.join(',') || 'none'
         end
 
