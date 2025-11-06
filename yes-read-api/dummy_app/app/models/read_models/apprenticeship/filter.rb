@@ -7,8 +7,6 @@ module ReadModels
         ::PersistedFilter.where(read_model: 'apprenticeships')
       end
 
-      def self.identity_user_class; end
-
       has_scope :ids do |_controller, scope, value|
         scope.by_id(value.split(','))
       end

@@ -10,7 +10,6 @@ module Yes
 
         before_action :authenticate_with_token
         before_action :validate_advanced_payload, only: :advanced
-        before_action :validate_own_param
 
         rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
 
@@ -40,7 +39,6 @@ module Yes
 
           filter_options[:filters] ||= {}
           records = filter(read_model_name).new(filter_options, type: filter_type).call
-          records = records.where(id: own_ids) if params[:own] == 'true'
           paginated_records = paginate(records, filter_options[:page] || {})
 
           Yousty::Eventsourcing::ReadModelsAuthorizer.call(read_model_name, paginated_records, auth_data)
@@ -105,25 +103,6 @@ module Yes
           render(
             json: { title: 'Invalid Payload', details: validation_result.errors.to_h }.to_json,
             status: :unprocessable_entity
-          )
-        end
-
-        def identity_user
-          @identity_user ||= filter(read_model_name).identity_user_class.find(auth_data[:identity_id])
-        end
-
-        def own_ids
-          identity_user.public_send("own_#{read_model_name.singularize}_ids")
-        end
-
-        def validate_own_param
-          return unless params[:own] == 'true'
-          return if filter(read_model_name).respond_to?(:identity_user_class) &&
-            identity_user&.respond_to?("own_#{read_model_name.singularize}_ids")
-
-          render(
-            json: { title: 'Own filter is not supported for this read model', details: 'own filter not allowed' }.to_json,
-            status: :bad_request
           )
         end
       end
