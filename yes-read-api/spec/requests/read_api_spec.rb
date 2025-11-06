@@ -228,21 +228,15 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               context 'when IdentityUser is defined' do
                 let!(:identity_user_class) do
                   stub_const('IdentityUser', Class.new do
-                    def self.own_apprenticeship_ids
-                      []
-                    end
-
                     def self.find_by(*)
                       nil
                     end
                   end)
                 end
 
-                context 'when IdentityUser does not respond to own_apprenticeship_ids' do
+                context 'when identity_user is not found' do
                   before do
-                    allow(::IdentityUser).to receive(:respond_to?)
-                      .with('own_apprenticeship_ids')
-                      .and_return(false)
+                    allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(nil)
                     subject
                   end
 
@@ -253,10 +247,16 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                   end
                 end
 
-                context 'when IdentityUser responds to own_apprenticeship_ids' do
-                  context 'when identity_user is not found' do
+                context 'when identity_user is found' do
+                  let(:identity_user) { double('IdentityUser') }
+
+                  before do
+                    allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(identity_user)
+                  end
+
+                  context 'when identity_user does not respond to own_apprenticeship_ids' do
                     before do
-                      allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(nil)
+                      # Double naturally doesn't respond to the method unless we stub it
                       subject
                     end
 
@@ -267,18 +267,16 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                     end
                   end
 
-                  context 'when identity_user is found' do
-                    let(:identity_user) { double('IdentityUser') }
+                  context 'when identity_user responds to own_apprenticeship_ids' do
                     let(:owned_ids) { [apprenticeship.id, apprenticeship1.id] }
 
                     before do
-                      allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(identity_user)
-                      allow(::IdentityUser).to receive(:own_apprenticeship_ids).and_return(owned_ids)
+                      allow(identity_user).to receive(:own_apprenticeship_ids).and_return(owned_ids)
                       subject
                     end
 
-                    it 'calls IdentityUser.own_apprenticeship_ids' do
-                      expect(::IdentityUser).to have_received(:own_apprenticeship_ids)
+                    it 'calls identity_user.own_apprenticeship_ids' do
+                      expect(identity_user).to have_received(:own_apprenticeship_ids)
                     end
 
                     it 'returns only owned records' do
