@@ -37,6 +37,9 @@ module Yes
           return unless defined?(::IdentityUser)
           return unless ::IdentityUser.respond_to?("own_#{read_model_name.singularize}_ids")
 
+          identity_user = ::IdentityUser.find_by(id: auth_data[:identity_id])
+          return if identity_user.blank?
+          
           owned_ids = ::IdentityUser.send("own_#{read_model_name.singularize}_ids")
           params[:filters][:ids] = owned_ids.presence&.join(',') || 'none'
         end
