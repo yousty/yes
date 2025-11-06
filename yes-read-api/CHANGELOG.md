@@ -4,8 +4,7 @@
 * Fix own filter to call method on instance instead of class
 
 # 1.4.1 - 2025-11-06
-* Add identity_user validation guard to process_own_filter
-* Update specs for identity_user lookup in own filter
+* fix identity user own...ids method called on class instead of instance
 * Update Ruby version from 3.2.2 to 3.4.5
 
 # 1.4.0 - 2025-11-06
