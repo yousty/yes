@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+# 1.4.0 - 2025-11-06
+* Add 'own' filter functionality to queries controller
+* Memoize params method to persist modifications across request lifecycle
+
 # 1.2.0 - 2025-10-17
 * Bump yousty-eventsourcing dependency to 15.0.1-alpha8
 * Add OpenTelemetry tracing to read API
