@@ -15,8 +15,12 @@ module Yes
                 aggregate_class.define_method(command_name) do |payload = nil, **options|
                   payload = payload.clone if payload.is_a?(Hash)
 
-                  # Extract guards option, default to true
-                  guards = options.fetch(:guards, true)
+                  # Extract and remove guards option from options, default to true
+                  guards = options.delete(:guards)
+                  guards = true if guards.nil?
+
+                  # Extract and remove metadata option from options if present
+                  metadata = options.delete(:metadata)
 
                   # Handle different calling patterns:
                   # 1. command(value) or command(value, guards: false) - shorthand form with single value
@@ -24,15 +28,17 @@ module Yes
                   # 3. command(attr: value) - ALL kwargs are treated as payload (no options)
                   # 4. command() - no arguments (for commands without payload)
 
-                  # If no positional argument was provided but kwargs were given,
-                  # treat all kwargs as payload (options must be passed with explicit hash)
-                  if payload.nil? && !options.empty? && !options.key?(:guards)
+                  # If no positional argument was provided but kwargs were given (after removing guards/metadata),
+                  # treat all remaining kwargs as payload
+                  if payload.nil? && !options.empty?
                     payload = options
                     options = {}
-                    guards = true
                   elsif payload.nil?
                     payload = {}
                   end
+
+                  # Add metadata to payload if provided
+                  payload[:metadata] = metadata if metadata.present?
 
                   Yes::Core::CommandHandling::CommandHandler.new(self).call(command_name, payload, guards:)
                 end

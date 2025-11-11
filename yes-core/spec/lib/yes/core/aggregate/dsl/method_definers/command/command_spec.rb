@@ -373,6 +373,90 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
             expect(aggregate.email).to eq('test_value@xyz.ch')
           end
         end
+
+        context 'when passing metadata option' do
+          let(:stream) { PgEventstore::Stream.new(context:, stream_name: aggregate_name, stream_id: aggregate.id) }
+          let(:latest_event) { PgEventstore.client.read(stream, options: { max_count: 1, direction: :desc }).first }
+
+          it 'correctly separates metadata option from payload and includes it in the payload' do
+            # Pass payload as explicit hash with metadata option
+            response = aggregate.approve_documents(
+              { document_ids: 'doc-123', another: 'test' },
+              metadata: { 'custom_key' => 'custom_value' }
+            )
+
+            expect(response.success?).to be true
+
+            # Verify the event data includes the payload fields
+            expect(latest_event.data).to include(
+              'document_ids' => 'doc-123',
+              'another' => 'test'
+            )
+            # Verify the metadata is in the event metadata field
+            expect(latest_event.metadata).to include(
+              'custom_key' => 'custom_value'
+            )
+          end
+
+          it 'handles metadata option with kwargs payload' do
+            # Pass kwargs as payload with metadata option
+            response = aggregate.approve_documents(
+              document_ids: 'doc-456',
+              another: 'test2',
+              metadata: { 'key' => 'value' }
+            )
+
+            expect(response.success?).to be true
+
+            # Verify the event data includes the payload fields
+            expect(latest_event.data).to include(
+              'document_ids' => 'doc-456',
+              'another' => 'test2'
+            )
+            # Verify the metadata is in the event metadata field
+            expect(latest_event.metadata).to include(
+              'key' => 'value'
+            )
+          end
+
+          it 'works with both guards and metadata options' do
+            # Pass payload with both guards and metadata options
+            response = aggregate.approve_documents(
+              { document_ids: 'doc-789', another: 'test3' },
+              guards: false,
+              metadata: { 'source' => 'api' }
+            )
+
+            expect(response.success?).to be true
+
+            # Verify the event data includes the payload fields
+            expect(latest_event.data).to include(
+              'document_ids' => 'doc-789',
+              'another' => 'test3'
+            )
+            # Verify guards is not in the payload data
+            expect(latest_event.data).not_to have_key('guards')
+            # Verify the metadata is in the event metadata field
+            expect(latest_event.metadata).to include(
+              'source' => 'api'
+            )
+          end
+
+          it 'does not add metadata to payload when metadata option is not provided' do
+            response = aggregate.approve_documents(
+              { document_ids: 'doc-999', another: 'test4' }
+            )
+
+            expect(response.success?).to be true
+
+            # Verify the event payload does not include metadata key
+            expect(latest_event.data).to include(
+              'document_ids' => 'doc-999',
+              'another' => 'test4'
+            )
+            expect(latest_event.data).not_to have_key('metadata')
+          end
+        end
       end
 
       context 'when command execution fails' do
