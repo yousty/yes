@@ -3,6 +3,9 @@
 - Refactor command and event class resolvers to use pattern matching for optional/nullable combinations
 - Add comprehensive specs for nullable attribute support in commands and events
 
+# 0.23.1 - 2025-11-11
+- Refactor metadata handling to use CommandHandler for proper event metadata merging
+
 # 0.23.0 - 2025-11-11
 - Add metadata option support to command DSL
 
