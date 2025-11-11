@@ -2,6 +2,6 @@
 
 module Yes
   module Core
-    VERSION = '0.22.2'
+    VERSION = '0.23.0'
   end
 end

@@ -3,6 +3,9 @@
 - Refactor command and event class resolvers to use pattern matching for optional/nullable combinations
 - Add comprehensive specs for nullable attribute support in commands and events
 
+# 0.23.0 - 2025-11-11
+- Add metadata option support to command DSL
+
 # 0.22.2 - 2025-11-03
 - Fix event type naming for draft and edit template events to include Draft/EditTemplate suffix
 
