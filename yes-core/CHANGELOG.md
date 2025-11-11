@@ -9,6 +9,9 @@
 # 0.23.0 - 2025-11-11
 - Add metadata option support to command DSL
 
+# 0.23.1 - 2025-11-11
+- Refactor metadata handling to use CommandHandler for proper event metadata merging
+
 # 0.23.0 - 2025-11-11
 - Add metadata option support to command DSL
 
