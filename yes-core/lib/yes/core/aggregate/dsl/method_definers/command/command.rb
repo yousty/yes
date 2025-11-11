@@ -37,10 +37,8 @@ module Yes
                     payload = {}
                   end
 
-                  # Add metadata to payload if provided
-                  payload[:metadata] = metadata if metadata.present?
-
-                  Yes::Core::CommandHandling::CommandHandler.new(self).call(command_name, payload, guards:)
+                  # Pass metadata to CommandHandler which will merge it into the event metadata
+                  Yes::Core::CommandHandling::CommandHandler.new(self).call(command_name, payload, guards:, metadata:)
                 end
               end
             end

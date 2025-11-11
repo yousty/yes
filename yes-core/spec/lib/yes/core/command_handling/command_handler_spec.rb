@@ -130,6 +130,43 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
       end
     end
 
+    context 'when custom metadata is provided' do
+      subject { handler.call(command_name, payload, guards:, metadata: custom_metadata) }
+
+      let(:custom_metadata) { { propagated: true, source: 'parent_company' } }
+
+      it 'merges custom metadata into event metadata' do
+        result = subject
+
+        aggregate_failures do
+          expect(result).to be_success
+          expect(result.event).to be_present
+
+          # Verify custom metadata is present
+          expect(result.event.metadata).to include('propagated' => true)
+          expect(result.event.metadata).to include('source' => 'parent_company')
+
+          # Verify standard metadata is still present
+          expect(result.event.metadata).to include('yes-dsl' => true)
+          expect(result.event.metadata).to have_key('created_at')
+        end
+      end
+
+      context 'when metadata is nil' do
+        let(:custom_metadata) { nil }
+
+        it 'works without custom metadata' do
+          result = subject
+
+          aggregate_failures do
+            expect(result).to be_success
+            expect(result.event.metadata).to include('yes-dsl' => true)
+            expect(result.event.metadata).not_to have_key('propagated')
+          end
+        end
+      end
+    end
+
     context 'failure cases' do
       context 'when read model update fails' do
         before do

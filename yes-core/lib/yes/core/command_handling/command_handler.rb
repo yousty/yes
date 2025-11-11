@@ -26,9 +26,10 @@ module Yes
         # @param command_name [Symbol] The name of the command to execute
         # @param payload [Hash] The command payload
         # @param guards [Boolean] Whether to evaluate guards (default: true)
+        # @param metadata [Hash] Optional custom metadata to add to the event
         # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
-        def call(command_name, payload, guards: true)
-          prepared_payload = prepare_payload(command_name, payload)
+        def call(command_name, payload, guards: true, metadata: nil)
+          prepared_payload = prepare_payload(command_name, payload, metadata)
           cmd = command_utilities.build_command(command_name, prepared_payload)
 
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
@@ -57,8 +58,9 @@ module Yes
         #
         # @param command_name [Symbol] The command name
         # @param payload [Hash] The raw payload
+        # @param custom_metadata [Hash] Optional custom metadata to merge
         # @return [Hash] The prepared payload
-        def prepare_payload(command_name, payload)
+        def prepare_payload(command_name, payload, custom_metadata = nil)
           prepared = command_utilities.prepare_default_payload(
             command_name,
             payload,
@@ -74,10 +76,21 @@ module Yes
             prepared
           )
 
+          add_custom_metadata(prepared, custom_metadata) if custom_metadata.present?
           add_draft_metadata(prepared) if aggregate.draft?
           add_otl_metadata(prepared)
 
           prepared
+        end
+
+        # Adds custom metadata to payload
+        #
+        # @param payload [Hash] The payload to modify
+        # @param custom_metadata [Hash] The custom metadata to merge
+        # @return [void]
+        def add_custom_metadata(payload, custom_metadata)
+          payload[:metadata] ||= {}
+          payload[:metadata].merge!(custom_metadata)
         end
 
         # Adds draft metadata to payload if aggregate is draft
