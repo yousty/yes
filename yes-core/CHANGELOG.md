@@ -1,4 +1,7 @@
 # Unreleased
+- Add nullable value support for command and event payload attributes via `nullable: true` option
+- Refactor command and event class resolvers to use pattern matching for optional/nullable combinations
+- Add comprehensive specs for nullable attribute support in commands and events
 
 # 0.22.2 - 2025-11-03
 - Fix event type naming for draft and edit template events to include Draft/EditTemplate suffix

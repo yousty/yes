@@ -127,5 +127,136 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
         end
       end
     end
+
+    context 'with nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, nullable: true },
+          age: { type: :integer, nullable: true }
+        }
+      end
+
+      it 'resolves command class with nullable attributes' do
+        command_class = subject
+
+        aggregate_failures do
+          expect(command_class.superclass).to eq(Yes::Core::Command)
+          expect(command_class.schema.key?(:email)).to be true
+          expect(command_class.schema.key?(:name)).to be true
+          expect(command_class.schema.key?(:phone)).to be true
+          expect(command_class.schema.key?(:age)).to be true
+        end
+      end
+
+      context 'command instance with nullable attributes' do
+        subject { super().new(payload) }
+
+        context 'when nullable attributes are provided with values' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:phone) { '123456789' }
+          let(:age) { 30 }
+          let(:payload) { { user_id:, email:, name:, phone:, age: } }
+
+          it 'handles nullable attributes when provided with values' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.phone).to eq(phone)
+              expect(command.age).to eq(age)
+            end
+          end
+        end
+
+        context 'when nullable attributes are provided as nil' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+          it 'allows nullable attributes to be nil' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.phone).to be_nil
+              expect(command.age).to be_nil
+            end
+          end
+        end
+      end
+    end
+
+    context 'with optional and nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: true, nullable: true },
+          age: { type: :integer, optional: true, nullable: false }
+        }
+      end
+
+      it 'resolves command class with optional and nullable attributes' do
+        command_class = subject
+
+        aggregate_failures do
+          expect(command_class.superclass).to eq(Yes::Core::Command)
+          expect(command_class.schema.key?(:email)).to be true
+          expect(command_class.schema.key?(:name)).to be true
+          expect(command_class.schema.key?(:phone)).to be true
+          expect(command_class.schema.key?(:age)).to be true
+        end
+      end
+
+      context 'command instance with optional and nullable attributes' do
+        subject { super().new(payload) }
+
+        context 'when optional nullable attribute is omitted' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name: } }
+
+          it 'allows omitting optional nullable attributes' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.phone).to be_nil
+              expect(command.age).to be_nil
+            end
+          end
+        end
+
+        context 'when optional nullable attribute is provided as nil' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name:, phone: nil } }
+
+          it 'allows optional nullable attributes to be explicitly nil' do
+            command = subject
+
+            expect(command.phone).to be_nil
+          end
+        end
+
+        context 'when optional nullable attribute is provided with value' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:phone) { '123456789' }
+          let(:payload) { { user_id:, email:, name:, phone: } }
+
+          it 'handles optional nullable attributes when provided with values' do
+            command = subject
+
+            expect(command.phone).to eq(phone)
+          end
+        end
+      end
+    end
   end
 end

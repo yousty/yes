@@ -36,7 +36,8 @@ module Yes
                       build_attribute = proc do |attr_name, attr_type_config|
                         # Handle simple type (not a hash)
                         unless attr_type_config.is_a?(Hash)
-                          return required(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type_config, context, :event))
+                          required(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type_config, context, :event))
+                          next
                         end
 
                         resolved_type = Yes::Core::TypeLookup.type_for(attr_type_config[:type], context, :event)
