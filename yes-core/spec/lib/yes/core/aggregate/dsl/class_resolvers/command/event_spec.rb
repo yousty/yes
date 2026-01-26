@@ -109,6 +109,111 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
       end
     end
 
+    context 'with nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, nullable: true },
+          age: { type: :integer, nullable: true }
+        }
+      end
+
+      context 'schema' do
+        let(:result_with_values) { subject.new(data: { user_id:, email:, name:, phone: '123456789', age: 30 }) }
+        let(:result_with_nils) { subject.new(data: { user_id:, email:, name:, phone: nil, age: nil }) }
+
+        it 'resolves event class with schema supporting nullable attributes' do
+          aggregate_failures do
+            expect(result_with_values.data[:phone]).to eq('123456789')
+            expect(result_with_values.data[:age]).to eq(30)
+            expect(result_with_nils.data[:phone]).to be_nil
+            expect(result_with_nils.data[:age]).to be_nil
+          end
+        end
+      end
+
+      context 'when nullable attributes are provided with values' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+
+        subject { super().new(data:) }
+
+        it 'handles nullable attributes when provided with values' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to eq('123456789')
+            expect(event.data[:age]).to eq(30)
+          end
+        end
+      end
+
+      context 'when nullable attributes are provided as nil' do
+        let(:data) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+        subject { super().new(data:) }
+
+        it 'allows nullable attributes to be nil' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to be_nil
+            expect(event.data[:age]).to be_nil
+          end
+        end
+      end
+    end
+
+    context 'with optional and nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: true, nullable: true },
+          age: { type: :integer, optional: true, nullable: false }
+        }
+      end
+
+      context 'when optional nullable attribute is omitted' do
+        let(:data) { { user_id:, email:, name: } }
+
+        subject { super().new(data:) }
+
+        it 'allows omitting optional nullable attributes' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data).not_to include(:phone)
+            expect(event.data).not_to include(:age)
+          end
+        end
+      end
+
+      context 'when optional nullable attribute is provided as nil' do
+        let(:data) { { user_id:, email:, name:, phone: nil } }
+
+        subject { super().new(data:) }
+
+        it 'allows optional nullable attributes to be explicitly nil' do
+          event = subject
+
+          expect(event.data[:phone]).to be_nil
+        end
+      end
+
+      context 'when optional nullable attribute is provided with value' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789' } }
+
+        subject { super().new(data:) }
+
+        it 'handles optional nullable attributes when provided with values' do
+          event = subject
+
+          expect(event.data[:phone]).to eq('123456789')
+        end
+      end
+    end
+
     context 'with encrypted attributes' do
       let(:payload_attributes) do
         {
