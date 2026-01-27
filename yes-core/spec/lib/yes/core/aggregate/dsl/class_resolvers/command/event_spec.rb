@@ -66,18 +66,6 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         }
       end
 
-      context 'schema' do
-        let(:result_with_all) { subject.new(data: { user_id:, email:, name:, phone: '123456789', age: 30 }) }
-        let(:result_required_only) { subject.new(data: { user_id:, email:, name: }) }
-
-        it 'resolves event class with schema supporting optional attributes' do
-          aggregate_failures do
-            expect(result_with_all.data).to include(:phone, :age)
-            expect(result_required_only.data).not_to include(:phone, :age)
-          end
-        end
-      end
-
       context 'when optional attributes are provided' do
         let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
 
@@ -105,6 +93,215 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
             expect(event.data).not_to include(:phone)
             expect(event.data).not_to include(:age)
           end
+        end
+      end
+    end
+
+    context 'with nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, nullable: true },
+          age: { type: :integer, nullable: true }
+        }
+      end
+
+      context 'when nullable attributes are provided with values' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+
+        subject { super().new(data:) }
+
+        it 'handles nullable attributes when provided with values' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to eq('123456789')
+            expect(event.data[:age]).to eq(30)
+          end
+        end
+      end
+
+      context 'when nullable attributes are provided as nil' do
+        let(:data) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+        subject { super().new(data:) }
+
+        it 'allows nullable attributes to be nil' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to be_nil
+            expect(event.data[:age]).to be_nil
+          end
+        end
+      end
+    end
+
+    context 'with optional and nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: true, nullable: true },
+          age: { type: :integer, optional: true, nullable: false }
+        }
+      end
+
+      context 'when optional nullable attribute is omitted' do
+        let(:data) { { user_id:, email:, name: } }
+
+        subject { super().new(data:) }
+
+        it 'allows omitting optional nullable attributes' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data).not_to include(:phone)
+            expect(event.data).not_to include(:age)
+          end
+        end
+      end
+
+      context 'when optional nullable attribute is provided as nil' do
+        let(:data) { { user_id:, email:, name:, phone: nil } }
+
+        subject { super().new(data:) }
+
+        it 'allows optional nullable attributes to be explicitly nil' do
+          event = subject
+
+          expect(event.data[:phone]).to be_nil
+        end
+      end
+
+      context 'when optional nullable attribute is provided with value' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789' } }
+
+        subject { super().new(data:) }
+
+        it 'handles optional nullable attributes when provided with values' do
+          event = subject
+
+          expect(event.data[:phone]).to eq('123456789')
+        end
+      end
+    end
+
+    context 'with explicitly required attributes (optional: false)' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: false },
+          age: { type: :integer, optional: false }
+        }
+      end
+
+      context 'when required attributes are provided' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+
+        subject { super().new(data:) }
+
+        it 'handles explicitly required attributes when provided' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to eq('123456789')
+            expect(event.data[:age]).to eq(30)
+          end
+        end
+      end
+
+      context 'when required attributes are omitted' do
+        let(:data) { { user_id:, email:, name: } }
+
+        subject { super().new(data:) }
+
+        it 'raises validation error when explicitly required attributes are missing' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+        end
+      end
+    end
+
+    context 'with explicitly non-nullable attributes (nullable: false)' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, nullable: false },
+          age: { type: :integer, nullable: false }
+        }
+      end
+
+      context 'when non-nullable attributes are provided with values' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+
+        subject { super().new(data:) }
+
+        it 'handles explicitly non-nullable attributes when provided with values' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to eq('123456789')
+            expect(event.data[:age]).to eq(30)
+          end
+        end
+      end
+
+      context 'when non-nullable attributes are provided as nil' do
+        let(:data) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+        subject { super().new(data:) }
+
+        it 'raises validation error when explicitly non-nullable attributes are nil' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+        end
+      end
+    end
+
+    context 'with optional: false and nullable: false' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: false, nullable: false },
+          age: { type: :integer, optional: false, nullable: false }
+        }
+      end
+
+      context 'when attributes are provided with values' do
+        let(:data) { { user_id:, email:, name:, phone: '123456789', age: 30 } }
+
+        subject { super().new(data:) }
+
+        it 'handles required non-nullable attributes when provided with values' do
+          event = subject
+
+          aggregate_failures do
+            expect(event.data[:phone]).to eq('123456789')
+            expect(event.data[:age]).to eq(30)
+          end
+        end
+      end
+
+      context 'when attributes are omitted' do
+        let(:data) { { user_id:, email:, name: } }
+
+        subject { super().new(data:) }
+
+        it 'raises validation error when required non-nullable attributes are missing' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+        end
+      end
+
+      context 'when attributes are provided as nil' do
+        let(:data) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+        subject { super().new(data:) }
+
+        it 'raises validation error when required non-nullable attributes are nil' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
         end
       end
     end

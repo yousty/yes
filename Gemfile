@@ -23,7 +23,7 @@ source 'https://gem.fury.io/yousty-ag/' do
   gem 'jwt_token_auth_client_rails', '~> 3.3'
   gem 'yousty-api', '~> 1.5'
   gem 'yousty_dev_tools', '~> 2.1'
-  gem 'yousty-eventsourcing', '~> 15.0.1-alpha8'
+  gem 'yousty-eventsourcing', '~> 15.0.1'
 end
 
 gem 'faker'

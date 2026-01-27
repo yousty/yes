@@ -32,20 +32,30 @@ module Yes
                   # Define the aggregate_id attribute for the command
                   attribute :"#{aggregate.underscore}_id", Yousty::Eventsourcing::Types::UUID
 
-                  define_singleton_method :optional_attribute do |attr_name, type|
-                    attribute? attr_name, Yes::Core::TypeLookup.type_for(type, context).optional
-                  end
-
-                  define_singleton_method :required_attribute do |attr_name, type|
-                    attribute attr_name, Yes::Core::TypeLookup.type_for(type, context)
-                  end
-
                   # Define payload attributes if any
                   payload_attributes.each do |attr_name, attr_type|
-                    next required_attribute attr_name, attr_type unless attr_type.is_a?(Hash)
-                    next optional_attribute attr_name, attr_type[:type] if attr_type[:optional]
+                    # Handle simple type (not a hash)
+                    unless attr_type.is_a?(Hash)
+                      attribute attr_name, Yes::Core::TypeLookup.type_for(attr_type, context)
+                      next
+                    end
 
-                    required_attribute attr_name, attr_type[:type]
+                    resolved_type = Yes::Core::TypeLookup.type_for(attr_type[:type], context)
+
+                    case [attr_type[:optional] == true, attr_type[:nullable] == true]
+                    when [false, false]
+                      # required key, non-nullable value
+                      attribute attr_name, resolved_type
+                    when [false, true]
+                      # required key, nullable value
+                      attribute attr_name, resolved_type.maybe
+                    when [true, false]
+                      # optional key, non-nullable value
+                      attribute? attr_name, resolved_type
+                    when [true, true]
+                      # optional key, nullable value
+                      attribute? attr_name, resolved_type.maybe
+                    end
                   end
 
                   # TODO: Legacy: Change to :aggregate_id - requires chnage in yousty es in many places

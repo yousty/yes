@@ -265,6 +265,26 @@ end
 
 Make sure the payload keys are all defined as attributes on the aggregate if you don't supply an `update_state` block.
 
+**Optional and Nullable Attributes**
+
+You can mark payload attributes as optional (key can be omitted) or nullable (value can be nil) using hash syntax:
+
+```ruby
+command :update_profile do
+  # Optional key - attribute can be omitted from payload
+  payload phone: { type: :string, optional: true },
+          # Nullable value - attribute must be present but can be nil
+          max_travel_time: { type: :integer, nullable: true },
+          # Both optional key and nullable value
+          email: { type: :email, optional: true, nullable: true }
+end
+```
+
+- `optional: true` - The key can be omitted from the command payload (for commands) or event data (for events)
+- `nullable: true` - The value can be `nil` (wraps the type with `.maybe` for commands, uses `.maybe()` for events)
+
+**Note**: For commands, nullable attributes are automatically unwrapped from `Dry::Monads::Maybe::Some/None` when accessing `command.payload` to ensure compatibility with event creation.
+
 #### Guards
 
 Add validation rules with guards:

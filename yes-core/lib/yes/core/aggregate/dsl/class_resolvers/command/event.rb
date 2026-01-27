@@ -32,12 +32,30 @@ module Yes
                 Class.new(Yes::Core::Event) do
                   define_method :schema do
                     Dry::Schema.Params do
-                      required_attribute = proc do |attr_name, type|
-                        required(attr_name).value(Yes::Core::TypeLookup.type_for(type, context, :event))
-                      end
+                      # Helper to build attribute definition with support for optional key and nullable value
+                      build_attribute = proc do |attr_name, attr_type_config|
+                        # Handle simple type (not a hash)
+                        unless attr_type_config.is_a?(Hash)
+                          required(attr_name).value(Yes::Core::TypeLookup.type_for(attr_type_config, context, :event))
+                          next
+                        end
 
-                      optional_attribute = proc do |attr_name, type|
-                        optional(attr_name).value(Yes::Core::TypeLookup.type_for(type, context, :event))
+                        resolved_type = Yes::Core::TypeLookup.type_for(attr_type_config[:type], context, :event)
+
+                        case [attr_type_config[:optional] == true, attr_type_config[:nullable] == true]
+                        when [false, false]
+                          # required key, non-nullable value
+                          required(attr_name).value(resolved_type)
+                        when [false, true]
+                          # required key, nullable value
+                          required(attr_name).maybe(resolved_type)
+                        when [true, false]
+                          # optional key, non-nullable value
+                          optional(attr_name).value(resolved_type)
+                        when [true, true]
+                          # optional key, nullable value
+                          optional(attr_name).maybe(resolved_type)
+                        end
                       end
 
                       # Define the aggregate_id attribute for the event
@@ -45,10 +63,7 @@ module Yes
 
                       # Define payload attributes if any
                       payload_attributes.each do |attr_name, attr_type|
-                        next required_attribute.call(attr_name, attr_type) unless attr_type.is_a?(Hash)
-                        next optional_attribute.call(attr_name, attr_type[:type]) if attr_type[:optional]
-
-                        required_attribute.call(attr_name, attr_type[:type])
+                        build_attribute.call(attr_name, attr_type)
                       end
                     end
                   end
