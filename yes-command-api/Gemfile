@@ -15,7 +15,7 @@ gem 'yes-core', path: '../yes-core'
 source 'https://gem.fury.io/yousty-ag/' do
   gem 'jwt_token_auth_client_rails', '~> 3.3'
   gem 'yousty_dev_tools', '~> 0.2'
-  gem 'yousty-eventsourcing', '~> 15.0.1-alpha8'
+  gem 'yousty-eventsourcing', '~> 15.0'
   gem 'yousty_tools', '~> 0.4'
   gem 'yousty-api', '~> 1.5'
 end
