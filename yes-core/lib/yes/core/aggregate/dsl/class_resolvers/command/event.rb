@@ -42,7 +42,7 @@ module Yes
 
                         resolved_type = Yes::Core::TypeLookup.type_for(attr_type_config[:type], context, :event)
 
-                        case [!attr_type_config[:optional].nil?, !attr_type_config[:nullable].nil?]
+                        case [attr_type_config[:optional] == true, attr_type_config[:nullable] == true]
                         when [false, false]
                           # required key, non-nullable value
                           required(attr_name).value(resolved_type)

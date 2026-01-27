@@ -165,8 +165,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.phone).to eq(phone)
-              expect(command.age).to eq(age)
+              expect(command.payload[:phone]).to eq(phone)
+              expect(command.payload[:age]).to eq(age)
             end
           end
         end
@@ -181,8 +181,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.phone).to be_nil
-              expect(command.age).to be_nil
+              expect(command.payload[:phone]).to be_nil
+              expect(command.payload[:age]).to be_nil
             end
           end
         end
@@ -224,8 +224,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.phone).to be_nil
-              expect(command.age).to be_nil
+              expect(command.payload[:phone]).to be_nil
+              expect(command.payload[:age]).to be_nil
             end
           end
         end
@@ -239,7 +239,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           it 'allows optional nullable attributes to be explicitly nil' do
             command = subject
 
-            expect(command.phone).to be_nil
+            expect(command.payload[:phone]).to be_nil
           end
         end
 
@@ -253,7 +253,150 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           it 'handles optional nullable attributes when provided with values' do
             command = subject
 
-            expect(command.phone).to eq(phone)
+            expect(command.payload[:phone]).to eq(phone)
+          end
+        end
+      end
+    end
+
+    context 'with explicitly required attributes (optional: false)' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: false },
+          age: { type: :integer, optional: false }
+        }
+      end
+
+      context 'command instance with explicitly required attributes' do
+        subject { super().new(payload) }
+
+        context 'when required attributes are provided' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:phone) { '123456789' }
+          let(:age) { 30 }
+          let(:payload) { { user_id:, email:, name:, phone:, age: } }
+
+          it 'handles explicitly required attributes when provided' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.phone).to eq(phone)
+              expect(command.age).to eq(age)
+            end
+          end
+        end
+
+        context 'when required attributes are omitted' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name: } }
+
+          it 'raises validation error when explicitly required attributes are missing' do
+            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+          end
+        end
+      end
+    end
+
+    context 'with explicitly non-nullable attributes (nullable: false)' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, nullable: false },
+          age: { type: :integer, nullable: false }
+        }
+      end
+
+      context 'command instance with explicitly non-nullable attributes' do
+        subject { super().new(payload) }
+
+        context 'when non-nullable attributes are provided with values' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:phone) { '123456789' }
+          let(:age) { 30 }
+          let(:payload) { { user_id:, email:, name:, phone:, age: } }
+
+          it 'handles explicitly non-nullable attributes when provided with values' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.payload[:phone]).to eq(phone)
+              expect(command.payload[:age]).to eq(age)
+            end
+          end
+        end
+
+        context 'when non-nullable attributes are provided as nil' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+          it 'raises validation error when explicitly non-nullable attributes are nil' do
+            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+          end
+        end
+      end
+    end
+
+    context 'with optional: false and nullable: false' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          name: :string,
+          phone: { type: :string, optional: false, nullable: false },
+          age: { type: :integer, optional: false, nullable: false }
+        }
+      end
+
+      context 'command instance with required non-nullable attributes' do
+        subject { super().new(payload) }
+
+        context 'when attributes are provided with values' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:phone) { '123456789' }
+          let(:age) { 30 }
+          let(:payload) { { user_id:, email:, name:, phone:, age: } }
+
+          it 'handles required non-nullable attributes when provided with values' do
+            command = subject
+
+            aggregate_failures do
+              expect(command.payload[:phone]).to eq(phone)
+              expect(command.payload[:age]).to eq(age)
+            end
+          end
+        end
+
+        context 'when attributes are omitted' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name: } }
+
+          it 'raises validation error when required non-nullable attributes are missing' do
+            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+          end
+        end
+
+        context 'when attributes are provided as nil' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name:, phone: nil, age: nil } }
+
+          it 'raises validation error when required non-nullable attributes are nil' do
+            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
           end
         end
       end
