@@ -21,7 +21,13 @@ else
   GEM_DIR="${GEM_NAME}"
   VERSION_FILE="${GEM_DIR}/lib/${GEM_NAME//-//}/version.rb"
 fi
-TAG_PREFIX="${GEM_NAME}-v"
+
+if [ -n "${GEM_DIR}" ]; then
+  TAG_PREFIX="${GEM_NAME}-v"
+else
+  TAG_PREFIX="v"
+fi
+
 GEM_FURY_URL="https://${GEM_FURY_PUSH_TOKEN}@push.fury.io/yousty-ag/"
 
 # === STEP 1: BUMP VERSION ===
