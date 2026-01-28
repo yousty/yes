@@ -1,4 +1,6 @@
 # Unreleased
+
+# 0.23.2 - 2026-01-28
 - Add nullable value support for command and event payload attributes via `nullable: true` option
 - Refactor command and event class resolvers to use pattern matching for optional/nullable combinations
 - Add comprehensive specs for nullable attribute support in commands and events
