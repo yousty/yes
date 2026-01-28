@@ -24,6 +24,13 @@ source 'https://gem.fury.io/yousty-ag/' do
   gem 'yousty-api', '~> 1.5'
   gem 'yousty_dev_tools', '~> 2.1'
   gem 'yousty-eventsourcing', '~> 15.0.1'
+
+  # Use Fury gems in production/staging
+  if %w[production staging].include?(ENV['RAILS_ENV'])
+    gem 'yes-command-api', '~> 2.4.0'
+    gem 'yes-core', '~> 0.23.0'
+    gem 'yes-read-api', '~> 1.4.0'
+  end
 end
 
 gem 'faker'
@@ -34,6 +41,9 @@ gem 'rubocop', '~> 1.21'
 gem 'rubocop-performance'
 gem 'rubocop-rails'
 
-gem 'yes-command-api', path: 'yes-command-api'
-gem 'yes-core', path: 'yes-core'
-gem 'yes-read-api', path: 'yes-read-api'
+# Use local gems only when not in production/staging
+unless %w[production staging].include?(ENV['RAILS_ENV'])
+  gem 'yes-command-api', path: 'yes-command-api'
+  gem 'yes-core', path: 'yes-core'
+  gem 'yes-read-api', path: 'yes-read-api'
+end
