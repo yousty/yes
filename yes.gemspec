@@ -22,9 +22,9 @@ Gem::Specification.new do |spec|
   spec.files = Dir['{lib,sig}/**/*', 'LICENSE.txt', 'README.md', 'CHANGELOG.md']
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'yes-command-api' # , Yes::VERSION
-  spec.add_dependency 'yes-core' # , Yes::VERSION
-  spec.add_dependency 'yes-read-api' # , Yes::VERSION
+  spec.add_dependency 'yes-command-api', '~> 2.4.0'
+  spec.add_dependency 'yes-core', '~> 0.23.0'
+  spec.add_dependency 'yes-read-api', '~> 1.4.0'
 
   spec.metadata['rubygems_mfa_required'] = 'true'
 end
