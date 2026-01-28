@@ -15,7 +15,7 @@ BUMP_ARGUMENT="$2"
 # === CONFIGURATION ===
 GEM_DIR="${GEM_NAME}"  # folder where the gem lives (same as the gem name)
 VERSION_FILE="${GEM_DIR}/lib/${GEM_NAME//-//}/version.rb"
-TAG_PREFIX="${GEM_NAME}_v"
+TAG_PREFIX="${GEM_NAME}-v"
 GEM_FURY_URL="https://${GEM_FURY_PUSH_TOKEN}@push.fury.io/yousty-ag/"
 
 # === STEP 1: BUMP VERSION ===
