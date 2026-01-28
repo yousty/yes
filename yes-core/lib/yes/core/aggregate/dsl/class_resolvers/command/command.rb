@@ -48,13 +48,13 @@ module Yes
                       attribute attr_name, resolved_type
                     when [false, true]
                       # required key, nullable value
-                      attribute attr_name, resolved_type.maybe
+                      attribute attr_name, resolved_type.optional
                     when [true, false]
                       # optional key, non-nullable value
                       attribute? attr_name, resolved_type
                     when [true, true]
                       # optional key, nullable value
-                      attribute? attr_name, resolved_type.maybe
+                      attribute? attr_name, resolved_type.optional
                     end
                   end
 

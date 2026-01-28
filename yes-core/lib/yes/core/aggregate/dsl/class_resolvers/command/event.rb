@@ -48,13 +48,13 @@ module Yes
                           required(attr_name).value(resolved_type)
                         when [false, true]
                           # required key, nullable value
-                          required(attr_name).maybe(resolved_type)
+                          required(attr_name).optional(resolved_type)
                         when [true, false]
                           # optional key, non-nullable value
                           optional(attr_name).value(resolved_type)
                         when [true, true]
                           # optional key, nullable value
-                          optional(attr_name).maybe(resolved_type)
+                          optional(attr_name).optional(resolved_type)
                         end
                       end
 

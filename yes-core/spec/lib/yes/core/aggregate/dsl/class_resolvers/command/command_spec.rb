@@ -165,8 +165,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.payload[:phone]).to eq(phone)
-              expect(command.payload[:age]).to eq(age)
+              expect(command.phone).to eq(phone)
+              expect(command.age).to eq(age)
             end
           end
         end
@@ -181,8 +181,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.payload[:phone]).to be_nil
-              expect(command.payload[:age]).to be_nil
+              expect(command.phone).to be_nil
+              expect(command.age).to be_nil
             end
           end
         end
@@ -224,8 +224,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.payload[:phone]).to be_nil
-              expect(command.payload[:age]).to be_nil
+              expect(command.phone).to be_nil
+              expect(command.age).to be_nil
             end
           end
         end
@@ -239,7 +239,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           it 'allows optional nullable attributes to be explicitly nil' do
             command = subject
 
-            expect(command.payload[:phone]).to be_nil
+            expect(command.phone).to be_nil
           end
         end
 
@@ -253,7 +253,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           it 'handles optional nullable attributes when provided with values' do
             command = subject
 
-            expect(command.payload[:phone]).to eq(phone)
+            expect(command.phone).to eq(phone)
           end
         end
       end
@@ -328,8 +328,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.payload[:phone]).to eq(phone)
-              expect(command.payload[:age]).to eq(age)
+              expect(command.phone).to eq(phone)
+              expect(command.age).to eq(age)
             end
           end
         end
@@ -372,8 +372,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
             command = subject
 
             aggregate_failures do
-              expect(command.payload[:phone]).to eq(phone)
-              expect(command.payload[:age]).to eq(age)
+              expect(command.phone).to eq(phone)
+              expect(command.age).to eq(age)
             end
           end
         end
