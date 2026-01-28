@@ -1,5 +1,8 @@
 ## [Unreleased]
 
+# 1.4.3 - 2026-01-28
+* Bump yousty-eventsourcing dependency to 15.0.1
+
 # 1.4.2 - 2025-11-06
 * Fix own filter to call method on instance instead of class
 
