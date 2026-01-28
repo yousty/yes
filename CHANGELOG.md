@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+# 0.4.1 - 2026-01-28
+* Bump yes-command-api dependency to 2.4.2
+* Bump yes-core dependency to 0.23.3
+* Bump yes-read-api dependency to 1.4.4
+
 # 0.4.0 - 2026-01-28
 * Bump yes-command-api dependency to 2.4.0
 * Bump yes-core dependency to 0.23.0
