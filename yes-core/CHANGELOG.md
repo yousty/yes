@@ -1,5 +1,11 @@
 # Unreleased
 
+# 0.23.5 - 2026-01-28
+- Revert `maybe` keyword in event class resolvers
+
+# 0.23.4 - 2026-01-28
+- Change `maybe` keyword to `optional` in command and event class resolvers - avoid monad wrapping of attributes
+
 # 0.23.3 - 2026-01-28
 * Bump yousty-eventsourcing dependency to 15.0.1 in the gemspec
 
