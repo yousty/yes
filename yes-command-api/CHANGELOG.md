@@ -1,5 +1,8 @@
 # Unreleased
 
+# 2.4.2 - 2026-01-28
+* Add yousty-eventsourcing dependency to gemspec
+
 # 2.4.1 - 2026-01-27
 * Bump yousty-eventsourcing dependency to 15.0.1
 

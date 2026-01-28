@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'rails', '>= 7.1'
   spec.add_dependency 'yousty-api', '~> 1.4'
   spec.add_dependency 'zeitwerk'
+  spec.add_dependency 'yousty-eventsourcing', '~> 15.0', '>=15.0.1'
 
   spec.metadata['rubygems_mfa_required'] = 'true'
 end

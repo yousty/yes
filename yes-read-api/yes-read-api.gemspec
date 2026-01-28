@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'jwt_token_auth_client_rails', '~> 3.3'
   spec.add_dependency 'pagy', '~> 6.0'
   spec.add_dependency 'rails', '>= 7.1'
-  spec.add_dependency 'yousty-eventsourcing', '>= 7'
+  spec.add_dependency 'yousty-eventsourcing', '~> 15.0', '>=15.0.1'
   spec.add_dependency 'yousty-api', '~> 1.5'
   spec.add_dependency 'zeitwerk'
 

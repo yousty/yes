@@ -1,5 +1,8 @@
 # Unreleased
 
+# 0.23.3 - 2026-01-28
+* Bump yousty-eventsourcing dependency to 15.0.1 in the gemspec
+
 # 0.23.2 - 2026-01-28
 - Add nullable value support for command and event payload attributes via `nullable: true` option
 - Refactor command and event class resolvers to use pattern matching for optional/nullable combinations

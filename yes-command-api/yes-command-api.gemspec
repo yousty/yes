@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'jwt_token_auth_client_rails', '~> 3.3'
   spec.add_dependency 'rails', '>= 7.0.4.3'
-  spec.add_dependency 'yousty-eventsourcing', '~> 15.0'
+  spec.add_dependency 'yousty-eventsourcing', '~> 15.0', '>=15.0.1'
 
   spec.add_development_dependency 'dotenv-rails', '~> 2.8'
   spec.add_development_dependency 'rake', '~> 13.0'
