@@ -137,7 +137,7 @@ bundle install
 Set up the test database:
 
 ```shell
-RAILS_ENV=test SETUP_DB=true bundle exec rake db:create db:migrate
+RAILS_ENV=test bundle exec rake db:create db:migrate
 ```
 
 The `.env` file at `spec/dummy/.env` is loaded automatically and contains JWT test keys and database configuration.

@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'message_bus'
+require 'yes/command/api/commands/notifiers/message_bus'
+
 RSpec.describe Yes::Core::Commands::Processor do
   let(:processor) { described_class.new }
   let(:origin) { 'some origin' }

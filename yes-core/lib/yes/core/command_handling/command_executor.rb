@@ -132,7 +132,9 @@ module Yes
           return unless read_model
 
           begin
-            read_model.update_column(:pending_update_since, Time.current)
+            ActiveRecord::Base.transaction(requires_new: true) do
+              read_model.update_column(:pending_update_since, Time.current)
+            end
           rescue ActiveRecord::StatementInvalid => e
             raise e unless e.message.include?('Concurrent pending update not allowed')
 

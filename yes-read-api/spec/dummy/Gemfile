@@ -30,9 +30,5 @@ gem 'bootsnap', require: false
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem 'debug'
-  gem 'dotenv-rails', '~> 2.8', '>= 2.8.1'
   gem 'factory_bot_rails', '~> 6.2'
-  if ENV['SETUP_DB'] == 'true'
-    gem 'yes-read-api', path: '../../yes-read-api'
-  end
 end

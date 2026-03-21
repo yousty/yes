@@ -92,7 +92,7 @@ module Yes
         end
 
         def draft?(cmd)
-          cmd.metadata&.dig(:draft)
+          cmd.metadata&.dig(:draft) || cmd.metadata&.dig(:edit_template_command)
         end
 
         # Determines the aggregate class for a given command

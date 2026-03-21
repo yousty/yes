@@ -1,19 +1,31 @@
 #!/usr/bin/env sh
 
-# Setup eventstore databases
-PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore" bundle exec rake pg_eventstore:drop
-PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore" bundle exec rake pg_eventstore:create
-PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore" bundle exec rake pg_eventstore:migrate
-PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test" bundle exec rake pg_eventstore:drop
-PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test" bundle exec rake pg_eventstore:create
-PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test" bundle exec rake pg_eventstore:migrate
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore"
+EVENTSTORE_TEST_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test"
+
+# Setup eventstore databases (using yes-core's bundle which has pg_eventstore)
+cd "$SCRIPT_DIR/yes-core"
+PG_EVENTSTORE_URI="$EVENTSTORE_URI" bundle exec rake pg_eventstore:drop || true
+PG_EVENTSTORE_URI="$EVENTSTORE_URI" bundle exec rake pg_eventstore:create
+PG_EVENTSTORE_URI="$EVENTSTORE_URI" bundle exec rake pg_eventstore:migrate
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" bundle exec rake pg_eventstore:drop || true
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" bundle exec rake pg_eventstore:create
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" bundle exec rake pg_eventstore:migrate
 
 # Setup databases for yes-core dummy app
-cd yes-core/spec/dummy && RAILS_ENV=development bundle exec rake db:drop db:create db:migrate && RAILS_ENV=test bundle exec rake db:migrate && rm db/schema.rb && cd ../../..
+cd "$SCRIPT_DIR/yes-core"
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake db:drop || true
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake db:create db:migrate
 
 # Setup databases for yes-command-api dummy app
-cd yes-command-api/spec/dummy && RAILS_ENV=test bundle exec rake db:drop db:create db:migrate && cd ../../..
+cd "$SCRIPT_DIR/yes-command-api"
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake db:drop || true
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake db:create db:migrate
 
 # Setup databases for yes-read-api dummy app
-cd yes-read-api/spec/dummy && RAILS_ENV=test SETUP_DB=true bundle exec rake db:drop db:create db:migrate && cd ../../..
-
+cd "$SCRIPT_DIR/yes-read-api"
+RAILS_ENV=test bundle exec rake db:drop || true
+RAILS_ENV=test bundle exec rake db:create db:migrate

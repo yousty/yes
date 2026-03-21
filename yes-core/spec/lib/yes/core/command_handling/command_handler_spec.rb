@@ -243,7 +243,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
           # Simulate another process updating the record very recently
           read_model.update_column(:pending_update_since, 1.second.ago)
         end
-  
+
         it 'raises ConcurrentUpdateError when another process owns the lock' do
           # When the pending state is too recent, it indicates another process is working
           expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
