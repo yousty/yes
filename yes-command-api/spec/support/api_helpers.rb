@@ -158,10 +158,10 @@ module APIHelpers
   end
 
   RSpec.shared_examples 'does not run any command' do |errors|
-    let(:command_bus) { instance_spy(Yousty::Eventsourcing::CommandBus) }
+    let(:command_bus) { instance_spy(Yes::Core::Commands::Bus) }
 
     before do
-      allow(Yousty::Eventsourcing::CommandBus).to receive(:new).and_return(command_bus)
+      allow(Yes::Core::Commands::Bus).to receive(:new).and_return(command_bus)
       allow(command_bus).to receive(:call)
     end
 

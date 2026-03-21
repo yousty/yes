@@ -16,18 +16,18 @@
 Gemfile.lock
 .rspec_status
 
-# Dummy app
-/dummy/db/*.sqlite3
-/dummy/db/*.sqlite3-*
-/dummy/log/*.log
-/dummy/tmp/
-/dummy/.sass-cache
-/dummy/storage/
+# Dummy apps
+/yes-core/spec/dummy/db/*.sqlite3
+/yes-core/spec/dummy/db/*.sqlite3-*
+/yes-core/spec/dummy/log/*.log
+/yes-core/spec/dummy/tmp/
+/yes-core/spec/dummy/.sass-cache
+/yes-core/spec/dummy/storage/
+/yes-read-api/spec/dummy/log/*.log
 
 /db/postgresql/data
-
-/yes-read-api/dummy_app/log/*.log
 
 /prompts/*
 
 .claude/
+.development/

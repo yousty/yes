@@ -27,15 +27,11 @@ $ gem install yes-command-api
 
 The preferred way of issuing commands using the commands api is asyncronously.
 
-For that, you need to configure yousty eventsourcing to not process commands inline.
-
-You most likely also want to configure a notifier to notify command progress. The notifier will be
-called when a batch of commands starts and finishes, and also whenever a single command of the batch has finished processing.
+For that, you need to configure Yes::Core to process commands asynchronously.
 
 ```ruby
-Yousty::Eventsourcing.configure do |config|
+Yes::Core.configure do |config|
   config.process_commands_inline = false
-  config.command_notifier_class = Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier
 end
 ```
 If `process_commands_inline` is true, commands will be processed using the currently configured ActiveJob adapter.
@@ -65,31 +61,13 @@ Given a command
 
 ```ruby
 module MyContext
-  module Commands
-    module MyAggregate
-      class DoSomething
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :user_id, Yousty::Eventsourcing::Types::UUID
-        alias aggregate_id user_id
-      end
-    end
-  end
-end
-```
+  module MyAggregate
+    class Aggregate < Yes::Core::Aggregate
+      attribute :what, :string, command: true
+      attribute :user_id, :uuid
 
-A simple authorizer could look like this:
-
-```ruby
-module MyContext
-  module Commands
-    module MyAggregate
-      class DoSomethingAuthorizer < Yousty::Eventsourcing::CommandAuthorizer
-        # @param command [Yousty::Eventsourcing::Command]
-        # @param auth_data [Hash]
-        def self.call(command, auth_data)
-          raise CommandNotAuthorized if command.user_id != auth_data['user_id']
-          raise CommandNotAuthorized if command.what != 'Nonsense'
-        end
+      authorize do
+        command.user_id == auth_data['user_id']
       end
     end
   end
@@ -104,7 +82,7 @@ In case the authorizer raises nothing, the command is considered authorized.
 
 The commands endpoint accepts commands supplied as a json array, using a POST request.
 
-The endpoint is located where you mounted it, if you followed the steps above it will be for yousty at `https://api.yousty.ch/your_service_context/v1/commands`.
+The endpoint is located where you mounted it, e.g. `https://your-app.example.com/v1/commands`.
 
 Here is an example of a valid payload:
 
@@ -122,7 +100,7 @@ Here is an example of a valid payload:
   "channel": "/notifications-for-user-07393424-fa57-40fe-a3d2-c3bdd8b8e952"
 }
 ```
-You also need to supply a valid JWT token for a yousty user as a bearer token for authorization and authentication.
+You also need to supply a valid JWT token as a bearer token for authorization and authentication.
 
 Note that commands is an array, so you can supply any number of commands in a single request.
 
@@ -218,17 +196,50 @@ postData(url, { '/notifications/testing-12345678': 0 }).then(processChunkedRespo
 
 ## Development
 
-You will have to install Docker first. It is needed to run EventStore DB. You can run EventStore DB with this command:
+### Prerequisites
+
+- Docker and Docker Compose
+- Ruby >= 3.2.0
+- Bundler
+
+### Setup
+
+Start PostgreSQL and Redis from the **repository root**:
 
 ```shell
-docker compose up
+docker compose up -d
 ```
 
-Run setup script:
-```ruby
-bin/setup_db
+Install dependencies:
+
+```shell
+bundle install
 ```
 
-Now you can enter a dev console by running `bin/console` or run tests by running the `rspec` command.
+Set up the EventStore database:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb` add description for released changes in `CHANGELOG.md` if necessary update `README.md`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to `gem.fury.io`. In order to push new releases you need to provide `GEM_FURY_PUSH_TOKEN` env variable.
+```shell
+PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test" bundle exec rake pg_eventstore:create pg_eventstore:migrate
+```
+
+Set up the test database:
+
+```shell
+RAILS_ENV=test bundle exec rake db:create db:migrate
+```
+
+The `.env` file at `spec/.env` is loaded automatically and contains JWT test keys.
+
+### Running Specs
+
+```shell
+bundle exec rspec
+```
+
+## Contributing
+
+Bug reports and pull requests are welcome on GitHub at https://github.com/yousty/yes.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

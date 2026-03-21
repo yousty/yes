@@ -1,5 +1,3 @@
-version: "3.5"
-
 services:
   redis:
     image: redis:7
@@ -11,6 +9,6 @@ services:
       - 5532:5432
     environment:
       - POSTGRES_PASSWORD=postgres
-    command: [ "postgres", "-c", "log_statement=all" ]
+    command: ["postgres", "-c", "log_statement=all"]
     volumes:
       - "./db/postgresql/data:/var/lib/postgresql/data"

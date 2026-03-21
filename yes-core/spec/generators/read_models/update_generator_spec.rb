@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :generator do
-  let(:destination) { File.expand_path('../../../../dummy', __dir__) }
+  let(:destination) { File.expand_path('../../dummy', __dir__) }
 
   before do
     self.destination_root = destination
@@ -16,7 +16,9 @@ RSpec.describe Yes::Core::Generators::ReadModels::UpdateGenerator, type: :genera
       if file.include?('create_test_users') ||
          file.include?('create_test_locations') ||
          file.include?('create_shared_profile_read_model') ||
-         file.include?('add_pending_update_tracking')
+         file.include?('add_pending_update_tracking') ||
+         file.include?('create_job_apps') ||
+         file.include?('create_apprenticeships')
         next
       end
 

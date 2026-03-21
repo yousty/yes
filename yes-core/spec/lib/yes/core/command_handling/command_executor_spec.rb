@@ -28,7 +28,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
         result = subject
 
         aggregate_failures do
-          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result).to be_a(Yes::Core::Commands::Response)
           expect(result.error).to be_nil
           expect(result.event).to be_present
         end
@@ -48,7 +48,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
         result = subject
 
         aggregate_failures do
-          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result).to be_a(Yes::Core::Commands::Response)
           expect(result.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
           expect(result.error.message).to include('no_change')
           expect(result.event).to be_nil
@@ -70,7 +70,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
         result = subject
 
         aggregate_failures do
-          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result).to be_a(Yes::Core::Commands::Response)
           expect(result.error).to be_nil
           expect(result.event).to be_present
         end
@@ -99,7 +99,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
               raise revision_error
             else
               # Return event on success
-              Yousty::Eventsourcing::Event.new(
+              Yes::Core::Event.new(
                 id: SecureRandom.uuid,
                 type: 'Test::User::NameChanged',
                 data: { 'name' => 'Jane' }
@@ -112,7 +112,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
           result = subject
 
           aggregate_failures do
-            expect(result).to be_a(Yes::Core::CommandResponse)
+            expect(result).to be_a(Yes::Core::Commands::Response)
             expect(result.error).to be_nil
             expect(result.event).to be_present
           end

@@ -5,7 +5,7 @@ module Yes
     module CommandHandling
       # Handles publishing events with revision checks
       class EventPublisher
-        include Yousty::Eventsourcing::OpenTelemetry::Trackable
+        include Yes::Core::OpenTelemetry::Trackable
 
         # Value object containing aggregate data needed for event publication
         AggregateEventPublicationData = Struct.new(:id, :context, :name, :revision, keyword_init: true) do
@@ -59,7 +59,7 @@ module Yes
 
         otl_trackable(
           :call, 
-          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer, track_sql: true)
+          Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer, track_sql: true)
         )
 
         private

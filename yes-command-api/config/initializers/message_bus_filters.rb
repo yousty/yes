@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+return unless defined?(MessageBus)
+
 # Filtering by params[:batch_id]. Applied to all channels
 MessageBus.register_client_message_filter('') do |params, message|
   next true unless params.key?('batch_id')
@@ -33,8 +35,8 @@ MessageBus.user_id_lookup do |env|
   request = ActionDispatch::Request.new(env)
   token, _ = ActionController::HttpAuthentication::Token.token_and_options(request)
 
-  if token
-    jwt_token = JwtTokenAuthClientRails::TokenVerifier.call(token)
-    jwt_token.token.first['identity_id']
+  if token && Yes::Core.configuration.auth_adapter
+    verified_token = Yes::Core.configuration.auth_adapter.verify_token(token)
+    verified_token.token.first['identity_id']
   end
 end

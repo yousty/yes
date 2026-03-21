@@ -47,7 +47,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command do
       aggregate_failures do
         expect(authorizer_class).to be < aggregate_class_authorizer
         expect(authorizer_class.name).to eq('Test::User::Commands::ApproveDocuments::Authorizer')
-        expect(authorizer_class).not_to be < Yousty::Eventsourcing::CommandCerbosAuthorizer
+        expect(authorizer_class).not_to be < Yes::Core::Authorization::CommandCerbosAuthorizer
       end
     end
 
@@ -75,7 +75,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command do
 
     it 'inherits from CommandCerbosAuthorizer' do
       # Test that the authorizer is a CerbosAuthorizer
-      expect(Universe::Star::Aggregate.authorizer_class).to be < Yousty::Eventsourcing::CommandCerbosAuthorizer
+      expect(Universe::Star::Aggregate.authorizer_class).to be < Yes::Core::Authorization::CommandCerbosAuthorizer
     end
 
     context 'resource_attributes' do
@@ -88,13 +88,25 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command do
 
     context 'cerbos_payload' do
       subject { cerbos_authorizer_class.cerbos_payload(command_obj, resource, auth_data) }
-      let(:auth_data) { { user_id: 'auth-user-id' } }
 
-      it 'returns custom cerbos_payload' do
-        expect(subject).to include(
-          principal: auth_data,
-          resource_id: 'test-id'
-        )
+      let(:identity_id) { SecureRandom.uuid }
+      let(:auth_data) { { identity_id: } }
+      let(:resource) { double('Resource', id: SecureRandom.uuid, auth_attributes: { owner_id: 'test-user-id' }) }
+      let(:command_obj) do
+        double('Command', payload: { label: 'Sirius', size: 10 }, class: Universe::Star::Commands::CreateStar::Command)
+      end
+
+      before do
+        Yes::Core.configuration.cerbos_principal_data_builder = lambda { |ad|
+          { id: ad[:identity_id], roles: [], attributes: {} }
+        }
+      end
+
+      it 'returns default cerbos_payload with resource and actions' do
+        aggregate_failures do
+          expect(subject).to include(:principal, :resource, :actions, :include_metadata)
+          expect(subject[:actions]).to eq(['create_star'])
+        end
       end
     end
   end

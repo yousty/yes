@@ -11,7 +11,8 @@ module Yes
       #   updater.call(event, command_payload, :approve_documents)
       #
       class ReadModelUpdater
-        include Yousty::Eventsourcing::OpenTelemetry::Trackable
+        include Yes::Core::OpenTelemetry::Trackable
+
         # Initializes a new ReadModelUpdater
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance to update read model for
@@ -24,7 +25,7 @@ module Yes
 
         # Updates the read model with revision guard protection
         #
-        # @param event [Yousty::Eventsourcing::Event] The event that was published
+        # @param event [Yes::Core::Event] The event that was published
         # @param command_payload [Hash] The command payload
         # @param command_name [Symbol, String] The command name (optional, will be derived from event if not provided)
         # @return [void]
@@ -40,7 +41,7 @@ module Yes
             return update_revision(event.stream_revision)
           end
 
-          payload = command_payload ? command_payload : payload_from_event(event, resolve_payload)
+          payload = command_payload || payload_from_event(event, resolve_payload)
 
           locale = payload[:locale]
 
@@ -56,7 +57,6 @@ module Yes
               aggregate:,
               event:
             ).call
-
             aggregate.update_read_model(
               state_changes.merge(
                 revision_column => event.stream_revision,
@@ -71,7 +71,8 @@ module Yes
 
         otl_trackable(
           :call,
-          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model', span_kind: :producer, track_sql: true)
+          Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model',
+                                                                     span_kind: :producer, track_sql: true)
         )
 
         private
@@ -90,7 +91,7 @@ module Yes
             value.start_with?(Yes::Core::Event::PAYLOAD_STORE_VALUE_PREFIX)
           end
 
-          Yousty::Eventsourcing::PayloadStore::Lookup.new.call(event).each do |key, value|
+          Yes::Core::PayloadStore::Lookup.new.call(event).each do |key, value|
             event.data[key.to_s] = value
           end
 

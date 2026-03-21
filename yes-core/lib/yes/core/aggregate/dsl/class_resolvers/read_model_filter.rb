@@ -12,7 +12,7 @@ module Yes
           # basic scopes and a reference to its corresponding read model class.
           #
           # @example Generated read model filter class structure
-          #   class UserFilter < Yousty::Eventsourcing::ReadModelFilter
+          #   class UserFilter < Yes::Core::ReadModel::Filter
           #     has_scope :ids do |_, scope, value|
           #       scope.by_ids(value.split(','))
           #     end
@@ -63,9 +63,9 @@ module Yes
 
             # Generates a new read model filter class with the required scopes and configuration
             #
-            # @return [Class] A new filter class inheriting from Yousty::Eventsourcing::ReadModelFilter
+            # @return [Class] A new filter class inheriting from Yes::Core::ReadModel::Filter
             def generate_class
-              klass = Class.new(Yousty::Eventsourcing::ReadModelFilter)
+              klass = Class.new(Yes::Core::ReadModel::Filter)
 
               klass.has_scope :ids do |_, scope, value|
                 scope.by_ids(value.split(','))

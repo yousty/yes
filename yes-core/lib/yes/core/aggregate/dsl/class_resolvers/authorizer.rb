@@ -6,7 +6,7 @@ module Yes
       module Dsl
         module ClassResolvers
           # Creates and registers authorizer classes for aggregates based on
-          # Yousty::Eventsourcing::CommandCerbosAuthorizer.
+          # Yes::Core::Authorization::CommandCerbosAuthorizer.
           #
           # This class resolver generates authorizer classes associated with aggregates.
           # Each authorizer class defines a RESOURCE constant containing the
@@ -14,7 +14,7 @@ module Yes
           #
           # @example Generated authorizer class structure
           #   # Generated for a 'User' aggregate
-          #   class GeneratedAuthorizer < Yousty::Eventsourcing::CommandCerbosAuthorizer
+          #   class GeneratedAuthorizer < Yes::Core::Authorization::CommandCerbosAuthorizer
           #     RESOURCE = { read_model: Auth::Resources::User, name: 'user' }.freeze
           #   end
           class Authorizer < Base
@@ -29,7 +29,7 @@ module Yes
             #   - resource_name [String, nil] Optional resource name for Cerbos. Defaults to
             #     aggregate name underscored (e.g., 'company').
             #   - authorizer_block [Proc, nil] An optional block defining the custom logic for the `call` method
-            #     if `authorizer_base_class` is not `Yousty::Eventsourcing::CommandCerbosAuthorizer`.
+            #     if `authorizer_base_class` is not `Yes::Core::Authorization::CommandCerbosAuthorizer`.
             def initialize(options)
               @resource_name = options.resource_name
               @read_model_class = options.read_model_class
@@ -78,7 +78,7 @@ module Yes
 
             # Generates a new authorizer class dynamically.
             # The generated class inherits from the specified authorizer_class.
-            # If the base class is Yousty::Eventsourcing::CommandCerbosAuthorizer, it sets the RESOURCE constant.
+            # If the base class is Yes::Core::Authorization::CommandCerbosAuthorizer, it sets the RESOURCE constant.
             # Otherwise, if a block was provided during initialization, it defines a `call` method
             # executing that block's logic.
             #
@@ -87,7 +87,7 @@ module Yes
             def generate_class
               klass = Class.new(authorizer_class)
 
-              if authorizer_class == Yousty::Eventsourcing::CommandCerbosAuthorizer
+              if authorizer_class == Yes::Core::Authorization::CommandCerbosAuthorizer
                 resource_attributes = { read_model: read_model_class, name: resource_name }
                 resource_attributes[:draft_read_model] = changes_read_model_class if draftable?
                 klass.const_set(:RESOURCE, resource_attributes.freeze)

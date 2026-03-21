@@ -22,7 +22,7 @@ Sidekiq.configure_server do |config|
 
   config.logger = logger
 
-  config.error_handlers << proc { |e, context| Yousty::ErrorHandler.new.call(e, context: context) }
+  config.error_handlers << proc { |e, context| Rails.logger.error("Sidekiq error: #{e.message}", context:) }
   config.redis = { url: "redis://#{ENV['REDIS_HOST']}:6479/" }
 end
 

@@ -23,11 +23,7 @@ module Yes
         # @param remove [Boolean] Whether to remove the read model before rebuilding
         # @return [void]
         def call(remove: true)
-          if remove
-            remove_read_model 
-          else
-            read_model.update(revision_column => -1)
-          end
+          remove ? remove_read_model : read_model.update(revision_column => -1)
           events.each { |events_page| events_page.each { |event| process_event(event) } }
         end
 

@@ -19,7 +19,7 @@ module Yes
                 aggregate_authorizer_class = command_data.aggregate_class.authorizer_class
                 return nil unless aggregate_authorizer_class
 
-                if aggregate_authorizer_class <= Yousty::Eventsourcing::CommandCerbosAuthorizer
+                if aggregate_authorizer_class <= Yes::Core::Authorization::CommandCerbosAuthorizer
                   CerbosAuthorizer.new(command_data)
                 else
                   SimpleAuthorizer.new(command_data)

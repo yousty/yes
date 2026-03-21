@@ -6,7 +6,7 @@ RSpec.describe Yes::Core::Aggregate do
 
     context 'for Test::User::Aggregate (uses CommandAuthorizer with block)' do
       let(:aggregate_class) { Test::User::Aggregate }
-      let(:expected_base_class) { Yousty::Eventsourcing::CommandAuthorizer }
+      let(:expected_base_class) { Yes::Core::Authorization::CommandAuthorizer }
 
       it 'sets the correct authorizer class after loading' do
         aggregate_failures do
@@ -37,8 +37,8 @@ RSpec.describe Yes::Core::Aggregate do
 
     context 'for Universe::Star::Aggregate (uses CommandCerbosAuthorizer)' do
       let(:aggregate_class) { Universe::Star::Aggregate }
-      let(:expected_base_class) { Yousty::Eventsourcing::CommandCerbosAuthorizer }
-      let(:expected_read_model_class) { UniverseStar }
+      let(:expected_base_class) { Yes::Core::Authorization::CommandCerbosAuthorizer }
+      let(:expected_read_model_class) { Apprenticeship }
 
       it 'sets the correct authorizer class after loading' do
         aggregate_failures do
@@ -57,7 +57,7 @@ RSpec.describe Yes::Core::Aggregate do
 
     context 'for Test::CustomResource::Aggregate (uses CommandCerbosAuthorizer with custom parameters)' do
       let(:aggregate_class) { Test::CustomResource::Aggregate }
-      let(:expected_base_class) { Yousty::Eventsourcing::CommandCerbosAuthorizer }
+      let(:expected_base_class) { Yes::Core::Authorization::CommandCerbosAuthorizer }
       let(:expected_read_model_class) { CustomResourceReadModel }
       let(:expected_resource_name) { 'special_resource' }
 

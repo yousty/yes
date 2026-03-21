@@ -30,7 +30,7 @@ module Yes
 
                 Class.new(Yes::Core::Command) do
                   # Define the aggregate_id attribute for the command
-                  attribute :"#{aggregate.underscore}_id", Yousty::Eventsourcing::Types::UUID
+                  attribute :"#{aggregate.underscore}_id", Yes::Core::Types::UUID
 
                   # Define payload attributes if any
                   payload_attributes.each do |attr_name, attr_type|
@@ -58,8 +58,8 @@ module Yes
                     end
                   end
 
-                  # TODO: Legacy: Change to :aggregate_id - requires chnage in yousty es in many places
-                  alias_method :subject_id, :"#{aggregate.underscore}_id"
+                  alias_method :aggregate_id, :"#{aggregate.underscore}_id"
+                  alias_method :subject_id, :aggregate_id
                 end
               end
             end

@@ -1,16 +1,8 @@
 # frozen_string_literal: true
 
 
-# require 'yousty/eventsourcing'
-# require 'jwt_token_auth_client_rails'
-# require 'pagy'
-# require 'api-pagination'
-# require_relative 'api/model_constraints'
-# require_relative 'api/api_pagination_patch'
-
-require 'yousty/eventsourcing'
+require 'yes/core'
 require 'zeitwerk'
-require 'yousty/api' # for serializers
 
 module Yes
   module Read

@@ -45,7 +45,7 @@ RSpec.shared_examples 'no open telemetry tracing' do
   let(:returned_result) { nil }
 
   before do
-    Yousty::Eventsourcing.config.otl_tracer = nil
+    Yes::Core.configuration.otl_tracer = nil
   end
 
   context 'when no tracer is configured' do

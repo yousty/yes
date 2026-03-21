@@ -7,9 +7,7 @@ This gem implements an endpoint to query read models.
 Add a gem to your Gemfile
 
 ```ruby
-source 'https://gem.fury.io/yousty-ag/' do
-  gem 'yes-read-api'
-end
+gem 'yes-read-api'
 ```
 
 and run `bundle install`
@@ -37,7 +35,7 @@ config.yes_read_api.read_models = ['apprenticeships']
 ```ruby
 module ReadModels
   module Apprenticeship
-    class RequestAuthorizer < Yousty::Eventsourcing::ReadRequestAuthorizer
+    class RequestAuthorizer < Yes::Core::ReadModel::RequestAuthorizer
       def self.call(params, auth_data)
         auth_data['scopes'].include?('admin')
       end
@@ -51,7 +49,7 @@ end
 ```ruby
 module ReadModels
   module Apprenticeship
-    class Filter < Yousty::Eventsourcing::ReadModelFilter
+    class Filter < Yes::Core::ReadModel::Filter
       has_scope :ids do |controller, scope, value|
         scope.by_id(value.split(','))
       end
@@ -116,22 +114,39 @@ More you can read here: [PAgy Countless](https://ddnexus.github.io/pagy/docs/ext
 
 ## Development
 
-You will have to install Docker first. It is needed to run services, needed for the development of this gem. Then you can start them using this command:
+### Prerequisites
+
+- Docker and Docker Compose
+- Ruby >= 3.2.0
+- Bundler
+
+### Setup
+
+Start PostgreSQL from the **repository root**:
 
 ```shell
-docker-compose up
+docker compose up -d
 ```
 
-Make sure you have created a database and run migrations:
+Install dependencies:
+
 ```shell
-rails db:create
-rails db:migrate
-rails db:migrate RAILS_ENV=test
+bundle install
 ```
 
-Now you can enter a dev console by running `rails c` or run tests by running the `rspec` command.
+Set up the test database:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to `gem.fury.io`. In order to push new releases you need to provide `GEM_FURY_PUSH_TOKEN` env variable.
+```shell
+RAILS_ENV=test SETUP_DB=true bundle exec rake db:create db:migrate
+```
+
+The `.env` file at `spec/dummy/.env` is loaded automatically and contains JWT test keys and database configuration.
+
+### Running Specs
+
+```shell
+bundle exec rspec
+```
 
 ## Contributing
 

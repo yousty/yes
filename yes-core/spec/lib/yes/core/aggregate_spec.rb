@@ -182,7 +182,7 @@ RSpec.describe Yes::Core::Aggregate do
     let(:aggregate_id) { SecureRandom.uuid }
     let(:stream) { PgEventstore::Stream.new(context: 'Test', stream_name: "User", stream_id: aggregate_id) }
     let(:event) { 
-      Yousty::Eventsourcing::Event.new(
+      Yes::Core::Event.new(
         id: SecureRandom.uuid,
         type: 'Test::UserCreated',
         data: {},
@@ -222,7 +222,7 @@ RSpec.describe Yes::Core::Aggregate do
 
     let(:instance) { subject_class.new(SecureRandom.uuid) }
     let(:event) { 
-      Yousty::Eventsourcing::Event.new(
+      Yes::Core::Event.new(
         id: SecureRandom.uuid,
         type: 'Test::UserCreated',
         data: {},

@@ -1,19 +1,85 @@
-inherit_from:
-  - https://raw.githubusercontent.com/yousty/qa-tools/master/rubocop/base/.rubocop.yml # common enabled rules
-  - https://raw.githubusercontent.com/yousty/qa-tools/master/rubocop/base/.rubocop.disabled.yml # common disabled rules
-  - .rubocop.disabled.yml # project specific disabled rules
+require:
+  - rubocop-performance
+  - rubocop-rails
 
 AllCops:
   NewCops: enable
-  TargetRubyVersion: 3.3.6
+  TargetRubyVersion: 3.2
   Exclude:
     - 'node_modules/**/*'
     - 'vendor/**/*'
     - 'sig/**/*'
-    
-# project specific overwritten rules
+    - 'db/**/*'
 
-# example:
-# Layout/LineLength:
-# Max: 100
-# AllowHeredoc: true
+# --- Metrics ---
+
+Metrics/ClassLength:
+  CountComments: false
+  Max: 150
+  CountAsOne: []
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/BlockLength:
+  Exclude:
+    - '**/spec/**/*'
+    - '**/factories/**/*'
+    - '**/config/routes.rb'
+    - '**/tasks/eventstore.rake'
+
+Metrics/ModuleLength:
+  Exclude:
+    - '**/spec/**/*'
+    - '**/factories/**/*'
+    - '**/config/routes.rb'
+
+# --- Layout ---
+
+Layout/LineLength:
+  Max: 120
+  AllowHeredoc: true
+  AllowURI: true
+  URISchemes:
+    - http
+    - https
+  IgnoreCopDirectives: false
+  Exclude:
+    - 'db/**/*.rb'
+    - '**/spec/features/*.rb'
+
+Layout/DotPosition:
+  EnforcedStyle: trailing
+
+# --- Lint ---
+
+Lint/DuplicateBranch:
+  Enabled: true
+  IgnoreLiteralBranches: true
+
+Lint/NumberConversion:
+  Enabled: false
+
+# --- Style ---
+
+Style/Documentation:
+  Enabled: false
+
+Style/AccessModifierDeclarations:
+  Enabled: false
+
+Style/Copyright:
+  Enabled: false
+
+Style/EndlessMethod:
+  EnforcedStyle: disallow
+
+# --- Bundler ---
+
+Bundler/GemComment:
+  Enabled: false
+
+# --- Rails ---
+
+Rails/SkipsModelValidations:
+  Enabled: false

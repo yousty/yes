@@ -11,7 +11,7 @@ module Yes
       #   evaluator = runner.call(cmd, command_name, guard_evaluator_class, skip_guards: false)
       #
       class GuardRunner
-        include Yousty::Eventsourcing::OpenTelemetry::Trackable
+        include Yes::Core::OpenTelemetry::Trackable
         # Initializes a new GuardRunner
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance for error management
@@ -28,7 +28,7 @@ module Yes
         # @return [GuardEvaluator, nil] The guard evaluator instance or nil if guards skipped
         # @raise [GuardEvaluator::InvalidTransition] When the transition is invalid
         # @raise [GuardEvaluator::NoChangeTransition] When no change would occur
-        # @raise [Yousty::Eventsourcing::Command::Invalid] When the command is invalid
+        # @raise [Yes::Core::Command::Invalid] When the command is invalid
         def call(cmd, command_name, guard_evaluator_class, skip_guards:)
 
           if skip_guards
@@ -49,14 +49,14 @@ module Yes
           evaluator
         rescue GuardEvaluator::InvalidTransition,
                GuardEvaluator::NoChangeTransition,
-               Yousty::Eventsourcing::Command::Invalid => e
+               Yes::Core::Command::Invalid => e
           aggregate.send(:"#{command_name.to_s.underscore}_error=", e.message)
           raise e
         end
         
         otl_trackable(
           :call,
-          Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Evaluate guards')
+          Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Evaluate guards')
         )
 
         private

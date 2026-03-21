@@ -67,6 +67,20 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             expect(json_data).to be_empty
           end
 
+          it 'passes auth_data to the serializer' do
+            serializer_double = double('Serializer')
+            allow(serializer_double).to receive(:new).and_return(double(to_json: '{"data":[],"meta":{"page":"1","total":"0","per_page":"20"}}'))
+
+            stub_const('ReadModels::Apprenticeship::Serializers::Apprenticeship', serializer_double)
+
+            subject
+
+            expect(serializer_double).to have_received(:new).with(
+              anything,
+              hash_including(auth_data: hash_including(identity_id:))
+            )
+          end
+
           context 'when no records exist' do
             it_behaves_like 'correctly paginated response' do
               let(:page) { '1' }
@@ -141,7 +155,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               include_context :opentelemetry_memory_exporter
 
               before do
-                Yousty::Eventsourcing.config.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
+                Yes::Core.configuration.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
 
                 subject
               end
@@ -439,6 +453,20 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
             expect(json_data).to be_empty
           end
 
+          it 'passes auth_data to the serializer' do
+            serializer_double = double('Serializer')
+            allow(serializer_double).to receive(:new).and_return(double(to_json: '{"data":[],"meta":{"page":"1","total":"0","per_page":"20"}}'))
+
+            stub_const('ReadModels::Apprenticeship::Serializers::Apprenticeship', serializer_double)
+
+            subject
+
+            expect(serializer_double).to have_received(:new).with(
+              anything,
+              hash_including(auth_data: hash_including(identity_id:))
+            )
+          end
+
           context 'when no records exist' do
             it_behaves_like 'correctly paginated response' do
               let(:page) { '1' }
@@ -572,7 +600,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
 
               before do
-                Yousty::Eventsourcing.config.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
+                Yes::Core.configuration.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
 
                 subject
               end

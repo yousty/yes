@@ -62,7 +62,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
         let(:user_id) { 'invalid-uuid' }
 
         it 'raises an error' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+          expect { subject }.to raise_error(Yes::Core::Command::Invalid)
         end
       end
     end

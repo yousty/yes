@@ -11,7 +11,7 @@
 # post '/:model', to: OtlTrackableRequest.new
 #
 
-require 'jwt_token_auth_client_rails'
+require 'yes/core'
 
 module Yes
   module Read
@@ -25,7 +25,7 @@ module Yes
         end
 
         def call(env)
-          tracer = Yousty::Eventsourcing.config.try(:otl_tracer)
+          tracer = Yes::Core.configuration.otl_tracer
           request = ActionDispatch::Request.new(env)
 
           self.controller_class ||= request.controller_class

@@ -28,7 +28,7 @@ module Yes
                   ).present?
                 rescue Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition,
                        Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition,
-                       Yousty::Eventsourcing::Command::Invalid
+                       Yes::Core::Command::Invalid
                   false
                 end
               end

@@ -52,7 +52,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
 
       context 'when OpenTelemetry tracer is not set' do
         before do
-          Yousty::Eventsourcing.configure do |config|
+          Yes::Core.configure do |config|
             config.otl_tracer = nil
           end
         end
@@ -77,7 +77,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
             c.service_name = 'SpecService'
             c.service_version = ENV.fetch('APP_VERSION', '1.0.0')
           end
-          Yousty::Eventsourcing.configure do |config|
+          Yes::Core.configure do |config|
             config.otl_tracer = OpenTelemetry.tracer_provider.tracer('SpecTracer')
           end
 
@@ -382,8 +382,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
       end
 
       before do
-        # TODO: @nico said we can use anymore CMD registry, we need some real aggregate
-        command_registry = Yousty::Eventsourcing::CommandRegistry.new
+        command_registry = Yes::Core::CommandRegistry.new
         command_registry.register(
           Dummy::Commands::Activity::DoSomethingElse,
           Dummy::Commands::Activity::DummyHandler
@@ -392,7 +391,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           Dummy::Commands::Activity::DoSomethingImpossible,
           Dummy::Commands::Activity::DummyHandler
         )
-        Yousty::Eventsourcing.configure do |config|
+        Yes::Core.configure do |config|
           config.command_registry = command_registry
         end
       end
@@ -429,7 +428,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
 
       context 'running commands inline' do
         before do
-          Yousty::Eventsourcing.configure do |config|
+          Yes::Core.configure do |config|
             config.command_notifier_classes = []
             config.process_commands_inline = true
           end
@@ -446,7 +445,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
               'Command Bus Schedule',
               'Process Dummy::Commands::Activity::DoSomethingElse',
               'Process Dummy::Commands::Activity::DoSomethingImpossible',
-              'Yousty::Eventsourcing::CommandProcessor'
+              'Command Processor Perform'
             ]
           end
           let(:extra_attribute_keys) do
@@ -485,9 +484,9 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           end
 
           context 'adding identity id to command metadata' do
-            let(:command_bus) { instance_spy(Yousty::Eventsourcing::CommandBus) }
+            let(:command_bus) { instance_spy(Yes::Core::Commands::Bus) }
             before do
-              allow(Yousty::Eventsourcing::CommandBus).to receive(:new).and_return(command_bus)
+              allow(Yes::Core::Commands::Bus).to receive(:new).and_return(command_bus)
             end
 
             it 'adds identity id to command metadata' do
@@ -506,8 +505,8 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           let(:params) { { commands: } }
 
           before do
-            Yousty::Eventsourcing.configure do |config|
-              config.command_notifier_classes = [Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier]
+            Yes::Core.configure do |config|
+              config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::MessageBus]
             end
           end
 
@@ -530,9 +529,9 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           let(:params) { super().merge(async: 'false') }
 
           before do
-            Yousty::Eventsourcing.configure do |config|
+            Yes::Core.configure do |config|
               config.process_commands_inline = true
-              config.command_notifier_classes = [Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier]
+              config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::MessageBus]
             end
           end
 
@@ -560,9 +559,9 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           let(:params) { super().merge(async: 'true') }
 
           before do
-            Yousty::Eventsourcing.configure do |config|
+            Yes::Core.configure do |config|
               config.process_commands_inline = false
-              config.command_notifier_classes = [Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier]
+              config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::MessageBus]
             end
           end
 
@@ -572,7 +571,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
 
       context 'running commands async' do
         before do
-          Yousty::Eventsourcing.configure do |config|
+          Yes::Core.configure do |config|
             config.command_notifier_classes = []
             config.process_commands_inline = false
           end
@@ -630,10 +629,10 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         ]
       end
 
-      let(:command_registry) { Yousty::Eventsourcing::CommandRegistry.new }
+      let(:command_registry) { Yes::Core::CommandRegistry.new }
 
       before do
-        Yousty::Eventsourcing.configure do |config|
+        Yes::Core.configure do |config|
           config.command_notifier_classes = []
           config.process_commands_inline = true
 

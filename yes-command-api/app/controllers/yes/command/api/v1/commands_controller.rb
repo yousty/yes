@@ -6,51 +6,49 @@ module Yes
   module Command
     module Api
       module V1
+        # Controller for executing command batches via the command bus.
+        #
+        # Auth is delegated to the configured auth adapter in Yes::Core.configuration.
+        # If no auth adapter is configured, authentication will raise an error.
         class CommandsController < ActionController::API
           MAX_INLINE_COMMANDS_PER_REQ = 10
 
-          include JwtTokenAuthClientRails::JwtTokenAuthController
-          include Yousty::Eventsourcing::OpenTelemetry::Trackable
+          include Yes::Core::OpenTelemetry::Trackable
 
           before_action :authenticate_with_token
           before_action :set_channel
 
           rescue_from(StandardError, with: :handle_unexpected_error)
 
-          rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
-
           rescue_from(
-            Yousty::Eventsourcing::CommandParamsValidator::CommandParamsInvalid,
+            Yes::Command::Api::Commands::ParamsValidator::CommandParamsInvalid,
             with: :command_params_invalid_response
           )
 
           rescue_from(
-            Yousty::Eventsourcing::CommandsDeserializer::DeserializationFailed,
+            Yes::Command::Api::Commands::Deserializer::DeserializationFailed,
             with: :deserialization_failed_response
           )
 
           rescue_from(
-            Yousty::Eventsourcing::CommandsAuthorizer::CommandsNotAuthorized,
+            Yes::Command::Api::Commands::BatchAuthorizer::CommandsNotAuthorized,
             with: :commands_unauthorized_response
           )
 
           rescue_from(
-            Yousty::Eventsourcing::CommandsValidator::CommandsInvalid,
+            Yes::Command::Api::Commands::BatchValidator::CommandsInvalid,
             with: :commands_invalid_response
           )
 
           # Executes a batch of commands.
-          #
-          # Documentation:  https://app.clickup.com/9010076192/v/dc/8cgnph0-14088/8cgnph0-19061
-          #
           def execute
-            Yousty::Eventsourcing::CommandParamsValidator.call(params[:commands])
-            deserialize_commands = Yousty::Eventsourcing::CommandsDeserializer.call(params[:commands])
+            Yes::Command::Api::Commands::ParamsValidator.call(params[:commands])
+            deserialize_commands = Yes::Command::Api::Commands::Deserializer.call(params[:commands])
             expanded_commands = expand_commands(deserialize_commands)
             return too_many_inline_commands if perform_inline? && expanded_commands.size > MAX_INLINE_COMMANDS_PER_REQ
 
-            Yousty::Eventsourcing::CommandsAuthorizer.call(expanded_commands, auth_data)
-            Yousty::Eventsourcing::CommandsValidator.call(expanded_commands)
+            Yes::Command::Api::Commands::BatchAuthorizer.call(expanded_commands, auth_data)
+            Yes::Command::Api::Commands::BatchValidator.call(expanded_commands)
             cmd_bus_response = command_bus.call(
               add_metadata(deserialize_commands),
               notifier_options: { channel: @channel }
@@ -61,21 +59,44 @@ module Yes
 
           private
 
-          def inline_processing_supported?
-            Gem::Specification.find_by_name('yousty-eventsourcing').version >= Gem::Version.new('13.3.0')
+          # Authenticates the request using the configured auth adapter.
+          #
+          # @raise [RuntimeError] if no auth adapter is configured
+          # @return [void]
+          def authenticate_with_token
+            adapter = Yes::Core.configuration.auth_adapter
+            raise 'No auth adapter configured. Set Yes::Core.configuration.auth_adapter.' unless adapter
+
+            adapter.authenticate(request)
+          rescue *auth_error_classes => e
+            auth_error_response(e)
+          end
+
+          # Returns auth data from the configured auth adapter.
+          #
+          # @return [Hash] the authentication data
+          def auth_data
+            Yes::Core.configuration.auth_adapter&.auth_data(request) || {}
+          end
+
+          # Returns the error classes defined by the auth adapter.
+          #
+          # @return [Array<Class>] auth error classes
+          def auth_error_classes
+            Yes::Core.configuration.auth_adapter&.error_classes || []
           end
 
           def perform_inline?
             return false if params[:async] == 'true'
-            return true if inline_processing_supported? && params[:async] == 'false'
+            return true if params[:async] == 'false'
 
-            Yousty::Eventsourcing.config.process_commands_inline
+            Yes::Core.configuration.process_commands_inline
           end
 
           def command_bus
-            return Yes::Core::CommandBus.new unless perform_inline?
+            return Yes::Core::Commands::Bus.new unless perform_inline?
 
-            Yes::Core::CommandBus.new(perform_inline: perform_inline?)
+            Yes::Core::Commands::Bus.new(perform_inline: perform_inline?)
           end
 
           def too_many_inline_commands
@@ -85,7 +106,7 @@ module Yes
 
           def expand_commands(deserialize_commands)
             deserialize_commands.map do |command|
-              command.is_a?(Yousty::Eventsourcing::CommandGroup) ? command.commands : command
+              command.is_a?(Yes::Core::Commands::Group) ? command.commands : command
             end.flatten
           end
 
@@ -128,7 +149,11 @@ module Yes
             render json: error_info.to_json, status: :bad_request
           end
 
-          def jwt_token_error_response(error)
+          # Handles auth token errors from the configured auth adapter.
+          #
+          # @param error [StandardError] the auth error
+          # @return [void]
+          def auth_error_response(error)
             render(
               json: { title: 'Auth Token Invalid', details: error.message }.to_json,
               status: :unauthorized
@@ -159,12 +184,11 @@ module Yes
             render json: { title: '"channel" param is required' }, status: :bad_request
           end
           otl_trackable :set_channel,
-                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(
+                        Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(
                           span_name: 'Set Channel',
                           span_kind: :client
                         )
 
-          # TODO: move to a shared library / helper
           def handle_unexpected_error(error)
             self.class.current_span&.status = OpenTelemetry::Trace::Status.error(error.message)
             self.class.current_span&.record_exception(error)
@@ -172,7 +196,7 @@ module Yes
             raise error
           end
           otl_trackable :handle_unexpected_error,
-                        Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Handle Unexpected Error')
+                        Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Handle Unexpected Error')
 
           def command_request_started_at_ms
             return nil unless request.env['HTTP_X_REQUEST_START']

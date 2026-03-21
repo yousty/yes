@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'ostruct'
+
 RSpec.describe Yes::Core::Aggregate::Draftable do
   let(:aggregate_class) do
     Class.new(Yes::Core::Aggregate) do

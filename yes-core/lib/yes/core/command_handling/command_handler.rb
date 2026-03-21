@@ -11,7 +11,7 @@ module Yes
       #   response = handler.call(:approve_documents, { document_ids: '123', another: 'value' })
       #
       class CommandHandler
-        include Yousty::Eventsourcing::OpenTelemetry::Trackable
+        include Yes::Core::OpenTelemetry::Trackable
         # Initializes a new CommandHandler
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance to handle commands for
@@ -27,7 +27,7 @@ module Yes
         # @param payload [Hash] The command payload
         # @param guards [Boolean] Whether to evaluate guards (default: true)
         # @param metadata [Hash] Optional custom metadata to add to the event
-        # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
+        # @return [Yes::Core::Commands::Response] The command response
         def call(command_name, payload, guards: true, metadata: nil)
           prepared_payload = prepare_payload(command_name, payload, metadata)
           cmd = command_utilities.build_command(command_name, prepared_payload)
@@ -48,7 +48,7 @@ module Yes
           response
         end
         otl_trackable :call,
-                      Yousty::Eventsourcing::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Execute command')
+                      Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Execute command')
 
         private
 
@@ -58,9 +58,9 @@ module Yes
         #
         # @param command_name [Symbol] The command name
         # @param payload [Hash] The raw payload
-        # @param custom_metadata [Hash] Optional custom metadata to merge
+        # @param metadata [Hash, nil] Optional custom metadata
         # @return [Hash] The prepared payload
-        def prepare_payload(command_name, payload, custom_metadata = nil)
+        def prepare_payload(command_name, payload, metadata = nil)
           prepared = command_utilities.prepare_default_payload(
             command_name,
             payload,
@@ -80,6 +80,7 @@ module Yes
           add_custom_metadata(prepared, custom_metadata) if custom_metadata.present?
           add_draft_metadata(prepared) if aggregate.draft?
           add_otl_metadata(prepared)
+          add_custom_metadata(prepared, metadata)
 
           prepared
         end
@@ -118,6 +119,18 @@ module Yes
           return if payload.dig(:metadata, :otl_contexts).blank?
 
           payload[:metadata][:otl_contexts][:timestamps][:command_handling_started_at_ms] = (Time.now.utc.to_f * 1000).to_i
+        end
+
+        # Adds custom metadata to payload
+        #
+        # @param payload [Hash] The payload to modify
+        # @param metadata [Hash, nil] The custom metadata to add
+        # @return [void]
+        def add_custom_metadata(payload, metadata)
+          return if metadata.blank?
+
+          payload[:metadata] ||= {}
+          payload[:metadata].merge!(metadata)
         end
       end
     end

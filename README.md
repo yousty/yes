@@ -1223,8 +1223,8 @@ Release a new version:
 bundle exec rake release
 ```
 
-This creates a git tag, pushes commits and tags, and pushes the gem to `gem.fury.io`. To push new releases, you need to provide the `GEM_FURY_PUSH_TOKEN` environment variable.
+This creates a git tag, pushes commits and tags, and pushes the gem to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/yousty/yousty-eventsourcing.
+Bug reports and pull requests are welcome on GitHub at https://github.com/yousty/yes.

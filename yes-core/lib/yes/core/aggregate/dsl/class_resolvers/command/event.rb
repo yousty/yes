@@ -59,7 +59,7 @@ module Yes
                       end
 
                       # Define the aggregate_id attribute for the event
-                      required(:"#{aggregate.underscore}_id").value(Yousty::Eventsourcing::Types::UUID)
+                      required(:"#{aggregate.underscore}_id").value(Yes::Core::Types::UUID)
 
                       # Define payload attributes if any
                       payload_attributes.each do |attr_name, attr_type|

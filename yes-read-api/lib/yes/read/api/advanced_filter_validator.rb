@@ -12,7 +12,7 @@ module Yes
         end
 
         AdvancedEndpointPayloadSchema = Dry::Schema.Params do
-          required(:filter_definition).hash(Yousty::Eventsourcing::FilterQueryBuilder::FilterSetSchema)
+          required(:filter_definition).hash(Yes::Core::ReadModel::FilterQueryBuilder::FilterSetSchema)
           optional(:page).hash(PaginationSchema)
           optional(:order).value(:hash)
           optional(:include).value(:string)

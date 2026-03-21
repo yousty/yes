@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
-class TestHelper
-  class << self
-    def clean_up_config
-      Yousty::Eventsourcing.instance_variable_set(:@config, nil)
-    end
-  end
-end
+require 'yes/core/test_support/test_helper'
+
+# Delegate to shared implementation in yes-core.
+# @see Yes::Core::TestSupport::TestHelper
+TestHelper = Yes::Core::TestSupport::TestHelper

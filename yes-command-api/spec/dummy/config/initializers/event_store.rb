@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-Yousty::Eventsourcing.configure do |config|
-  config.command_notifier_classes = [Yousty::Eventsourcing::CommandNotifiers::MessageBusNotifier]
+Yes::Core.configure do |config|
+  config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::MessageBus]
 end
 
 PgEventstore.configure do |config|

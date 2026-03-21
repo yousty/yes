@@ -13,9 +13,9 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
     stub_const("Auth::Resources::#{aggregate_name}", Class.new)
   end
   let!(:custom_dummy_read_model_class) { Class.new }
-  let!(:existing_authorizer_class) { Class.new(Yousty::Eventsourcing::CommandCerbosAuthorizer) }
-  let!(:base_cerbos_authorizer_class) { Yousty::Eventsourcing::CommandCerbosAuthorizer }
-  let!(:base_command_authorizer_class) { Yousty::Eventsourcing::CommandAuthorizer }
+  let!(:existing_authorizer_class) { Class.new(Yes::Core::Authorization::CommandCerbosAuthorizer) }
+  let!(:base_cerbos_authorizer_class) { Yes::Core::Authorization::CommandCerbosAuthorizer }
+  let!(:base_command_authorizer_class) { Yes::Core::Authorization::CommandAuthorizer }
 
   let(:generated_class) { resolver.call }
   let(:instance) { generated_class.new }
@@ -141,7 +141,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
         it 'generates a new authorizer class with RESOURCE constant' do
           aggregate_failures do
             expect(subject).to be_a(Class)
-            expect(subject).to be < Yousty::Eventsourcing::CommandCerbosAuthorizer
+            expect(subject).to be < Yes::Core::Authorization::CommandCerbosAuthorizer
             expect(subject.const_defined?(:RESOURCE)).to be true
             expect(subject::RESOURCE).to eq({ read_model: dummy_read_model_class,
                                               name: default_resource_name }.freeze)
@@ -160,7 +160,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
           aggregate_failures do
             expect(subject).to be_a(Class)
             expect(subject.name).to eq("#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer")
-            expect(subject).to be < Yousty::Eventsourcing::CommandCerbosAuthorizer
+            expect(subject).to be < Yes::Core::Authorization::CommandCerbosAuthorizer
             expect(subject.const_defined?(:RESOURCE)).to be true
             expect(subject::RESOURCE).to eq({ read_model: dummy_read_model_class,
                                               name: default_resource_name }.freeze)
@@ -202,7 +202,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
         it 'generates a class inheriting from CommandAuthorizer without RESOURCE' do
           aggregate_failures do
             expect(subject).to be_a(Class)
-            expect(subject).to be < Yousty::Eventsourcing::CommandAuthorizer
+            expect(subject).to be < Yes::Core::Authorization::CommandAuthorizer
             expect(subject.const_defined?(:RESOURCE)).to be false
           end
         end
@@ -217,7 +217,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
           aggregate_failures do
             expect(Yes::Core.configuration).to have_received(:register_aggregate_authorizer_class).
               with(context_name, aggregate_name, subject)
-            expect(subject.ancestors).to include(Yousty::Eventsourcing::CommandAuthorizer)
+            expect(subject.ancestors).to include(Yes::Core::Authorization::CommandAuthorizer)
           end
         end
 
@@ -225,7 +225,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
           aggregate_failures do
             expect(subject).to be_a(Class)
             expect(subject.name).to eq("#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer")
-            expect(subject).to be < Yousty::Eventsourcing::CommandAuthorizer
+            expect(subject).to be < Yes::Core::Authorization::CommandAuthorizer
             expect(subject.const_defined?(:RESOURCE)).to be false
             expect(subject.instance_methods).to include(:call) # call method defined
           end

@@ -9,8 +9,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModelFilter do
   subject { described_class.new(read_model_name, context, aggregate).call }
 
   describe '#call' do
-    it 'resolves filter class inheriting from Yousty::Eventsourcing::ReadModelFilter' do
-      expect(subject.superclass).to eq(Yousty::Eventsourcing::ReadModelFilter)
+    it 'resolves filter class inheriting from Yes::Core::ReadModel::Filter' do
+      expect(subject.superclass).to eq(Yes::Core::ReadModel::Filter)
     end
 
     it 'defines private read_model_class method' do

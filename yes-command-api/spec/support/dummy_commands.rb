@@ -3,80 +3,80 @@
 module Dummy
   module Commands
     module Activity
-      class DoSomething < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoSomething < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
 
-      class DoSomethingElse < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoSomethingElse < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
 
-      class DoSomethingImpossible < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoSomethingImpossible < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
 
-      class DoSomethingMoreImpossible < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoSomethingMoreImpossible < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
 
-      class DoAnotherImpossible < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoAnotherImpossible < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
 
-      class DoSomethingLocalized < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
-        attribute :locale, Yousty::Eventsourcing::Types::String
+      class DoSomethingLocalized < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
+        attribute :locale, Yes::Core::Types::String
         alias aggregate_id id
       end
 
-      class DoSomethingUncommon < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoSomethingUncommon < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
 
-      class DoSomethingElseAuthorizer < Yousty::Eventsourcing::CommandAuthorizer
+      class DoSomethingElseAuthorizer < Yes::Core::Authorization::CommandAuthorizer
         def self.call(command, auth_data)
           true
         end
       end
 
-      class DoSomethingImpossibleAuthorizer < Yousty::Eventsourcing::CommandAuthorizer
+      class DoSomethingImpossibleAuthorizer < Yes::Core::Authorization::CommandAuthorizer
         def self.call(command, auth_data)
           true
         end
       end
 
-      class DoSomethingMoreImpossibleAuthorizer < Yousty::Eventsourcing::CommandAuthorizer
+      class DoSomethingMoreImpossibleAuthorizer < Yes::Core::Authorization::CommandAuthorizer
         def self.call(command, auth_data)
           raise CommandNotAuthorized, 'You cannot do this'
         end
       end
 
-      class DoSomethingMoreImpossibleValidator < Yousty::Eventsourcing::CommandValidator
+      class DoSomethingMoreImpossibleValidator < Yes::Core::Commands::Validator
         def self.call(command)
           raise CommandInvalid
         end
       end
 
-      class DoSomethingUncommonAuthorizer < Yousty::Eventsourcing::CommandAuthorizer
+      class DoSomethingUncommonAuthorizer < Yes::Core::Authorization::CommandAuthorizer
         def self.call(command, auth_data)
           true
         end
       end
 
-      class DoSomethingUncommonValidator < Yousty::Eventsourcing::CommandValidator
+      class DoSomethingUncommonValidator < Yes::Core::Commands::Validator
         def self.call(command)
           raise CommandInvalid, 'This is not valid'
         end
@@ -86,9 +86,9 @@ module Dummy
 
   module V23
     module Activity
-      class DoSomething < Yousty::Eventsourcing::Command
-        attribute :what, Yousty::Eventsourcing::Types::String
-        attribute :id, Yousty::Eventsourcing::Types::UUID
+      class DoSomething < Yes::Core::Command
+        attribute :what, Yes::Core::Types::String
+        attribute :id, Yes::Core::Types::UUID
         alias aggregate_id id
       end
     end
@@ -97,20 +97,20 @@ module Dummy
   module User
     module Commands
       module ChangeName
-        class Command < Yousty::Eventsourcing::Command
-          attribute :first_name, Yousty::Eventsourcing::Types::String
-          attribute :last_name, Yousty::Eventsourcing::Types::String
-          attribute :user_id, Yousty::Eventsourcing::Types::UUID
+        class Command < Yes::Core::Command
+          attribute :first_name, Yes::Core::Types::String
+          attribute :last_name, Yes::Core::Types::String
+          attribute :user_id, Yes::Core::Types::UUID
           alias subject_id user_id
         end
 
-        class Authorizer < Yousty::Eventsourcing::CommandAuthorizer
+        class Authorizer < Yes::Core::Authorization::CommandAuthorizer
           def self.call(command, auth_data)
             true
           end
         end
 
-        class Validator < Yousty::Eventsourcing::CommandValidator
+        class Validator < Yes::Core::Commands::Validator
           def self.call(command)
             true
           end
@@ -122,19 +122,19 @@ module Dummy
   module Company
     module Commands
       module ChangeName
-        class Command < Yousty::Eventsourcing::Command
-          attribute :name, Yousty::Eventsourcing::Types::String
-          attribute :company_id, Yousty::Eventsourcing::Types::UUID
+        class Command < Yes::Core::Command
+          attribute :name, Yes::Core::Types::String
+          attribute :company_id, Yes::Core::Types::UUID
           alias subject_id company_id
         end
 
-        class Authorizer < Yousty::Eventsourcing::CommandAuthorizer
+        class Authorizer < Yes::Core::Authorization::CommandAuthorizer
           def self.call(command, auth_data)
             true
           end
         end
 
-        class Validator < Yousty::Eventsourcing::CommandValidator
+        class Validator < Yes::Core::Commands::Validator
           def self.call(command)
             true
           end
@@ -142,19 +142,19 @@ module Dummy
       end
 
       module ChangeDescription
-        class Command < Yousty::Eventsourcing::Command
-          attribute :description, Yousty::Eventsourcing::Types::String
-          attribute :company_id, Yousty::Eventsourcing::Types::UUID
+        class Command < Yes::Core::Command
+          attribute :description, Yes::Core::Types::String
+          attribute :company_id, Yes::Core::Types::UUID
           alias subject_id company_id
         end
 
-        class Authorizer < Yousty::Eventsourcing::CommandAuthorizer
+        class Authorizer < Yes::Core::Authorization::CommandAuthorizer
           def self.call(command, auth_data)
             true
           end
         end
 
-        class Validator < Yousty::Eventsourcing::CommandValidator
+        class Validator < Yes::Core::Commands::Validator
           def self.call(command)
             true
           end
@@ -162,7 +162,7 @@ module Dummy
       end
 
       module DoSomethingCompounded
-        class Command < Yousty::Eventsourcing::CommandGroup
+        class Command < Yes::Core::Commands::Group
           command 'ChangeName'
           command 'ChangeDescription'
           command 'ChangeName', subject: 'User'

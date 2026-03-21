@@ -73,7 +73,7 @@ module Yes
         # @param command_name [Symbol] The name of the command being executed
         # @param guard_evaluator_class [Class] The guard evaluator class to process the command
         # @param skip_guards [Boolean] Whether to skip guard evaluation (default: false)
-        # @return [Yousty::Eventsourcing::Stateless::CommandResponse] The command response
+        # @return [Yes::Core::Commands::Response] The command response
         def call(cmd, command_name, guard_evaluator_class, skip_guards: false)
           retries = 0
 
@@ -115,7 +115,7 @@ module Yes
             retries <= MAX_RETRIES ? retry : raise(e)
           rescue GuardEvaluator::InvalidTransition,
                  GuardEvaluator::NoChangeTransition,
-                 Yousty::Eventsourcing::Command::Invalid => e
+                 Yes::Core::Command::Invalid => e
             command_response_class(cmd).new(cmd: cmd, error: e, batch_id: cmd.batch_id)
           end
         end
@@ -156,12 +156,12 @@ module Yes
         # Determines the appropriate response class for the command
         #
         # @param cmd [Yes::Core::Command] The command
-        # @return [Class] CommandGroupResponse or CommandResponse class
+        # @return [Class] GroupResponse or Response class
         def command_response_class(cmd)
-          if cmd.is_a?(Yousty::Eventsourcing::CommandGroup)
-            Yousty::Eventsourcing::Stateless::CommandGroupResponse
+          if cmd.is_a?(Yes::Core::Commands::Group)
+            Yes::Core::Commands::Stateless::GroupResponse
           else
-            Yes::Core::CommandResponse
+            Yes::Core::Commands::Response
           end
         end
       end

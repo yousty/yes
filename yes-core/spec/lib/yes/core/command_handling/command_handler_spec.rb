@@ -20,7 +20,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
         result = subject
 
         aggregate_failures do
-          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result).to be_a(Yes::Core::Commands::Response)
           expect(result).to be_success
           expect(result.event).to be_present
 
@@ -39,7 +39,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
           expect(result.event).to be_present
 
           # Verify event properties
-          expect(result.event).to be_a(Yousty::Eventsourcing::Event)
+          expect(result.event).to be_a(Yes::Core::Event)
           expect(result.event.type).to eq('Test::UserNameChanged')
           expect(result.event.data).to include('name' => 'Jane', 'user_id' => user_id)
           expect(result.event.stream_revision).to eq(0)
@@ -58,7 +58,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
         result = subject
 
         aggregate_failures do
-          expect(result).to be_a(Yes::Core::CommandResponse)
+          expect(result).to be_a(Yes::Core::Commands::Response)
           expect(result).not_to be_success
           expect(result.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
 
@@ -270,7 +270,7 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
           # so let's test with a completely invalid payload
           invalid_payload = { invalid_field: 'value' }
   
-          expect { handler.call(command_name, invalid_payload) }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+          expect { handler.call(command_name, invalid_payload) }.to raise_error(Yes::Core::Command::Invalid)
         end
       end
     end

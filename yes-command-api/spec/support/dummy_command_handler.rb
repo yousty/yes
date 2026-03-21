@@ -11,9 +11,9 @@ module Dummy
         end
 
         def call(cmd)
-          return if cmd.is_a?(Yousty::Eventsourcing::CommandGroup)
+          return if cmd.is_a?(Yes::Core::Commands::Group)
 
-          Yousty::Eventsourcing::CommandResponse.new(cmd: cmd)
+          Yes::Core::Commands::Response.new(cmd: cmd)
         end
 
         def initialize(adapter:)
@@ -25,7 +25,7 @@ module Dummy
   module User
     module Commands
       module ChangeName
-        class Handler < Yousty::Eventsourcing::Stateless::CommandHandler
+        class Handler < Yes::Core::Commands::Stateless::Handler
           self.event_name = 'NameChanged'
         end
       end
@@ -35,7 +35,7 @@ module Dummy
   module Company
     module Commands
       module ChangeName
-        class Handler < Yousty::Eventsourcing::Stateless::CommandHandler
+        class Handler < Yes::Core::Commands::Stateless::Handler
           self.event_name = 'NameChanged'
 
           def call
@@ -49,13 +49,13 @@ module Dummy
       end
 
       module ChangeDescription
-        class Handler < Yousty::Eventsourcing::Stateless::CommandHandler
+        class Handler < Yes::Core::Commands::Stateless::Handler
           self.event_name = 'DescriptionChanged'
         end
       end
 
       module DoSomethingCompounded
-        class CommandHandler < Yousty::Eventsourcing::Stateless::CommandGroupHandler
+        class CommandHandler < Yes::Core::Commands::Stateless::GroupHandler
           handler 'ChangeName'
           handler 'ChangeName', subject: 'User'
           handler :custom_check

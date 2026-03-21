@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Yes::Core::CommandProcessor do
+RSpec.describe Yes::Core::Commands::Processor do
   subject(:processor) { described_class.new }
 
   let(:command) do
@@ -17,7 +17,7 @@ RSpec.describe Yes::Core::CommandProcessor do
   let(:command_notifier) { instance_double('CommandNotifier') }
 
   before do
-    allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).
+    allow(Yes::Core.configuration).to receive(:command_notifier_classes).
       and_return([double(new: command_notifier)])
   end
 
@@ -28,7 +28,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
     context 'with a single command' do
       it 'processes the command successfully' do
-        expect(Yes::Core::CommandNotifier).to receive(:with_batch_notification).
+        expect(Yes::Core::Commands::Notifier).to receive(:with_batch_notification).
           with([command_notifier], processor.job_id, [kind_of(Test::User::Commands::ChangeName::Command)]).
           and_yield
 
@@ -42,7 +42,7 @@ RSpec.describe Yes::Core::CommandProcessor do
       let(:commands) { [command, command.clone] }
 
       it 'processes all commands' do
-        expect(Yes::Core::CommandNotifier).to receive(:with_batch_notification).
+        expect(Yes::Core::Commands::Notifier).to receive(:with_batch_notification).
           with([command_notifier], processor.job_id, kind_of(Array)).
           and_yield
 
@@ -60,13 +60,13 @@ RSpec.describe Yes::Core::CommandProcessor do
       end
 
       it 'raises UnregisteredCommand error' do
-        expect { subject }.to raise_error(Yes::Core::CommandProcessor::UnregisteredCommand)
+        expect { subject }.to raise_error(Yes::Core::Commands::Processor::UnregisteredCommand)
       end
     end
 
     context 'without command notifier configured' do
       before do
-        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
+        allow(Yes::Core.configuration).to receive(:command_notifier_classes).and_return(nil)
       end
 
       it 'processes commands without notifications' do
@@ -87,7 +87,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
       before do
         allow(Test::User::Aggregate).to receive(:new).and_return(aggregate_instance)
-        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
+        allow(Yes::Core.configuration).to receive(:command_notifier_classes).and_return(nil)
       end
 
       it 'instantiates aggregate with draft: true' do
@@ -118,7 +118,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
       before do
         allow(Test::User::Aggregate).to receive(:new).and_return(aggregate_instance)
-        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
+        allow(Yes::Core.configuration).to receive(:command_notifier_classes).and_return(nil)
       end
 
       it 'instantiates aggregate with draft: true' do
@@ -141,7 +141,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
       before do
         allow(Test::User::Aggregate).to receive(:new).and_return(aggregate_instance)
-        allow(Yousty::Eventsourcing.config).to receive(:command_notifier_classes).and_return(nil)
+        allow(Yes::Core.configuration).to receive(:command_notifier_classes).and_return(nil)
       end
 
       it 'instantiates aggregate without draft parameter' do
@@ -163,7 +163,7 @@ RSpec.describe Yes::Core::CommandProcessor do
       subject { processor.perform(origin, commands, notifier_options, nil, true) }
 
       it 'does not call any notifiers' do
-        expect(Yes::Core::CommandNotifier).not_to receive(:with_batch_notification)
+        expect(Yes::Core::Commands::Notifier).not_to receive(:with_batch_notification)
         expect(command_notifier).not_to receive(:notify_command_response)
 
         subject
@@ -190,7 +190,7 @@ RSpec.describe Yes::Core::CommandProcessor do
 
         aggregate_failures do
           expect(result).to be_an(Array)
-          expect(result.first).to be_a(Yes::Core::CommandResponse)
+          expect(result.first).to be_a(Yes::Core::Commands::Response)
         end
       end
     end
@@ -199,7 +199,7 @@ RSpec.describe Yes::Core::CommandProcessor do
       subject { processor.perform(origin, commands, notifier_options, nil, false) }
 
       it 'uses batch notification when notifiers are configured' do
-        expect(Yes::Core::CommandNotifier).to receive(:with_batch_notification).
+        expect(Yes::Core::Commands::Notifier).to receive(:with_batch_notification).
           with([command_notifier], processor.job_id, [kind_of(Test::User::Commands::ChangeName::Command)]).
           and_yield
 

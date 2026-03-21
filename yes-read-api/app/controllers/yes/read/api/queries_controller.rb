@@ -6,22 +6,22 @@ module Yes
   module Read
     module Api
       class QueriesController < ApplicationController
-        include JwtTokenAuthClientRails::JwtTokenAuthController
-
         before_action :authenticate_with_token
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
-        rescue_from(*TOKEN_AUTH_ERRORS, with: :jwt_token_error_response)
+        rescue_from(Yes::Core::AuthenticationError, with: :auth_error_response)
 
         rescue_from(
-          Yousty::Eventsourcing::ReadModelsAuthorizer::NotAuthorized,
-          Yousty::Eventsourcing::ReadRequestAuthorizer::NotAuthorized,
+          Yes::Core::Authorization::ReadModelsAuthorizer::NotAuthorized,
+          Yes::Core::Authorization::ReadRequestAuthorizer::NotAuthorized,
           with: :read_models_unauthorized_response
         )
 
         def call
-          persisted_filter = filter(read_model_name).persisted_filter_scope.find_by(id: params[:filter_id]) if params[:filter_id].present?
+          if params[:filter_id].present?
+            persisted_filter = filter(read_model_name).persisted_filter_scope.find_by(id: params[:filter_id])
+          end
 
           render json: response_json(persisted_filter:, filter_type: persisted_filter ? :advanced : :basic).to_json
         end
@@ -48,13 +48,12 @@ module Yes
           filter_options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
 
           request_authorizer.call(filter_options, auth_data)
-          # TODO, use strong params filter_params
 
           filter_options[:filters] ||= {}
           records = filter(read_model_name).new(filter_options, type: filter_type).call
           paginated_records = paginate(records, filter_options[:page] || {})
 
-          Yousty::Eventsourcing::ReadModelsAuthorizer.call(read_model_name, paginated_records, auth_data)
+          Yes::Core::Authorization::ReadModelsAuthorizer.call(read_model_name, paginated_records, auth_data)
 
           serialize(paginated_records, filter_options)
         end
@@ -63,7 +62,7 @@ module Yes
           authorizer_class = "ReadModels::#{read_model_name.classify}::RequestAuthorizer"
           Kernel.const_get(authorizer_class)
         rescue NameError
-          raise Yousty::Eventsourcing::ReadRequestAuthorizer::NotAuthorized, 'Not allowed'
+          raise Yes::Core::Authorization::ReadRequestAuthorizer::NotAuthorized, 'Not allowed'
         end
 
         def read_model_name
@@ -74,12 +73,15 @@ module Yes
           filter_class = "ReadModels::#{read_model_name.classify}::Filter"
           Kernel.const_get(filter_class)
         rescue NameError
-          Yousty::Eventsourcing::ReadModelFilter
+          Yes::Core::ReadModel::Filter
         end
 
         def serialize(records, filter_options)
-          # TODO, use strong params not to pass all params
-          options = { params: filter_options, include: filter_options[:include]&.split(',')&.map(&:to_sym) }.compact
+          options = {
+            params: filter_options,
+            include: filter_options[:include]&.split(',')&.map(&:to_sym),
+            auth_data:
+          }.compact
 
           serializer.new(records, options)
         end
@@ -93,7 +95,18 @@ module Yes
           @params ||= request.parameters.deep_symbolize_keys
         end
 
-        def jwt_token_error_response(error)
+        def authenticate_with_token
+          adapter = Yes::Core.configuration.auth_adapter
+          raise Yes::Core::AuthenticationError, 'No auth adapter configured' if adapter.nil?
+
+          @auth_data = adapter.authenticate(request)
+        end
+
+        def auth_data
+          @auth_data
+        end
+
+        def auth_error_response(error)
           render(
             json: { title: 'Auth Token Invalid', details: error.message }.to_json,
             status: :unauthorized

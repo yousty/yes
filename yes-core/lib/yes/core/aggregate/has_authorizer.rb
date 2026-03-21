@@ -65,9 +65,9 @@ module Yes
           # @return [Class] The authorizer class.
           def authorize(cerbos: false, read_model_class: nil, resource_name: nil, &block)
             authorizer_base_class = if cerbos
-                                      Yousty::Eventsourcing::CommandCerbosAuthorizer
+                                      Yes::Core::Authorization::CommandCerbosAuthorizer
                                     else
-                                      Yousty::Eventsourcing::CommandAuthorizer
+                                      Yes::Core::Authorization::CommandAuthorizer
                                     end
 
             self.authorizer_options = AuthorizerOptions.new(

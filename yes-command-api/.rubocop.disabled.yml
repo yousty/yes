@@ -1,4 +1,0 @@
-# These are all the cops that are disabled in the default configuration.
-
-Style/Copyright:
-  Enabled: false

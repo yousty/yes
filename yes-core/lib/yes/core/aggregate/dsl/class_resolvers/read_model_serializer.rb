@@ -12,7 +12,7 @@ module Yes
           # the specified attributes and type naming conventions.
           #
           # @example Generated read model serializer class structure
-          #   class UserSerializer < Yousty::Api::ApplicationSerializer
+          #   class UserSerializer < Yes::Core::Serializer
           #     set_type 'users'
           #     attributes :id, :email, :first_name, :last_name
           #   end
@@ -59,9 +59,9 @@ module Yes
 
             # Generates a new read model serializer class with the required configuration
             #
-            # @return [Class] A new serializer class inheriting from Yousty::Api::ApplicationSerializer
+            # @return [Class] A new serializer class inheriting from Yes::Core::Serializer
             def generate_class
-              klass = Class.new(Yousty::Api::ApplicationSerializer)
+              klass = Class.new(Yes::Core::Serializer)
 
               klass.set_type read_model_name.pluralize
               klass.attributes(*read_model_attributes)

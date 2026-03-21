@@ -19,8 +19,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::ReadModelSerializer do
   end
 
   describe '#call' do
-    it 'resolves serializer class inheriting from Yousty::Api::ApplicationSerializer' do
-      expect(subject.superclass).to eq(Yousty::Api::ApplicationSerializer)
+    it 'resolves serializer class inheriting from Yes::Core::Serializer' do
+      expect(subject.superclass).to eq(Yes::Core::Serializer)
     end
 
     it 'sets the correct type for JSON:API serialization' do

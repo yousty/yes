@@ -19,15 +19,11 @@ gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', require: false
 
-source 'https://gem.fury.io/yousty-ag/' do
-  gem 'jwt_token_auth_client_rails', '~> 3.3'
-  gem 'yousty-api', '~> 1.5'
-  gem 'yousty_dev_tools', '~> 2.1'
-  gem 'yousty-eventsourcing', '~> 15.0.1'
-end
-
 gem 'faker'
+gem 'factory_bot'
 gem 'generator_spec'
+gem 'message_bus'
+gem 'opentelemetry-sdk'
 gem 'rspec', '~> 3.0'
 gem 'rspec-rails', '~> 7.1'
 gem 'rubocop', '~> 1.21'

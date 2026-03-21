@@ -18,70 +18,50 @@ module Yes
 
         case @type
         when :lat, :lng
-          @obj_type == :event ? :float : Yousty::Eventsourcing::Types::Coercible::Float
+          @obj_type == :event ? :float : Yes::Core::Types::Coercible::Float
         when :string
-          base = Yousty::Eventsourcing::Types::Coercible::String
+          base = Yes::Core::Types::Coercible::String
           @obj_type == :event ? base : base.prepend { |v| v.nil? ? raise(Dry::Types::CoercionError, 'nil is not a string') : v }
         when :integer
-          Yousty::Eventsourcing::Types::Coercible::Integer
+          Yes::Core::Types::Coercible::Integer
         when :boolean
-          Yousty::Eventsourcing::Types::Strict::Bool
+          Yes::Core::Types::Strict::Bool
         when :float
-          Yousty::Eventsourcing::Types::Coercible::Float
+          Yes::Core::Types::Coercible::Float
         when :uuid
-          Yousty::Eventsourcing::Types::UUID
+          Yes::Core::Types::UUID
         when :uuids
-          Yousty::Eventsourcing::Types::UUIDS
+          Yes::Core::Types::UUIDS
         when :email
-          Yousty::Eventsourcing::Types::EMAIL
+          Yes::Core::Types::EMAIL
         when :url
-          Yousty::Eventsourcing::Types::URL
+          Yes::Core::Types::URL
         when :optional_url
-          Yousty::Eventsourcing::Types::OPTIONAL_URL
+          Yes::Core::Types::OPTIONAL_URL
         when :hash
-          Yousty::Eventsourcing::Types::Hash
+          Yes::Core::Types::Hash
         when :years
-          Yousty::Eventsourcing::Types::YEARS
+          Yes::Core::Types::YEARS
         when :locale
-          Yousty::Eventsourcing::Types::LOCALE
-        when :media
-          Yousty::Eventsourcing::Types::MEDIA
-        when :subscription_type
-          Yousty::Eventsourcing::Types::SUBSCRIPTION_TYPE
-        when :team_member_role
-          Yousty::Eventsourcing::Types::TEAM_MEMBER_ROLE
+          Yes::Core::Types::LOCALE
         when :year
-          Yousty::Eventsourcing::Types::YEAR
+          Yes::Core::Types::YEAR
         when :year_date_hash
-          Yousty::Eventsourcing::Types::YEAR_DATE_HASH
-        when :apprenticeship_training_year
-          Yousty::Eventsourcing::Types::APPRENTICESHIP_TRAINING_YEAR
+          Yes::Core::Types::YEAR_DATE_HASH
         when :emails
-          Yousty::Eventsourcing::Types::EMAILS
-        when :apprenticeship_application_type
-          Yousty::Eventsourcing::Types::APPRENTICESHIP_APPLICATION_TYPE
-        when :trial_apprenticeship_application_type
-          Yousty::Eventsourcing::Types::TRIAL_APPRENTICESHIP_APPLICATION_TYPE
-        when :standard_application_document_type
-          Yousty::Eventsourcing::Types::STANDARD_APPLICATION_DOCUMENT_TYPE
+          Yes::Core::Types::EMAILS
         when :datetime
-          Yousty::Eventsourcing::Types::DATE_TIME
+          Yes::Core::Types::DATE_TIME
         when :date_value
-          Yousty::Eventsourcing::Types::DateValue
+          Yes::Core::Types::DateValue
         when :period
-          Yousty::Eventsourcing::Types::PERIOD
+          Yes::Core::Types::PERIOD
         when :dimensions
-          Yousty::Eventsourcing::Types::DIMENSIONS
-        when :standard_trial_application_document_type
-          lookup_type('STANDARD_TRIAL_APPLICATION_DOCUMENT_TYPE')
-        when :roles
-          lookup_type('ROLES')
-        when :user_authorization_roles
-          lookup_type('USER_AUTHORIZATION_ROLES')
+          Yes::Core::Types::DIMENSIONS
         when :array
-          Yousty::Eventsourcing::Types::Array
+          Yes::Core::Types::Array
         else
-          raise "Unknown type #{@type}"
+          lookup_type(@type.to_s.upcase)
         end
       end
 
@@ -94,7 +74,14 @@ module Yes
       def lookup_type(value)
         return "#{@context}::Types::#{value}".constantize if Object.const_defined?("#{@context}::Types::#{value}")
 
-        "Yousty::Eventsourcing::Types::#{value}".constantize
+        if Yes::Core::Types.const_defined?(value)
+          return Yes::Core::Types.const_get(value)
+        end
+
+        registered = Yes::Core::Types.lookup(value.downcase.to_sym)
+        return registered if registered
+
+        raise "Unknown type #{@type}"
       end
     end
   end

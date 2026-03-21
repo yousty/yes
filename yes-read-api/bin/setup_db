@@ -9,5 +9,5 @@
 # PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test" bundle exec rake pg_eventstore:migrate
 
 # Setup databases for dummy app
-cd dummy_app && RAILS_ENV=test SETUP_DB=true bundle exec rake db:drop db:create db:migrate && cd ..
+cd spec/dummy && RAILS_ENV=test SETUP_DB=true bundle exec rake db:drop db:create db:migrate && cd ../..
 

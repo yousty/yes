@@ -98,18 +98,14 @@ module Yes
         #
         # @param key [Symbol, String] The key to access
         # @return [Object] The value for the given key
-        def [](key)
-          raw_metadata[key]
-        end
+        delegate :[], to: :raw_metadata
 
         # Set metadata values by key (hash-style assignment)
         #
         # @param key [Symbol, String] The key to set
         # @param value [Object] The value to set
         # @return [Object] The value that was set
-        def []=(key, value)
-          raw_metadata[key] = value
-        end
+        delegate :[]=, to: :raw_metadata
 
         private
 

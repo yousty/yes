@@ -25,12 +25,90 @@ module Yes
       # @return [Boolean] Enable aggregate shortcuts in Rails console (default: false)
       attr_accessor :aggregate_shortcuts
 
+      # @return [#call] A callable that receives auth_data and returns boolean indicating super admin status
+      attr_accessor :super_admin_check
+
+      # @return [#call] A callable that receives auth_data and returns a principal data hash for Cerbos
+      attr_accessor :cerbos_principal_data_builder
+
+      # @return [String] URL of the Cerbos server
+      attr_accessor :cerbos_url
+
+      # @return [Boolean] Whether to include metadata in Cerbos command authorizer responses
+      attr_accessor :cerbos_commands_authorizer_include_metadata
+
+      # @return [Boolean] Whether to include metadata in Cerbos read authorizer responses
+      attr_accessor :cerbos_read_authorizer_include_metadata
+
+      # @return [Array<String>] Default actions for Cerbos read authorizer
+      attr_accessor :cerbos_read_authorizer_actions
+
+      # @return [String] Prefix for Cerbos read authorizer resource ids
+      attr_accessor :cerbos_read_authorizer_resource_id_prefix
+
+      # @return [Object] Logger instance
+      attr_accessor :logger
+
+      # @return [#call, nil] A callable error reporter responding to #call(error, context:).
+      #   When nil, errors are only logged.
+      #   Example: ->(error, context:) { Sentry.capture_exception(error, extra: context) }
+      attr_accessor :error_reporter
+
+      # @return [Object, nil] Payload store client for resolving large payload references
+      attr_accessor :payload_store_client
+
+      # @return [Boolean] Whether to process commands inline (synchronously) or via ActiveJob
+      attr_accessor :process_commands_inline
+
+      # @return [Array<Class>] Command notifier classes to instantiate for batch notifications
+      attr_accessor :command_notifier_classes
+
+      # @return [Object, nil] OpenTelemetry tracer instance. When nil, all tracing is no-op.
+      attr_accessor :otl_tracer
+
+      # @return [String] Anonymous principal ID for Cerbos read authorizer
+      attr_accessor :cerbos_read_authorizer_principal_anonymous_id
+
+      # @return [Boolean] Whether to raise on missing handler methods in aggregate state
+      attr_accessor :raise_on_missing_handler_method
+
+      # @return [String] Service name for telemetry and identification
+      attr_accessor :service_name
+
+      # @return [String] Service version for telemetry
+      attr_accessor :service_version
+
+      # @return [#call, nil] Authentication adapter for API controllers.
+      #   Must respond to #controller_concern (returns a module to include),
+      #   #verify_token(token) and #error_classes (returns array of error classes).
+      attr_accessor :auth_adapter
+
       # Initializes a new configuration instance with nested hashes for class storage.
       def initialize
         @registered_classes = Hash.new do |h, k|
           h[k] = Hash.new { |h2, k2| h2[k2] = {} }
         end
         @aggregate_shortcuts = false
+        @super_admin_check = ->(_auth_data) { false }
+        @cerbos_principal_data_builder = lambda { |auth_data|
+          { id: auth_data[:identity_id], roles: [], attr: {} }
+        }
+        @cerbos_url = ENV.fetch('CERBOS_URL', nil)
+        @cerbos_commands_authorizer_include_metadata = false
+        @cerbos_read_authorizer_include_metadata = false
+        @cerbos_read_authorizer_actions = %w[read]
+        @cerbos_read_authorizer_resource_id_prefix = 'read-'
+        @cerbos_read_authorizer_principal_anonymous_id = 'anonymous'
+        @logger = nil
+        @error_reporter = nil
+        @payload_store_client = nil
+        @process_commands_inline = true
+        @command_notifier_classes = []
+        @otl_tracer = nil
+        @raise_on_missing_handler_method = defined?(Rails) ? Rails.env.local? : false
+        @service_name = ENV.fetch('SERVICE_NAME', nil)
+        @service_version = ENV.fetch('APP_VERSION', '')
+        @auth_adapter = nil
       end
 
       # Register a class for a specific aggregate and type

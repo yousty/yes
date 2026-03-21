@@ -10,7 +10,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
   let(:command_utilities) { instance_double(Yes::Core::Utils::CommandUtils) }
   let(:revision_column) { :revision }
   
-  let(:event) { instance_double(Yousty::Eventsourcing::Event, stream_revision: 5, data: event_data) }
+  let(:event) { instance_double(Yes::Core::Event, stream_revision: 5, data: event_data) }
   let(:event_data) { { document_ids: SecureRandom.uuid } }
   let(:command_payload) { { document_ids: SecureRandom.uuid, another: 'value', locale: 'en' } }
   let(:command_name) { :approve_documents }
@@ -63,11 +63,11 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         }
       end
       let(:resolved_value) { 'resolved_value' }
-      let(:payload_lookup) { instance_double(Yousty::Eventsourcing::PayloadStore::Lookup) }
+      let(:payload_lookup) { instance_double(Yes::Core::PayloadStore::Lookup) }
 
       before do
         allow(Yes::Core::CommandHandling::ReadModelRevisionGuard).to receive(:call).and_yield
-        allow(Yousty::Eventsourcing::PayloadStore::Lookup).to receive(:new).and_return(payload_lookup)
+        allow(Yes::Core::PayloadStore::Lookup).to receive(:new).and_return(payload_lookup)
         allow(payload_lookup).to receive(:call).with(event).and_return({ 'another' => resolved_value })
       end
 
@@ -268,7 +268,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
 
       context 'when command is not found' do
         let(:error) { Yes::Core::Utils::CommandUtils::CommandNotFoundError.new('Command not found') }
-        let(:event) { instance_double(Yousty::Eventsourcing::Event, stream_revision: 5, type: 'SomeUnknownEvent', data: event_data) }
+        let(:event) { instance_double(Yes::Core::Event, stream_revision: 5, type: 'SomeUnknownEvent', data: event_data) }
 
         before do
           allow(command_utilities)

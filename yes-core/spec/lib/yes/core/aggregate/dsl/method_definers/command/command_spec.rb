@@ -461,7 +461,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
 
       context 'when command execution fails' do
         let(:command_response) do
-          Yes::Core::CommandResponse.new(cmd:, event: nil, error:)
+          Yes::Core::Commands::Response.new(cmd:, event: nil, error:)
         end
 
         let(:cmd) do
