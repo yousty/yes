@@ -58,9 +58,7 @@ module Yes
           #  { stream => { event_name => event_data } }
           # @raise [InvalidCommandGroupError] if the command is not valid
           def initialize(cmd, events_cache: {})
-            unless valid_command?(cmd)
-              raise InvalidCommandGroupError.new(cmd.class.name.deconstantize, self.class.name.deconstantize)
-            end
+            raise InvalidCommandGroupError.new(cmd.class.name.deconstantize, self.class.name.deconstantize) unless valid_command?(cmd)
 
             @cmd = cmd
             @events_cache = events_cache

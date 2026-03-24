@@ -5,5 +5,5 @@ Yes::Core.configure do |config|
 end
 
 PgEventstore.configure do |config|
-  config.pg_uri = 'postgresql://postgres:postgres@localhost:5532/eventstore'
+  config.pg_uri = ENV.fetch('PG_EVENTSTORE_URI', 'postgresql://postgres:postgres@localhost:5532/eventstore')
 end

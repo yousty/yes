@@ -126,7 +126,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
         ) do
           payload.shortcut_description.size > 3
         end
-         # Setup the state updater class which is required in the guard evaluation
+        # Setup the state updater class which is required in the guard evaluation
         Yes::Core::Aggregate::Dsl::ClassResolvers::Command::StateUpdater.new(command_data).call
       end
 

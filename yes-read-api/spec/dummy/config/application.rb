@@ -1,16 +1,18 @@
-require_relative "boot"
+# frozen_string_literal: true
 
-require "rails"
+require_relative 'boot'
+
+require 'rails'
 # Pick the frameworks you want:
-require "active_model/railtie"
-require "active_job/railtie"
-require "active_record/railtie"
+require 'active_model/railtie'
+require 'active_job/railtie'
+require 'active_record/railtie'
 # require "active_storage/engine"
-require "action_controller/railtie"
-require "action_mailer/railtie"
+require 'action_controller/railtie'
+require 'action_mailer/railtie'
 # require "action_mailbox/engine"
 # require "action_text/engine"
-require "action_view/railtie"
+require 'action_view/railtie'
 # require "action_cable/engine"
 # require "rails/test_unit/railtie"
 
@@ -19,7 +21,7 @@ require "action_view/railtie"
 Bundler.require(*Rails.groups)
 
 # Load dotenv only in development or test environment
-Dotenv.load('../.env') if Rails.env.development? || Rails.env.test?
+Dotenv.load('../.env') if Rails.env.local?
 
 module Dummy
   class Application < Rails::Application
@@ -39,10 +41,8 @@ module Dummy
     config.api_only = true
 
     # config.active_job.queue_adapter = :sidekiq
-    if defined?(FactoryBotRails)
-      config.factory_bot.definition_file_paths += [File.expand_path('../../spec/factories', __dir__)]
-    end
+    config.factory_bot.definition_file_paths += [File.expand_path('../../spec/factories', __dir__)] if defined?(FactoryBotRails)
 
-    config.yes_read_api.read_models = ['apprenticeships', 'companies', 'not_existing']
+    config.yes_read_api.read_models = %w[apprenticeships companies not_existing]
   end
 end

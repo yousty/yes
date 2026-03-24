@@ -15,7 +15,7 @@ RSpec.describe Yes::Core::OpenTelemetry::Trackable do
         'test1'
       end
 
-      def dummy_method_with_sql(data)
+      def dummy_method_with_sql(_data)
         TestUser.first
 
         'test4'

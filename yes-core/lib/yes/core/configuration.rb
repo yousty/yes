@@ -314,21 +314,17 @@ module Yes
         list_all_registered_classes.keys.flat_map do |context_aggregate|
           context_name, aggregate_name = context_aggregate
           aggregate_class_name = "#{context_name.to_s.camelize}::#{aggregate_name.to_s.camelize}::Aggregate"
-          
+
           begin
             aggregate_class = aggregate_class_name.constantize
             models = []
-            
+
             # Add main read model if it exists
-            if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
-              models << aggregate_class.read_model_name.camelize.to_s
-            end
-            
+            models << aggregate_class.read_model_name.camelize.to_s if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
+
             # Add changes read model if aggregate is draftable
-            if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
-              models << aggregate_class.changes_read_model_name.camelize.to_s
-            end
-            
+            models << aggregate_class.changes_read_model_name.camelize.to_s if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
+
             models
           rescue NameError
             # Skip if aggregate class doesn't exist
@@ -362,31 +358,31 @@ module Yes
         list_all_registered_classes.keys.flat_map do |context_aggregate|
           context_name, aggregate_name = context_aggregate
           aggregate_class_name = "#{context_name.to_s.camelize}::#{aggregate_name.to_s.camelize}::Aggregate"
-          
+
           begin
             aggregate_class = aggregate_class_name.constantize
             models = []
-            
+
             # Main read model (not draft)
             if aggregate_class.respond_to?(:read_model_name) && aggregate_class.read_model_name
               begin
                 read_model_class = aggregate_class.read_model_name.camelize.constantize
-                models << { 
-                  read_model_class: read_model_class, 
+                models << {
+                  read_model_class: read_model_class,
                   aggregate_class: aggregate_class,
-                  is_draft: false 
+                  is_draft: false
                 }
               rescue NameError
                 # Skip if read model class doesn't exist
               end
             end
-            
+
             # Changes read model (draft)
             if aggregate_class.respond_to?(:changes_read_model_name) && aggregate_class.changes_read_model_name
               begin
                 changes_model_class = aggregate_class.changes_read_model_name.camelize.constantize
-                models << { 
-                  read_model_class: changes_model_class, 
+                models << {
+                  read_model_class: changes_model_class,
                   aggregate_class: aggregate_class,
                   is_draft: true
                 }
@@ -394,7 +390,7 @@ module Yes
                 # Skip if changes read model class doesn't exist
               end
             end
-            
+
             models
           rescue NameError
             # Skip if aggregate class doesn't exist

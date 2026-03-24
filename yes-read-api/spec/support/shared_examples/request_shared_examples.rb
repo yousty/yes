@@ -51,8 +51,8 @@ RSpec.shared_examples_for 'authentication failure' do
 
   it 'has correct error body' do
     expect(response.parsed_body).to include(
-                                      'title' => 'Auth Token Invalid'
-                                    )
+      'title' => 'Auth Token Invalid'
+    )
   end
 end
 
@@ -71,9 +71,9 @@ RSpec.shared_examples_for 'authentication token missing' do
 
   it 'has correct error body' do
     expect(response.parsed_body).to include(
-                                      'title' => 'Auth Token Invalid',
-                                      'details' => 'Authentication token missing'
-                                    )
+      'title' => 'Auth Token Invalid',
+      'details' => 'Authentication token missing'
+    )
   end
 end
 
@@ -94,9 +94,9 @@ RSpec.shared_examples_for 'unauthorized response' do
 
   it 'has correct error body' do
     expect(response.parsed_body).to include(
-                                      'title' => 'Unauthorized',
-                                      'details' => details
-                                    )
+      'title' => 'Unauthorized',
+      'details' => details
+    )
   end
 end
 
@@ -128,7 +128,7 @@ RSpec.shared_examples 'correctly paginated response' do
   it 'has returns total pagination header' do
     subject
 
-    expect(response.headers['X-Total']).to eq ""
+    expect(response.headers['X-Total']).to eq ''
   end
 
   it 'has correct per page pagination header' do

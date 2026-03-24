@@ -6,7 +6,7 @@ class TestUser < Yes::Core::ApplicationRecord
 
   # Association with location if needed
   belongs_to :location, class_name: 'TestLocation', optional: true
-  
+
   # Scope required by Yes::Core
   scope :by_ids, ->(ids) { where(id: ids) }
 end

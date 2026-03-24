@@ -9,7 +9,7 @@ module Yes
       # @api private
       class CommandUtils
         class CommandNotFoundError < Yes::Core::Error; end
-        
+
         ASSIGN_COMMAND_PREFIX = 'assign_'
 
         # @param context [String] The context namespace
@@ -137,9 +137,7 @@ module Yes
           return append_locale_param(command_name, payload, aggregate_class) if payload.is_a?(Hash)
 
           payload_attributes = aggregate_class.commands[command_name].payload_attributes.except(:locale)
-          if payload_attributes.length > 1
-            raise 'Payload attributes must be a Hash with a single key (not including locale key)'
-          end
+          raise 'Payload attributes must be a Hash with a single key (not including locale key)' if payload_attributes.length > 1
 
           append_locale_param(command_name, { payload_attributes.keys.first => payload }, aggregate_class)
         end

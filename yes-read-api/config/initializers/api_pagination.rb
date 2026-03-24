@@ -14,7 +14,7 @@ ApiPagination.configure do |config|
   config.page_header = 'X-Page'
 
   # Optional: set this to add other response format. Useful with tools that define :jsonapi format
-  config.response_formats = [:json, :xml, :jsonapi]
+  config.response_formats = %i[json xml jsonapi]
 
   config.page_param do |params|
     params.dig(:page, :number)

@@ -157,7 +157,7 @@ module APIHelpers
     end
   end
 
-  RSpec.shared_examples 'does not run any command' do |errors|
+  RSpec.shared_examples 'does not run any command' do |_errors|
     let(:command_bus) { instance_spy(Yes::Core::Commands::Bus) }
 
     before do

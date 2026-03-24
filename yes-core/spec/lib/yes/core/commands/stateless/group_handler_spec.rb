@@ -104,9 +104,9 @@ RSpec.describe Yes::Core::Commands::Stateless::GroupHandler do
 
       it 'raises an error with details about failed commands' do
         aggregate_failures do
-          expect {
+          expect do
             subject
-          }.to raise_error { |error|
+          end.to(raise_error do |error|
             expect(error).to be_a(Yes::Core::Commands::Stateless::GroupHandler::CommandsError)
             expect(error.extra).to be_an(Array)
             expect(error.extra.size).to eq(2)
@@ -118,7 +118,7 @@ RSpec.describe Yes::Core::Commands::Stateless::GroupHandler do
 
             expect(error.extra[0]).to eq(command: 'Dummy::Company::Commands::ChangeName::Command', error: 'Invalid name', extra: { foo: 'bar' })
             expect(error.extra[1]).to eq(custom_handler: :custom_check, error: 'Invalid last name', extra: { boo: 'far' })
-          }
+          end)
         end
       end
 
@@ -142,24 +142,24 @@ RSpec.describe Yes::Core::Commands::Stateless::GroupHandler do
       it 'raises an error' do
         allow(instance).to receive(:send).with(:custom_method).and_raise(NoMethodError)
 
-        expect {
+        expect do
           subject
-        }.to raise_error(Yes::Core::Commands::Stateless::GroupHandler::CustomHandlerMethodMissingError)
+        end.to raise_error(Yes::Core::Commands::Stateless::GroupHandler::CustomHandlerMethodMissingError)
       end
     end
   end
 
   describe '#initialize' do
     let(:invalid_command) do
-      Dummy::Actions::Commands::DoSomething::Command.new({ what: 'something', id: SecureRandom.uuid})
+      Dummy::Actions::Commands::DoSomething::Command.new({ what: 'something', id: SecureRandom.uuid })
     end
 
     it 'raises an error with the correct message if the command is not a valid CommandGroup' do
-      expect {
+      expect do
         described_class.new(invalid_command)
-      }.to raise_error(
+      end.to raise_error(
         Yes::Core::Commands::Stateless::GroupHandler::InvalidCommandGroupError,
-        "command Dummy::Actions::Commands::DoSomething does not match handler Yes::Core::Commands::Stateless"
+        'command Dummy::Actions::Commands::DoSomething does not match handler Yes::Core::Commands::Stateless'
       )
     end
   end

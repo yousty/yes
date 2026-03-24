@@ -49,7 +49,7 @@ module Yes
               'event_published_delay_ms' => event_publish_delay_ms,
               'event_published_at_ms' => (event.created_at.utc.to_f * 1000).to_i,
               'command_request_started_at_ms' => event.metadata.dig('otl_contexts', 'timestamps',
-                                                                     'command_request_started_at_ms'),
+                                                                    'command_request_started_at_ms'),
               'command_handling_started_at_ms' => event.metadata.dig('otl_contexts', 'timestamps',
                                                                      'command_handling_started_at_ms'),
               'event.type' => event.type,

@@ -37,19 +37,19 @@ module Yes
           shortcuts = list(filter)
 
           if shortcuts.empty?
-            puts "No shortcuts found#{" for '#{filter}'" if filter}."
+            Rails.logger.debug { "No shortcuts found#{" for '#{filter}'" if filter}." }
             return
           end
 
           max_shortcut_length = shortcuts.keys.map(&:length).max
 
-          puts "\nAvailable Aggregate Shortcuts:"
-          puts "=" * (max_shortcut_length + 70)
+          Rails.logger.debug "\nAvailable Aggregate Shortcuts:"
+          Rails.logger.debug '=' * (max_shortcut_length + 70)
           shortcuts.sort.each do |shortcut, full_path|
-            puts "#{shortcut.ljust(max_shortcut_length)} → #{full_path}"
+            Rails.logger.debug "#{shortcut.ljust(max_shortcut_length)} → #{full_path}"
           end
-          puts "=" * (max_shortcut_length + 70)
-          puts "\nUsage: #{shortcuts.keys.first}.new(id)" if shortcuts.any?
+          Rails.logger.debug '=' * (max_shortcut_length + 70)
+          Rails.logger.debug { "\nUsage: #{shortcuts.keys.first}.new(id)" } if shortcuts.any?
         end
 
         private
@@ -58,7 +58,7 @@ module Yes
           @context_overrides = {}
           @subject_overrides = {}
 
-          config_path = Rails.root.join('config', 'aggregate_shortcuts.yml')
+          config_path = Rails.root.join('config/aggregate_shortcuts.yml')
           return unless File.exist?(config_path)
 
           config = YAML.load_file(config_path)
@@ -72,26 +72,24 @@ module Yes
           @aggregates = []
 
           Rails.root.glob('app/contexts/**/aggregate.rb').each do |file|
-            begin
-              require file
-              parts = file.to_s.split('contexts/').last.split('/')
-              context = parts[0]
-              subject = parts[1]
+            require file
+            parts = file.to_s.split('contexts/').last.split('/')
+            context = parts[0]
+            subject = parts[1]
 
-              class_name = "#{context.camelize}::#{subject.camelize}::Aggregate"
-              klass = class_name.constantize
+            class_name = "#{context.camelize}::#{subject.camelize}::Aggregate"
+            klass = class_name.constantize
 
-              next unless klass < Yes::Core::Aggregate
+            next unless klass < Yes::Core::Aggregate
 
-              @aggregates << {
-                context: context.camelize,
-                subject: subject.camelize,
-                class: klass,
-                class_name: class_name
-              }
-            rescue NameError, LoadError => e
-              Rails.logger.debug("Skipping #{file}: #{e.message}")
-            end
+            @aggregates << {
+              context: context.camelize,
+              subject: subject.camelize,
+              class: klass,
+              class_name: class_name
+            }
+          rescue NameError, LoadError => e
+            Rails.logger.debug { "Skipping #{file}: #{e.message}" }
           end
         end
 

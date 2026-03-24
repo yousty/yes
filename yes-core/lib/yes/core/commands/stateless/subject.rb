@@ -17,7 +17,7 @@ module Yes
         #     subject: 'Apprenticeship',
         #     aggregate_id: '123'
         #   )
-        class Subject < Data.define(:subject, :aggregate_id, :context, :stream_prefix)
+        Subject = Data.define(:subject, :aggregate_id, :context, :stream_prefix) do
           OPTIONAL_FIELDS = %i[stream_prefix].index_with(nil).freeze
 
           def initialize(**attrs)

@@ -10,16 +10,16 @@ gemspec
 gem 'rake', '~> 13.0'
 
 group :development, :test do
-  gem 'generator_spec'
-  gem 'rails', '~> 7.2'
   gem 'factory_bot', '~> 6.0'
+  gem 'faker'
+  gem 'generator_spec'
+  gem 'opentelemetry-sdk'
+  gem 'rails', '~> 7.2'
   gem 'rspec', '~> 3.0'
   gem 'rspec-rails', '~> 7.1'
   gem 'rubocop', '~> 1.21'
   gem 'simplecov', '~> 0.21'
   gem 'simplecov-formatter-badge', '~> 0.1'
-  gem 'faker'
-  gem 'opentelemetry-sdk'
   gem 'yes-command-api', path: '../yes-command-api'
   gem 'yes-read-api', path: '../yes-read-api'
 end

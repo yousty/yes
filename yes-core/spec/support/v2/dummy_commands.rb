@@ -11,13 +11,13 @@ module Dummy
         end
 
         class Authorizer < Yes::Core::Authorization::CommandAuthorizer
-          def self.call(command, auth_data)
+          def self.call(_command, _auth_data)
             true
           end
         end
 
         class Validator < Yes::Core::Commands::Validator
-          def self.call(command)
+          def self.call(_command)
             true
           end
         end
@@ -73,13 +73,13 @@ module Dummy
         end
 
         class Authorizer < Yes::Core::Authorization::CommandAuthorizer
-          def self.call(command, auth_data)
+          def self.call(_command, _auth_data)
             true
           end
         end
 
         class Validator < Yes::Core::Commands::Validator
-          def self.call(command)
+          def self.call(_command)
             true
           end
         end

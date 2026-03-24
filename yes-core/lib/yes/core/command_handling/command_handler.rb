@@ -12,6 +12,7 @@ module Yes
       #
       class CommandHandler
         include Yes::Core::OpenTelemetry::Trackable
+
         # Initializes a new CommandHandler
         #
         # @param aggregate [Yes::Core::Aggregate] The aggregate instance to handle commands for
@@ -34,16 +35,12 @@ module Yes
 
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
-          if aggregate.class.read_model_enabled?
-            ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate:)
-          end
+          ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate:) if aggregate.class.read_model_enabled?
 
           response = CommandExecutor.new(aggregate).
-            call(cmd, command_name, guard_evaluator_class, skip_guards: !guards)
+                     call(cmd, command_name, guard_evaluator_class, skip_guards: !guards)
 
-          if aggregate.class.read_model_enabled? && response.success?
-            ReadModelUpdater.new(aggregate).call(response.event, prepared_payload, command_name)
-          end
+          ReadModelUpdater.new(aggregate).call(response.event, prepared_payload, command_name) if aggregate.class.read_model_enabled? && response.success?
 
           response
         end
@@ -77,7 +74,6 @@ module Yes
           )
 
           add_console_origin(prepared)
-          add_custom_metadata(prepared, custom_metadata) if custom_metadata.present?
           add_draft_metadata(prepared) if aggregate.draft?
           add_otl_metadata(prepared)
           add_custom_metadata(prepared, metadata)
@@ -94,16 +90,6 @@ module Yes
 
           console_origin = Utils::CallerUtils.console_origin
           payload[:origin] = console_origin if console_origin
-        end
-
-        # Adds custom metadata to payload
-        #
-        # @param payload [Hash] The payload to modify
-        # @param custom_metadata [Hash] The custom metadata to merge
-        # @return [void]
-        def add_custom_metadata(payload, custom_metadata)
-          payload[:metadata] ||= {}
-          payload[:metadata].merge!(custom_metadata)
         end
 
         # Adds draft metadata to payload if aggregate is draft

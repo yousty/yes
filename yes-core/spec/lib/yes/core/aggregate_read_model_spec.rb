@@ -96,9 +96,9 @@ RSpec.describe Yes::Core::Aggregate do
     context 'when attribute change is not allowed' do
       before do
         allow(aggregate).to receive(:update_read_model)
-        allow_any_instance_of(Yes::Core::CommandHandling::CommandExecutor)
-          .to receive(:call)
-          .and_return(double('CommandResponse', success?: false))
+        allow_any_instance_of(Yes::Core::CommandHandling::CommandExecutor).
+          to receive(:call).
+          and_return(double('CommandResponse', success?: false))
       end
 
       it 'does not update read model' do

@@ -25,6 +25,10 @@ cd "$SCRIPT_DIR/yes-command-api"
 PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake db:drop || true
 PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake db:create db:migrate
 
+# Setup message_bus database for yes-command-api (schema loaded automatically by maintain_test_schema!)
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake app:db:drop:message_bus || true
+PG_EVENTSTORE_URI="$EVENTSTORE_TEST_URI" RAILS_ENV=test bundle exec rake app:db:create:message_bus
+
 # Setup databases for yes-read-api dummy app
 cd "$SCRIPT_DIR/yes-read-api"
 RAILS_ENV=test bundle exec rake db:drop || true

@@ -390,7 +390,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           subject
           messages = MessageBus.backlog channel
           batch_id = response.parsed_body.dig(0, 'batch_id')
-          messages_data = messages.map { |message| message.data }
+          messages_data = messages.map(&:data)
 
           aggregate_failures do
             expect(messages.size).to eq(4)

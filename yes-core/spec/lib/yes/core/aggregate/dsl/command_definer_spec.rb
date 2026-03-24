@@ -18,9 +18,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::CommandDefiner do
 
   after do
     # Clean up constants
-    if Test::User::Commands.const_defined?(command_module_name)
-      Test::User::Commands.send(:remove_const, command_module_name)
-    end
+    Test::User::Commands.send(:remove_const, command_module_name) if Test::User::Commands.const_defined?(command_module_name)
     Test::User::Events.send(:remove_const, event_class_name) if Test::User::Events.const_defined?(event_class_name)
   end
 

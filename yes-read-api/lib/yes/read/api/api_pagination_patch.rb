@@ -12,9 +12,7 @@ module Yes
         private
 
         def pagy_from(collection, options)
-          if Pagy::DEFAULT[:countless_minimal] && options[:include_total] != 'true'
-            return countless_pagy(collection, options)
-          end
+          return countless_pagy(collection, options) if Pagy::DEFAULT[:countless_minimal] && options[:include_total] != 'true'
 
           super
         end

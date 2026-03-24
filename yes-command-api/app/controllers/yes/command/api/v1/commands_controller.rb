@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-# rubocop:disable Rails/HttpStatus
-
 module Yes
   module Command
     module Api

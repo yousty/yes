@@ -21,7 +21,7 @@ module Yes
         RebuildError = Class.new(Error)
 
         READ_MODEL_CLASS_REGEXP =
-          /(?<context>\w+)::ReadModels::(?<version>V\d+)?(::)?(?<aggregate>\w+)/.freeze
+          /(?<context>\w+)::ReadModels::(?<version>V\d+)?(::)?(?<aggregate>\w+)/
 
         # Based on event type class it distributes event to a proper event handler
         # @param event [Yes::Core::Event]
@@ -216,8 +216,8 @@ module Yes
         # @param read_model [ActiveRecord::Base] the read model
         # @param event [Yes::Core::Event] the event
         # @param handler [Yes::Core::ReadModel::EventHandler] the handler that processed the event
-        def otl_record_processed(read_model, event, handler)
-          return unless ENV['STATSD_ADDR'].present?
+        def otl_record_processed(_read_model, event, handler)
+          return if ENV['STATSD_ADDR'].blank?
 
           StatsD.increment(
             'events_processing_total',
@@ -247,7 +247,7 @@ module Yes
               'event_published_delay_ms' => event_publish_delay_ms,
               'event_published_at_ms' => (event.created_at.to_f * 1000).to_i,
               'command_request_started_at_ms' => event.metadata.dig('otl_contexts', 'timestamps',
-                                                                     'command_request_started_at_ms'),
+                                                                    'command_request_started_at_ms'),
               'command_handling_started_at_ms' => event.metadata.dig('otl_contexts', 'timestamps',
                                                                      'command_handling_started_at_ms'),
               'read_model_builder.name' => self.class.name,

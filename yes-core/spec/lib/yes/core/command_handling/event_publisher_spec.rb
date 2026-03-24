@@ -164,7 +164,6 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
     end
   end
 
-
   describe 'external aggregate revision verification with draft mode' do
     context 'when main aggregate uses draft stream' do
       let(:payload) do
@@ -203,7 +202,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
 
         # Now the external aggregate revision check should fail
         accessed_external_aggregates[0][:revision] = -> { -1 }
-        
+
         expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError)
       end
     end

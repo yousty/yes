@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 Dir.chdir(File.expand_path('../yes-core/spec/dummy', __dir__))
 ENV['BUNDLE_GEMFILE'] = "#{__dir__}/Gemfile"

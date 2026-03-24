@@ -169,9 +169,7 @@ module Yes
         # @example Define a localized attribute
         #   attribute :description, :string, command: true, localized: true
         def attribute(name, type, **options, &)
-          if type == :aggregate && options[:command]
-            raise 'Aggregate attribute definition with command: true is not allowed'
-          end
+          raise 'Aggregate attribute definition with command: true is not allowed' if type == :aggregate && options[:command]
 
           @attributes ||= {}
           @attributes[name] = type
@@ -385,7 +383,7 @@ module Yes
           self.class.context,
           self.class.aggregate
         )
-        
+
         mappings.sort.to_h
       end
 
@@ -400,7 +398,7 @@ module Yes
         return unless draft && !self.class.draftable?
 
         raise ArgumentError, "#{self.class.name} is not draftable. Add 'draftable' to the class definition."
-      end     
+      end
     end
   end
 end

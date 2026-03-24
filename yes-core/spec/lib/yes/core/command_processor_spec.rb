@@ -170,7 +170,7 @@ RSpec.describe Yes::Core::Commands::Processor do
       end
 
       it 'adds origin and batch_id to commands' do
-        allow(Test::User::Aggregate).to receive(:new) do |user_id, **_opts|
+        allow(Test::User::Aggregate).to receive(:new) do |_user_id, **_opts|
           aggregate_instance = instance_double(Test::User::Aggregate, public_send: nil)
           allow(aggregate_instance).to receive(:public_send) do |_method_name, cmd_hash, **_kwargs|
             # Verify the command hash passed to aggregate has origin and batch_id

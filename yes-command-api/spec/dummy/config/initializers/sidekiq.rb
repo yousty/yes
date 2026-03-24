@@ -4,7 +4,7 @@ require 'sidekiq/web'
 
 Sidekiq::Web.use(Rack::Auth::Basic) do |user, password|
   [user, password] ==
-    [ENV['SIDEKIQ_USERNAME'], ENV['SIDEKIQ_PASSWORD']]
+    [ENV.fetch('SIDEKIQ_USERNAME', nil), ENV.fetch('SIDEKIQ_PASSWORD', nil)]
 end
 
 # Disable Sidekiq's strict arguments. We have ActiveJob which ensures that job's arguments are
@@ -12,7 +12,7 @@ end
 Sidekiq.strict_args!(false)
 
 Sidekiq.configure_client do |config|
-  config.redis = { url: "redis://#{ENV['REDIS_HOST']}:6479/" }
+  config.redis = { url: "redis://#{ENV.fetch('REDIS_HOST', nil)}:6479/" }
 end
 
 Sidekiq.configure_server do |config|
@@ -23,7 +23,7 @@ Sidekiq.configure_server do |config|
   config.logger = logger
 
   config.error_handlers << proc { |e, context| Rails.logger.error("Sidekiq error: #{e.message}", context:) }
-  config.redis = { url: "redis://#{ENV['REDIS_HOST']}:6479/" }
+  config.redis = { url: "redis://#{ENV.fetch('REDIS_HOST', nil)}:6479/" }
 end
 
 Sidekiq.default_job_options = { retry: 0 }

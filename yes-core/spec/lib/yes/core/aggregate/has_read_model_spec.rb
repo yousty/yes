@@ -72,7 +72,7 @@ RSpec.describe Yes::Core::Aggregate::HasReadModel do
       expect(read_model).to receive(:update_column).with(:test_revision, 42)
       expect(read_model).not_to receive(:update!)
       expect(read_model).not_to receive(:save!)
-      
+
       init_revision_from_stream
     end
 

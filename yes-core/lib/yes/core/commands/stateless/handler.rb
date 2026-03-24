@@ -258,16 +258,18 @@ module Yes
           # @param result [PgEventstore::Event]
           # @return [void]
           def otl_record_response(result)
-            StatsD.increment(
-              'events_processing_total',
-              tags: {
-                service: Rails.application.class.module_parent.name,
-                source: "#{Rails.application.class.module_parent.name}-#{result.type}",
-                target: "#{Rails.application.class.module_parent.name}-#{result.type}",
-                type: 'producer',
-                event: result.type
-              }
-            ) if ENV['STATSD_ADDR'].present?
+            if ENV['STATSD_ADDR'].present?
+              StatsD.increment(
+                'events_processing_total',
+                tags: {
+                  service: Rails.application.class.module_parent.name,
+                  source: "#{Rails.application.class.module_parent.name}-#{result.type}",
+                  target: "#{Rails.application.class.module_parent.name}-#{result.type}",
+                  type: 'producer',
+                  event: result.type
+                }
+              )
+            end
 
             self.class.current_span&.status = ::OpenTelemetry::Trace::Status.ok
             self.class.current_span&.add_event(

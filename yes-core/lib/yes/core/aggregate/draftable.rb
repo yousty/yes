@@ -31,7 +31,8 @@ module Yes
           #   draftable
           #
           # @example Override all parameters
-          #   draftable draft_aggregate: { context: 'ApprenticeshipPresentation', aggregate: 'MyAggregateDraft' }, changes_read_model: 'custom_change', changes_read_model_public: false
+          #   draftable draft_aggregate: { context: 'ApprenticeshipPresentation', aggregate: 'MyAggregateDraft' },
+          #             changes_read_model: 'custom_change', changes_read_model_public: false
           #
           # @example Override only context
           #   draftable draft_aggregate: { context: 'CustomContext' }
@@ -46,17 +47,17 @@ module Yes
           #   draftable changes_read_model_public: false
           def draftable(draft_aggregate: nil, changes_read_model: nil, changes_read_model_public: true)
             self._is_draftable = true
-            
+
             draft_config = draft_aggregate || {}
-            self._draft_context = draft_config[:context] || self.context
-            self._draft_aggregate = draft_config[:aggregate] || "#{self.aggregate}Draft"
-            
+            self._draft_context = draft_config[:context] || context
+            self._draft_aggregate = draft_config[:aggregate] || "#{aggregate}Draft"
+
             self._changes_read_model_name = if changes_read_model
                                               changes_read_model.to_s
                                             else
                                               "#{read_model_name}_change"
                                             end
-            
+
             self._changes_read_model_public = changes_read_model_public
           end
 
@@ -120,10 +121,10 @@ module Yes
           end
 
           def main_changes_model_foreign_key
-            if draft_aggregate_class.respond_to?(:changes_read_model_foreign_key) 
+            if draft_aggregate_class.respond_to?(:changes_read_model_foreign_key)
               draft_aggregate_class.changes_read_model_foreign_key
             else
-              "#{draft_aggregate}".underscore.sub(/_(draft|batch)$/, '_change_id')
+              draft_aggregate.to_s.underscore.sub(/_(draft|batch)$/, '_change_id')
             end
           end
         end
@@ -183,8 +184,8 @@ module Yes
         #
         # @return [void]
         def update_draft_aggregate
-          main_id_method = "#{self.class.read_model_name}_id".to_sym
-          
+          main_id_method = :"#{self.class.read_model_name}_id"
+
           # Check if the changes read model has a foreign key that relates it to the main read model
           #
           # e.g. ApprenticeshipDraft is a draft for Apprenticeship, so main_read_model_id is :apprenticeship_id

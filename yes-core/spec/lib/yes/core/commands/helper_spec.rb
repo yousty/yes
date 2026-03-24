@@ -9,7 +9,7 @@ RSpec.describe Yes::Core::Commands::Helper do
       attribute(:company_id, Yes::Core::Types::UUID.default { SecureRandom.uuid })
       attribute(:apprenticeship_id, Yes::Core::Types::UUID.default { SecureRandom.uuid })
       attribute :locale, Yes::Core::Types::Strict::String.default('de-CH')
-      alias aggregate_id apprenticeship_id
+      alias_method :aggregate_id, :apprenticeship_id
     end
   end
 

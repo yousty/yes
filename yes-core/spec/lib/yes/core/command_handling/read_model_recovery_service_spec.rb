@@ -8,7 +8,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
   let(:read_model) { aggregate.read_model }
   let(:mock_updater) { instance_double(Yes::Core::CommandHandling::ReadModelUpdater) }
   let(:is_draft) { false }
-  
+
   describe '.recover_read_model' do
     subject(:recover) { described_class.recover_read_model(read_model, aggregate_class:, is_draft:) }
 
@@ -17,7 +17,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
       allow(Yes::Core::CommandHandling::ReadModelUpdater).to receive(:new).and_return(mock_updater)
       allow(mock_updater).to receive(:call)
     end
-    
+
     context 'when read model is stuck in pending state' do
       let(:created_aggregate) { aggregate_class.new(read_model.id) }
 
@@ -62,7 +62,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         expect(mock_updater).to have_received(:call)
       end
     end
-    
+
     context 'when read model is already recovered' do
       before do
         # Ensure pending_update_since is nil (already recovered)
@@ -80,7 +80,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         end
       end
     end
-    
+
     context 'when is_draft is true' do
       let(:is_draft) { true }
 
@@ -93,7 +93,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         recover
       end
     end
-    
+
     context 'when recovery fails' do
       before do
         # Set the read model to stuck state so recovery will be attempted
@@ -114,8 +114,8 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         )
 
         # Make the recovery fail
-        allow(mock_updater).to receive(:call)
-          .and_raise(StandardError, 'Recovery failed')
+        allow(mock_updater).to receive(:call).
+          and_raise(StandardError, 'Recovery failed')
       end
 
       it 'returns failure result with error message' do
@@ -128,7 +128,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
       end
     end
   end
-  
+
   describe '.recover_all_stuck_read_models' do
     subject(:recover_all) do
       described_class.recover_all_stuck_read_models(
@@ -143,7 +143,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
     before do
       # Clean up any existing stuck models from previous test runs
       read_model_class.where.not(pending_update_since: nil).update_all(pending_update_since: nil)
-      
+
       # Set up our specific stuck models
       stuck_model_1.update_column(:pending_update_since, 2.minutes.ago)
       stuck_model_2.update_column(:pending_update_since, 3.minutes.ago)
@@ -151,8 +151,8 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
       # Mock the configuration to return only our test aggregate mappings
       # This avoids trying to query non-existent tables
       allow(Yes::Core.configuration).to receive(:all_read_models_with_aggregate_classes).and_return([
-        { read_model_class: read_model_class, aggregate_class: aggregate_class, is_draft: false }
-      ])
+                                                                                                      { read_model_class: read_model_class, aggregate_class: aggregate_class, is_draft: false }
+                                                                                                    ])
 
       # Mock the actual recovery to isolate the orchestration logic
       # We're testing the orchestration, not the recovery itself (that's tested above)
@@ -161,23 +161,23 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
         described_class::RecoveryResult.new(success: true, read_model:)
       end
     end
-    
+
     it 'finds stuck read models using the configuration' do
       # The method should use the configuration to find stuck models
       expect(Yes::Core.configuration).to receive(:all_read_models_with_aggregate_classes).and_return([
-        { read_model_class: read_model_class, aggregate_class: aggregate_class, is_draft: false }
-      ])
+                                                                                                       { read_model_class: read_model_class, aggregate_class: aggregate_class, is_draft: false }
+                                                                                                     ])
       recover_all
     end
-    
+
     it 'attempts to recover stuck models' do
       aggregate_failures do
-        expect(described_class).to receive(:recover_read_model)
-          .with(stuck_model_1, aggregate_class: aggregate_class, 
-          is_draft: false)
-        expect(described_class).to receive(:recover_read_model)
-            .with(stuck_model_2, aggregate_class: aggregate_class, 
-            is_draft: false)
+        expect(described_class).to receive(:recover_read_model).
+          with(stuck_model_1, aggregate_class: aggregate_class,
+                              is_draft: false)
+        expect(described_class).to receive(:recover_read_model).
+          with(stuck_model_2, aggregate_class: aggregate_class,
+                              is_draft: false)
       end
 
       recover_all
@@ -188,7 +188,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
       aggregate_failures do
         expect(results).to be_an(Array)
         expect(results.size).to eq 2
-        expect(results.all? { |r| r.is_a?(described_class::RecoveryResult) }).to be true
+        expect(results.all?(described_class::RecoveryResult)).to be true
       end
     end
   end
@@ -277,8 +277,8 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRecoveryService do
 
       context 'when recovery fails with RevisionAlreadyAppliedError' do
         before do
-          allow(mock_updater).to receive(:call)
-            .and_raise(Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError)
+          allow(mock_updater).to receive(:call).
+            and_raise(Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError)
         end
 
         it 'returns true as another thread already recovered' do

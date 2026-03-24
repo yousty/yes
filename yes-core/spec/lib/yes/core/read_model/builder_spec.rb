@@ -238,7 +238,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
         let!(:apprenticeship) { FactoryBot.create(:apprenticeship, id: apprenticeship_id) }
 
         it 'does not create another one' do
-          expect { subject }.not_to change { Apprenticeship.count }
+          expect { subject }.not_to(change { Apprenticeship.count })
         end
         it 'processes the given event' do
           expect { subject }.to change { apprenticeship.reload.company_id }.to(company_id)
@@ -284,7 +284,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
           expect(builder).to receive(:call).with(event3, any_args)
         end
 
-        expect { subject }.to change { dummy_record.reload.created_at }
+        expect { subject }.to(change { dummy_record.reload.created_at })
       end
     end
 
@@ -326,7 +326,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       end
 
       it 'uses proper read model' do
-        expect { subject }.to change { dummy_record.reload.created_at }
+        expect { subject }.to(change { dummy_record.reload.created_at })
       end
     end
   end

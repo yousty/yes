@@ -27,14 +27,13 @@ module Yes
               # of resource_attributes and cerbos_payload methods
               #
               # @param klass [Class] the class being generated
-              # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity
-              # rubocop:disable Metrics/PerceivedComplexity, Metrics/AbcSize
+              # rubocop:disable Metrics/MethodLength
               def apply_cerbos_overrides(klass)
                 # Store the block for later use
                 user_block = command_data.authorizer_block
 
                 # Define instance variables and accessor methods for the DSL
-                klass.class_eval do # rubocop:disable Metrics/BlockLength
+                klass.class_eval do
                   # Resource attributes storage
                   class << self
                     attr_accessor :_resource_attributes_block, :_cerbos_payload_block
@@ -60,9 +59,7 @@ module Yes
                         instance.instance_eval(&_resource_attributes_block)
                       ensure
                         instance.remove_instance_variable(:@_command) if instance.instance_variable_defined?(:@_command)
-                        if instance.instance_variable_defined?(:@_resource)
-                          instance.remove_instance_variable(:@_resource)
-                        end
+                        instance.remove_instance_variable(:@_resource) if instance.instance_variable_defined?(:@_resource)
                       end
                     elsif defined?(super)
                       # No block defined, call the original method if available
@@ -86,12 +83,8 @@ module Yes
                         instance.instance_eval(&_cerbos_payload_block)
                       ensure
                         instance.remove_instance_variable(:@_command) if instance.instance_variable_defined?(:@_command)
-                        if instance.instance_variable_defined?(:@_resource)
-                          instance.remove_instance_variable(:@_resource)
-                        end
-                        if instance.instance_variable_defined?(:@_auth_data)
-                          instance.remove_instance_variable(:@_auth_data)
-                        end
+                        instance.remove_instance_variable(:@_resource) if instance.instance_variable_defined?(:@_resource)
+                        instance.remove_instance_variable(:@_auth_data) if instance.instance_variable_defined?(:@_auth_data)
                       end
                     elsif defined?(super)
                       # No block defined, call the original method if available
@@ -111,8 +104,7 @@ module Yes
                   instance_eval(&user_block)
                 end
               end
-              # rubocop:enable Metrics/PerceivedComplexity, Metrics/AbcSize
-              # rubocop:enable Metrics/MethodLength, Metrics/CyclomaticComplexity
+              # rubocop:enable Metrics/MethodLength
             end
           end
         end

@@ -8,7 +8,6 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
   let!(:read_model) { TestUser.create!(id: aggregate_id, name: 'John') }
   let(:aggregate) { Test::User::Aggregate.new(aggregate_id) }
 
-
   describe '#call' do
     subject { executor.call(command, command_name, guard_evaluator_class, skip_guards:) }
 
@@ -95,16 +94,14 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
           call_count = 0
           allow(PgEventstore.client).to receive(:append_to_stream) do
             call_count += 1
-            if call_count <= 2
-              raise revision_error
-            else
-              # Return event on success
-              Yes::Core::Event.new(
-                id: SecureRandom.uuid,
-                type: 'Test::User::NameChanged',
-                data: { 'name' => 'Jane' }
-              )
-            end
+            raise revision_error if call_count <= 2
+
+            # Return event on success
+            Yes::Core::Event.new(
+              id: SecureRandom.uuid,
+              type: 'Test::User::NameChanged',
+              data: { 'name' => 'Jane' }
+            )
           end
         end
 
@@ -144,27 +141,25 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
         before do
           allow(aggregate).to receive(:read_model).and_return(read_model)
           allow(read_model).to receive(:update_column) do |column, value|
-            if column == :pending_update_since && value.present?
-              raise ActiveRecord::StatementInvalid, 'Concurrent pending update not allowed'
-            else
-              read_model.class.where(id: read_model.id).update_all(column => value)
-            end
+            raise ActiveRecord::StatementInvalid, 'Concurrent pending update not allowed' if column == :pending_update_since && value.present?
+
+            read_model.class.where(id: read_model.id).update_all(column => value)
           end
         end
 
         it 'attempts inline recovery after INLINE_RECOVERY_RETRY_THRESHOLD retries' do
-          expect(Yes::Core::CommandHandling::ReadModelRecoveryService)
-            .to receive(:attempt_inline_recovery)
-            .at_least(:once)
-            .and_return(false)
+          expect(Yes::Core::CommandHandling::ReadModelRecoveryService).
+            to receive(:attempt_inline_recovery).
+            at_least(:once).
+            and_return(false)
 
           expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
         end
 
         it 'sleeps with exponential backoff between retries' do
-          allow(Yes::Core::CommandHandling::ReadModelRecoveryService)
-            .to receive(:attempt_inline_recovery)
-            .and_return(false)
+          allow(Yes::Core::CommandHandling::ReadModelRecoveryService).
+            to receive(:attempt_inline_recovery).
+            and_return(false)
 
           expect(executor).to receive(:sleep).at_least(:once)
 
@@ -172,9 +167,9 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
         end
 
         it 'reloads read model after inline recovery attempt' do
-          allow(Yes::Core::CommandHandling::ReadModelRecoveryService)
-            .to receive(:attempt_inline_recovery)
-            .and_return(false)
+          allow(Yes::Core::CommandHandling::ReadModelRecoveryService).
+            to receive(:attempt_inline_recovery).
+            and_return(false)
 
           expect(read_model).to receive(:reload).at_least(:once)
 

@@ -38,7 +38,7 @@ module Yes
               #
               # @return [Class] A new guard evaluator class inheriting from Yes::Core::CommandHandling::GuardEvaluator
               # @api private
-              def generate_class # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+              def generate_class
                 command_name = command_data.name
                 context_name = command_data.context_name
                 aggregate_name = command_data.aggregate_name
@@ -46,9 +46,7 @@ module Yes
                 # Add the no_change guard to the command data's guard names
                 # This will be added by the GuardEvaluator unless there's an update_state block
                 # or if it was already added by a shortcut expansion
-                unless command_data.guard_names.include?(:no_change) || command_data.update_state_block
-                  command_data.add_guard(:no_change)
-                end
+                command_data.add_guard(:no_change) unless command_data.guard_names.include?(:no_change) || command_data.update_state_block
 
                 Class.new(Yes::Core::CommandHandling::GuardEvaluator) do
                   guard :no_change do

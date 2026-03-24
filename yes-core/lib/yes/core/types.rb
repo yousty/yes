@@ -55,7 +55,7 @@ module Yes
       DateValue = Types::String.constrained(format: /^\d{4}-\d{2}-\d{2}$/)
 
       YEAR_FORMAT = ->(value) { value.to_s =~ /^\d{4}$/ }
-      YEAR_RANGE = ->(value) { value.to_s.to_i >= 2000 && value.to_s.to_i <= 2050 }
+      YEAR_RANGE = ->(value) { value.to_s.to_i.between?(2000, 2050) }
       YearAvailabilityRange = Types::Any.constrained(case: YEAR_FORMAT).constrained(case: YEAR_RANGE)
 
       YEAR = YearAvailabilityRange

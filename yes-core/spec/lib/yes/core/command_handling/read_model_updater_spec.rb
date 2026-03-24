@@ -9,7 +9,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
   let(:aggregate_class) { class_double(Yes::Core::Aggregate) }
   let(:command_utilities) { instance_double(Yes::Core::Utils::CommandUtils) }
   let(:revision_column) { :revision }
-  
+
   let(:event) { instance_double(Yes::Core::Event, stream_revision: 5, data: event_data) }
   let(:event_data) { { document_ids: SecureRandom.uuid } }
   let(:command_payload) { { document_ids: SecureRandom.uuid, another: 'value', locale: 'en' } }
@@ -42,14 +42,14 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
       it 'uses event.data as payload' do
         filtered_payload = event_data.except(*Yes::Core::Command::RESERVED_KEYS)
 
-        expect(state_updater_class)
-          .to receive(:new)
-          .with(
+        expect(state_updater_class).
+          to receive(:new).
+          with(
             payload: filtered_payload,
             aggregate: aggregate,
             event: event
-          )
-          .and_return(state_updater)
+          ).
+          and_return(state_updater)
 
         updater.call(event, nil, command_name, resolve_payload: false)
       end
@@ -81,14 +81,14 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         expected_event_data = event_data.merge('another' => resolved_value)
         filtered_payload = expected_event_data.except(*Yes::Core::Command::RESERVED_KEYS)
 
-        expect(state_updater_class)
-          .to receive(:new)
-          .with(
+        expect(state_updater_class).
+          to receive(:new).
+          with(
             payload: filtered_payload,
             aggregate: aggregate,
             event: event
-          )
-          .and_return(state_updater)
+          ).
+          and_return(state_updater)
 
         updater.call(event, nil, command_name, resolve_payload: true)
       end
@@ -96,10 +96,10 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
 
     context 'with revision guard' do
       it 'calls ReadModelRevisionGuard with correct parameters' do
-        expect(Yes::Core::CommandHandling::ReadModelRevisionGuard)
-          .to receive(:call)
-          .with(read_model, 5, { revision_column: :revision })
-          .and_yield
+        expect(Yes::Core::CommandHandling::ReadModelRevisionGuard).
+          to receive(:call).
+          with(read_model, 5, { revision_column: :revision }).
+          and_yield
 
         updater.call(event, command_payload, command_name)
       end
@@ -108,10 +108,10 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         let(:revision_column) { :test_user_revision }
 
         it 'passes custom revision column to guard' do
-          expect(Yes::Core::CommandHandling::ReadModelRevisionGuard)
-            .to receive(:call)
-            .with(read_model, 5, { revision_column: :test_user_revision })
-            .and_yield
+          expect(Yes::Core::CommandHandling::ReadModelRevisionGuard).
+            to receive(:call).
+            with(read_model, 5, { revision_column: :test_user_revision }).
+            and_yield
 
           updater.call(event, command_payload, command_name)
         end
@@ -124,25 +124,25 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
       end
 
       it 'fetches the state updater class' do
-        expect(command_utilities)
-          .to receive(:fetch_state_updater_class)
-          .with(command_name)
-          .and_return(state_updater_class)
-        
+        expect(command_utilities).
+          to receive(:fetch_state_updater_class).
+          with(command_name).
+          and_return(state_updater_class)
+
         updater.call(event, command_payload, command_name)
       end
 
       it 'instantiates state updater with filtered payload' do
         filtered_payload = command_payload.except(*Yes::Core::Command::RESERVED_KEYS)
 
-        expect(state_updater_class)
-          .to receive(:new)
-          .with(
+        expect(state_updater_class).
+          to receive(:new).
+          with(
             payload: filtered_payload,
             aggregate: aggregate,
             event: event
-          )
-          .and_return(state_updater)
+          ).
+          and_return(state_updater)
 
         updater.call(event, command_payload, command_name)
       end
@@ -151,14 +151,14 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         command_payload_with_encrypted = command_payload.merge(es_encrypted: { secret: 'value' })
         filtered_payload = command_payload_with_encrypted.except(*Yes::Core::Command::RESERVED_KEYS)
 
-        expect(state_updater_class)
-          .to receive(:new)
-          .with(
+        expect(state_updater_class).
+          to receive(:new).
+          with(
             payload: filtered_payload,
             aggregate: aggregate,
             event: event
-          )
-          .and_return(state_updater)
+          ).
+          and_return(state_updater)
 
         expect(filtered_payload).not_to have_key(:es_encrypted)
 
@@ -167,7 +167,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
 
       it 'executes state updater' do
         expect(state_updater).to receive(:call).and_return(state_changes)
-        
+
         updater.call(event, command_payload, command_name)
       end
     end
@@ -183,11 +183,11 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
           locale: 'en',
           pending_update_since: nil
         )
-        
-        expect(aggregate)
-          .to receive(:update_read_model)
-          .with(expected_attributes)
-        
+
+        expect(aggregate).
+          to receive(:update_read_model).
+          with(expected_attributes)
+
         updater.call(event, command_payload, command_name)
       end
 
@@ -200,11 +200,11 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
             locale: nil,
             pending_update_since: nil
           )
-          
-          expect(aggregate)
-            .to receive(:update_read_model)
-            .with(expected_attributes)
-          
+
+          expect(aggregate).
+            to receive(:update_read_model).
+            with(expected_attributes)
+
           updater.call(event, command_payload, command_name)
         end
       end
@@ -218,17 +218,17 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
 
       it 'derives command name from event' do
         aggregate_failures do
-          expect(command_utilities)
-            .to receive(:command_name_from_event)
-            .with(event, aggregate_class)
-            .and_return(:approve_documents)
-          
-          expect(command_utilities)
-            .to receive(:fetch_state_updater_class)
-            .with(:approve_documents)
-            .and_return(state_updater_class)
+          expect(command_utilities).
+            to receive(:command_name_from_event).
+            with(event, aggregate_class).
+            and_return(:approve_documents)
+
+          expect(command_utilities).
+            to receive(:fetch_state_updater_class).
+            with(:approve_documents).
+            and_return(state_updater_class)
         end
-        
+
         updater.call(event, command_payload)
       end
     end
@@ -238,9 +238,9 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         let(:error) { Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionMismatchError.new('Mismatch') }
 
         before do
-          allow(Yes::Core::CommandHandling::ReadModelRevisionGuard)
-            .to receive(:call)
-            .and_raise(error)
+          allow(Yes::Core::CommandHandling::ReadModelRevisionGuard).
+            to receive(:call).
+            and_raise(error)
         end
 
         it 'propagates the error' do
@@ -252,16 +252,16 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         let(:error) { Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError.new('Already applied') }
 
         before do
-          allow(Yes::Core::CommandHandling::ReadModelRevisionGuard)
-            .to receive(:call)
-            .and_raise(error)
+          allow(Yes::Core::CommandHandling::ReadModelRevisionGuard).
+            to receive(:call).
+            and_raise(error)
           allow(Rails.logger).to receive(:warn)
         end
 
         it 'rescues the error and logs a warning' do
           aggregate_failures do
             expect { updater.call(event, command_payload, command_name) }.not_to raise_error
-            expect(Rails.logger).to have_received(:warn).with("Read model revision already applied: Already applied")
+            expect(Rails.logger).to have_received(:warn).with('Read model revision already applied: Already applied')
           end
         end
       end
@@ -271,22 +271,22 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater do
         let(:event) { instance_double(Yes::Core::Event, stream_revision: 5, type: 'SomeUnknownEvent', data: event_data) }
 
         before do
-          allow(command_utilities)
-            .to receive(:command_name_from_event)
-            .with(event, aggregate_class)
-            .and_raise(error)
+          allow(command_utilities).
+            to receive(:command_name_from_event).
+            with(event, aggregate_class).
+            and_raise(error)
           allow(Rails.logger).to receive(:warn)
         end
 
         it 'logs a warning and updates only the revision' do
           aggregate_failures do
-            expect(Rails.logger)
-              .to receive(:warn)
-              .with("Command not found for event SomeUnknownEvent: Command not found")
+            expect(Rails.logger).
+              to receive(:warn).
+              with('Command not found for event SomeUnknownEvent: Command not found')
 
-            expect(aggregate)
-              .to receive(:update_read_model)
-              .with(revision: 5)
+            expect(aggregate).
+              to receive(:update_read_model).
+              with(revision: 5)
 
             expect(command_utilities).not_to receive(:fetch_state_updater_class)
             expect(state_updater_class).not_to receive(:new)

@@ -2,12 +2,14 @@
 
 ENV['RAILS_ENV'] = 'test'
 
-require 'spec_helper'
+require_relative 'spec_helper'
 require_relative 'dummy/config/environment'
 
 abort('The Rails environment is running in production mode!') if Rails.env.production?
 
 require 'rspec/rails'
+require 'message_bus/rails/models/message_bus_record'
+require 'message_bus/rails/models/message'
 
 Dir[File.join(__dir__, 'support/**/*.rb')].each { |f| load f }
 
@@ -28,10 +30,12 @@ RSpec.configure do |config|
 
   config.before do
     stub_const('Yes::Core::Aggregate::RETRY_DELAY_SECONDS', 0)
+    Yes::Core.configuration.auth_adapter = DummyAuthAdapter.new
   end
 
   config.after do
     REDIS.flushdb
+    MessageBus::Rails::Message.delete_all if defined?(MessageBus::Rails::Message)
     DummyRepository.reset
     TestHelper.clean_up_config
     PgEventstore::TestHelpers.clean_up_db

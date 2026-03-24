@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'dry-types'
   spec.add_dependency 'has_scope'
   spec.add_dependency 'jsonapi-serializer'
-  spec.add_dependency 'pg_eventstore'
+  spec.add_dependency 'pg_eventstore', '~> 1.0'
   spec.add_dependency 'rails', '>= 7.1'
   spec.add_dependency 'zeitwerk'
 end

@@ -13,7 +13,7 @@ module Yes
         @obj_type = obj_type
       end
 
-      def type_for # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+      def type_for # rubocop:disable Metrics/MethodLength, Metrics/CyclomaticComplexity
         return @type if basic_event_type?
 
         case @type
@@ -74,9 +74,7 @@ module Yes
       def lookup_type(value)
         return "#{@context}::Types::#{value}".constantize if Object.const_defined?("#{@context}::Types::#{value}")
 
-        if Yes::Core::Types.const_defined?(value)
-          return Yes::Core::Types.const_get(value)
-        end
+        return Yes::Core::Types.const_get(value) if Yes::Core::Types.const_defined?(value)
 
         registered = Yes::Core::Types.lookup(value.downcase.to_sym)
         return registered if registered

@@ -39,27 +39,23 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
   end
 
   let(:authorizer_constant_path) { "#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer" }
-  
+
   around do |example|
     # Track if we're using stub_const in this test
     @using_stub_const = false
-    
+
     # Run the test
     example.run
-    
+
     # Clean up generated constants after the test, but only if not stubbed
-    unless @using_stub_const
-      if Object.const_defined?(context_name, false)
-        context_module = Object.const_get(context_name, false)
-        if context_module.const_defined?(aggregate_name, false)
-          aggregate_module = context_module.const_get(aggregate_name, false)
-          if aggregate_module.const_defined?('Commands', false)
-            commands_module = aggregate_module.const_get('Commands', false)
-            authorizer_name = "#{aggregate_name}Authorizer"
-            if commands_module.const_defined?(authorizer_name, false)
-              commands_module.send(:remove_const, authorizer_name)
-            end
-          end
+    if !@using_stub_const && Object.const_defined?(context_name, false)
+      context_module = Object.const_get(context_name, false)
+      if context_module.const_defined?(aggregate_name, false)
+        aggregate_module = context_module.const_get(aggregate_name, false)
+        if aggregate_module.const_defined?('Commands', false)
+          commands_module = aggregate_module.const_get('Commands', false)
+          authorizer_name = "#{aggregate_name}Authorizer"
+          commands_module.send(:remove_const, authorizer_name) if commands_module.const_defined?(authorizer_name, false)
         end
       end
     end
@@ -276,8 +272,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
       it 'registers the authorizer with draft support' do
         aggregate_failures do
           generated_class
-          expect(Yes::Core.configuration).to have_received(:register_aggregate_authorizer_class)
-            .with(context_name, aggregate_name, kind_of(Class))
+          expect(Yes::Core.configuration).to have_received(:register_aggregate_authorizer_class).
+            with(context_name, aggregate_name, kind_of(Class))
         end
       end
     end

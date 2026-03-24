@@ -10,7 +10,7 @@ default: &default
 message_bus_default: &message_bus_default
   <<: *default
   pool: 2
-  migrations_paths: db/message_bus
+  migrations_paths: spec/dummy/db/message_bus
 
 development:
   primary:

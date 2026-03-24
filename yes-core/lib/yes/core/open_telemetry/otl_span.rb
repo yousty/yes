@@ -75,7 +75,7 @@ module Yes
                 span.set_attribute('db.event_name', sql_event.payload[:name])
               end
             end
-            ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') { yield }
+            ActiveSupport::Notifications.subscribed(callback, 'sql.active_record', &block)
           end
         end
 
@@ -90,7 +90,7 @@ module Yes
           return [] if args.blank? && kwargs.blank?
           return [] unless (otl_contexts = otl_data.links_extractor.call(*args, **kwargs).presence)
 
-          otl_contexts.map do |_context_name, context_data|
+          otl_contexts.filter_map do |_context_name, context_data|
             next unless context_data['traceparent']
 
             trace_parent_ctx = ::OpenTelemetry::Trace::Propagation::TraceContext::TraceParent.from_string(
@@ -102,7 +102,7 @@ module Yes
               trace_flags: trace_parent_ctx.flags
             )
             ::OpenTelemetry::Trace::Link.new(trace_span_ctx)
-          end.compact
+          end
         end
       end
     end

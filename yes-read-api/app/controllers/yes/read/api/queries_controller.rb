@@ -19,9 +19,7 @@ module Yes
         )
 
         def call
-          if params[:filter_id].present?
-            persisted_filter = filter(read_model_name).persisted_filter_scope.find_by(id: params[:filter_id])
-          end
+          persisted_filter = filter(read_model_name).persisted_filter_scope.find_by(id: params[:filter_id]) if params[:filter_id].present?
 
           render json: response_json(persisted_filter:, filter_type: persisted_filter ? :advanced : :basic).to_json
         end
@@ -102,9 +100,7 @@ module Yes
           @auth_data = adapter.authenticate(request)
         end
 
-        def auth_data
-          @auth_data
-        end
+        attr_reader :auth_data
 
         def auth_error_response(error)
           render(

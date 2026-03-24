@@ -33,7 +33,7 @@ end
 
 MessageBus.user_id_lookup do |env|
   request = ActionDispatch::Request.new(env)
-  token, _ = ActionController::HttpAuthentication::Token.token_and_options(request)
+  token, = ActionController::HttpAuthentication::Token.token_and_options(request)
 
   if token && Yes::Core.configuration.auth_adapter
     verified_token = Yes::Core.configuration.auth_adapter.verify_token(token)

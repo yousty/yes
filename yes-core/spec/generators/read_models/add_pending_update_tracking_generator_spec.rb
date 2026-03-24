@@ -11,7 +11,7 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
 
     # Set Rails.root to the destination root
     allow(Rails).to receive(:root).and_return(Pathname.new(destination_root))
-    
+
     # Create the migration directory
     FileUtils.mkdir_p(File.join(destination_root, 'db/migrate'))
   end
@@ -100,7 +100,7 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
       # The logic in the migration will truncate names over 62 chars
       # Test that the helper method is defined
       expect(migration_content).to include('def truncate_index_name')
-      
+
       # Test that triggers are truncated
       expect(migration_content).to include('trigger_name = trigger_name[0..62] if trigger_name.length > 63')
       # Test that recovery index uses truncation
@@ -112,7 +112,7 @@ RSpec.describe Yes::Core::Generators::ReadModels::AddPendingUpdateTrackingGenera
     it 'generates sequential migration numbers' do
       # Create a dummy migration to set the baseline
       FileUtils.touch(File.join(destination_root, 'db/migrate/20240101000000_dummy_migration.rb'))
-      
+
       next_number = described_class.next_migration_number(File.join(destination_root, 'db/migrate'))
       expect(next_number).to be > '20240101000000'
       expect(next_number).to match(/^\d{14}$/)

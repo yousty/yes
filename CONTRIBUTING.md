@@ -25,7 +25,7 @@ Thank you for your interest in contributing to Yes! This document provides guide
 
 3. Install dependencies:
    ```bash
-   bundle install
+   ./bin/setup
    ```
 
 4. Set up databases:
@@ -47,20 +47,26 @@ yes/                      # Root gem (meta-package)
 
 ## Running Tests
 
-Run specs for a specific gem:
+Each gem has its own test suite that runs in isolation with its own bundle context.
+
+Run specs for a single gem from the root:
 
 ```bash
-cd yes-core && bundle exec rspec
-cd yes-command-api && bundle exec rspec
-cd yes-read-api && bundle exec rspec
+bundle exec rake yes_core:spec
+bundle exec rake yes_command_api:spec
+bundle exec rake yes_read_api:spec
 ```
 
-Or from root for all gems:
+Run all gem specs:
 
 ```bash
-bundle exec rspec yes-core/spec
-bundle exec rspec yes-command-api/spec
-bundle exec rspec yes-read-api/spec
+bundle exec rake spec
+```
+
+You can also run specs directly from within a gem directory:
+
+```bash
+cd yes-core && bundle exec rspec spec
 ```
 
 ## Running RuboCop

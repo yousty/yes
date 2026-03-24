@@ -5,6 +5,7 @@ class DummyRepository
 
   class Key
     attr_accessor :iv, :cipher, :id
+
     def initialize(id:, **)
       @id = id
     end

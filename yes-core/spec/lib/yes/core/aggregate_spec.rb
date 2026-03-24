@@ -180,15 +180,15 @@ RSpec.describe Yes::Core::Aggregate do
 
     let(:instance) { subject_class.new(aggregate_id) }
     let(:aggregate_id) { SecureRandom.uuid }
-    let(:stream) { PgEventstore::Stream.new(context: 'Test', stream_name: "User", stream_id: aggregate_id) }
-    let(:event) { 
+    let(:stream) { PgEventstore::Stream.new(context: 'Test', stream_name: 'User', stream_id: aggregate_id) }
+    let(:event) do
       Yes::Core::Event.new(
         id: SecureRandom.uuid,
         type: 'Test::UserCreated',
         data: {},
         stream_revision: 5
       )
-    }
+    end
     let(:client_double) { instance_double(PgEventstore::Client) }
 
     before do
@@ -199,18 +199,18 @@ RSpec.describe Yes::Core::Aggregate do
     end
 
     it 'reads the latest event from the stream with correct options' do
-      expect(client_double).to receive(:read)
-        .with(stream, options: { max_count: 1, direction: :desc })
-        .and_return([event])
+      expect(client_double).to receive(:read).
+        with(stream, options: { max_count: 1, direction: :desc }).
+        and_return([event])
 
       expect(latest_event).to eq(event)
     end
 
     context 'when no events exist' do
       it 'returns nil' do
-        expect(client_double).to receive(:read)
-          .with(stream, options: { max_count: 1, direction: :desc })
-          .and_return([])
+        expect(client_double).to receive(:read).
+          with(stream, options: { max_count: 1, direction: :desc }).
+          and_return([])
 
         expect(latest_event).to be_nil
       end
@@ -221,14 +221,14 @@ RSpec.describe Yes::Core::Aggregate do
     subject(:event_revision) { instance.event_revision }
 
     let(:instance) { subject_class.new(SecureRandom.uuid) }
-    let(:event) { 
+    let(:event) do
       Yes::Core::Event.new(
         id: SecureRandom.uuid,
         type: 'Test::UserCreated',
         data: {},
         stream_revision: 42
       )
-    }
+    end
 
     before do
       allow(instance).to receive(:latest_event).and_return(event)
@@ -298,9 +298,9 @@ RSpec.describe Yes::Core::Aggregate do
     end
 
     it 'retrieves command mappings from the global configuration' do
-      expect(Yes::Core.configuration).to receive(:command_event_mappings)
-        .with('Test', 'User')
-        .and_call_original
+      expect(Yes::Core.configuration).to receive(:command_event_mappings).
+        with('Test', 'User').
+        and_call_original
 
       commands
     end

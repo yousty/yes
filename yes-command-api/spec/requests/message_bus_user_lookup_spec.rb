@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require_relative '../rails_helper'
 
 RSpec.describe 'MessageBus user lookup' do
   subject do
@@ -20,6 +20,10 @@ RSpec.describe 'MessageBus user lookup' do
   let(:user_uuid1) { SecureRandom.uuid }
   let(:user_uuid2) { SecureRandom.uuid }
 
+  # MessageBus middleware bypasses Rails response handling, so parsed_body
+  # does not auto-parse JSON. Use explicit JSON.parse instead.
+  let(:parsed_response) { response.parsed_body }
+
   before do
     MessageBus.publish(channel_name, first_message, user_ids: [user_uuid1])
     MessageBus.publish(channel_name, second_message, user_ids: [user_uuid2])
@@ -29,8 +33,8 @@ RSpec.describe 'MessageBus user lookup' do
     it 'returns messages, belonging to the authenticated user' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).not_to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end
@@ -41,8 +45,8 @@ RSpec.describe 'MessageBus user lookup' do
     it 'does not publish any messages' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).not_to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).not_to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end

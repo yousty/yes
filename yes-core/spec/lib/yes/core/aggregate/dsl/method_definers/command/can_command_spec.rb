@@ -23,9 +23,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::CanCommand do
   describe '#call' do
     before do
       aggregate_class.remove_method(:"can_#{command_name}?") if aggregate_class.method_defined?(:"can_#{command_name}?")
-      if aggregate_class.method_defined?(:"#{command_name}_error")
-        aggregate_class.remove_method(:"#{command_name}_error")
-      end
+      aggregate_class.remove_method(:"#{command_name}_error") if aggregate_class.method_defined?(:"#{command_name}_error")
 
       subject
     end

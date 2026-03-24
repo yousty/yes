@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-Dir.chdir(File.expand_path("../spec/dummy", __dir__))
+Dir.chdir(File.expand_path('../spec/dummy', __dir__))
 ENV['BUNDLE_GEMFILE'] = "#{__dir__}/Gemfile"
 
-APP_PATH = File.expand_path("../spec/dummy/config/application", __dir__)
-require_relative "../spec/dummy/config/boot"
+APP_PATH = File.expand_path('../spec/dummy/config/application', __dir__)
+require_relative '../spec/dummy/config/boot'
 
-require "rails/commands"
+require 'rails/commands'

@@ -123,7 +123,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
 
               it 'returns correct records' do
-                expect(json_data.map { |record| record['id'] }).to match_array(
+                expect(json_data.pluck('id')).to match_array(
                   [apprenticeship.id, apprenticeship3.id]
                 )
               end
@@ -135,7 +135,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
 
               it 'returns correct records' do
-                expect(json_data.map { |record| record['id'] }).to match_array(
+                expect(json_data.pluck('id')).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                 )
               end
@@ -186,7 +186,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                 let(:params) { { filters: { ids: [apprenticeship.id, apprenticeship1.id].join(',') } } }
 
                 it 'returns correct records' do
-                  expect(json_data.map { |record| record['id'] }).to match_array(
+                  expect(json_data.pluck('id')).to match_array(
                     [apprenticeship.id, apprenticeship1.id]
                   )
                 end
@@ -206,7 +206,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                 let(:params) { { filters: { dropout_enabled: true } } }
 
                 it 'returns correct records' do
-                  expect(json_data.map { |record| record['id'] }).to match_array(
+                  expect(json_data.pluck('id')).to match_array(
                     [apprenticeship3.id]
                   )
                 end
@@ -221,7 +221,6 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                   let(:per_page) { '20' }
                 end
               end
-
             end
 
             context 'when own filter is provided' do
@@ -233,7 +232,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                 end
 
                 it 'returns all records' do
-                  expect(json_data.map { |record| record['id'] }).to match_array(
+                  expect(json_data.pluck('id')).to match_array(
                     [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                   )
                 end
@@ -254,12 +253,12 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
 
                 context 'when identity_user is not found' do
                   before do
-                    allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(nil)
+                    allow(IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(nil)
                     subject
                   end
 
                   it 'returns all records' do
-                    expect(json_data.map { |record| record['id'] }).to match_array(
+                    expect(json_data.pluck('id')).to match_array(
                       [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                     )
                   end
@@ -269,7 +268,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                   let(:identity_user) { double('IdentityUser') }
 
                   before do
-                    allow(::IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(identity_user)
+                    allow(IdentityUser).to receive(:find_by).with(id: auth_user_uuid).and_return(identity_user)
                   end
 
                   context 'when identity_user does not respond to own_apprenticeship_ids' do
@@ -279,7 +278,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                     end
 
                     it 'returns all records' do
-                      expect(json_data.map { |record| record['id'] }).to match_array(
+                      expect(json_data.pluck('id')).to match_array(
                         [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                       )
                     end
@@ -298,7 +297,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
                     end
 
                     it 'returns only owned records' do
-                      expect(json_data.map { |record| record['id'] }).to match_array(owned_ids)
+                      expect(json_data.pluck('id')).to match_array(owned_ids)
                     end
 
                     it_behaves_like 'correctly paginated response' do
@@ -363,7 +362,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               let(:params) { { include: 'company' } }
 
               it 'returns correct records' do
-                expect(json_data.map { |record| record['id'] }).to match_array(
+                expect(json_data.pluck('id')).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                 )
               end
@@ -492,7 +491,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
 
               it 'returns correct records' do
-                expect(json_data.map { |record| record['id'] }).to match_array(
+                expect(json_data.pluck('id')).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                 )
               end
@@ -537,7 +536,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               end
 
               it 'returns correct records' do
-                expect(json_data.map { |record| record['id'] }).to match_array(
+                expect(json_data.pluck('id')).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship3.id]
                 )
               end
@@ -629,7 +628,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
               let(:params) { { include: 'company' } }
 
               it 'returns correct records' do
-                expect(json_data.map { |record| record['id'] }).to match_array(
+                expect(json_data.pluck('id')).to match_array(
                   [apprenticeship.id, apprenticeship1.id, apprenticeship2.id, apprenticeship3.id]
                 )
               end

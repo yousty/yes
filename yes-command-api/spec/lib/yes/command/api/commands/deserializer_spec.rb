@@ -50,7 +50,7 @@ RSpec.describe Yes::Command::Api::Commands::Deserializer do
         let(:command2) { 'DoSomethingNotFound' }
 
         it 'raises DeserializationFailed error' do
-          expect{ subject }.to raise_error(deserialize_error)
+          expect { subject }.to raise_error(deserialize_error)
         end
       end
 
@@ -143,14 +143,14 @@ RSpec.describe Yes::Command::Api::Commands::Deserializer do
 
           it 'raises DeserializationFailed error' do
             aggregate_failures do
-              expect {
+              expect do
                 subject
-              }.to raise_error { |error|
+              end.to(raise_error do |error|
                 expect(error).to be_a(Yes::Command::Api::Commands::Deserializer::DeserializationFailed)
                 expect(error.extra[:invalid]).to be_an(Array)
                 expect(error.extra[:invalid].size).to eq(1)
                 expect(error.extra[:invalid].first[:command]).to eq('DoSomethingCompounded')
-              }
+              end)
             end
           end
         end

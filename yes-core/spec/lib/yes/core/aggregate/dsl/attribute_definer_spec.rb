@@ -79,6 +79,5 @@ RSpec.describe Yes::Core::Aggregate::Dsl::AttributeDefiner do
         end
       end
     end
-
   end
 end

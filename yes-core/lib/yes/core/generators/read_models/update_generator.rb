@@ -127,7 +127,7 @@ module Yes
             ActiveRecord::Base.connection.table_exists?(table_name)
           end
 
-          def database_type(type) # rubocop:disable Metrics/CyclomaticComplexity
+          def database_type(type)
             case type
             when :string, :email, :url then :string
             when :integer then :integer

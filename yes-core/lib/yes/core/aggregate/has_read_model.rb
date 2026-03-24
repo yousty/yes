@@ -22,7 +22,7 @@ module Yes
           self._read_model_enabled = true
         end
 
-        class_methods do # rubocop:disable Metrics/BlockLength
+        class_methods do
           # Returns the read model class associated with the current aggregate.
           # The class is resolved using ReadModelClassResolver, which either uses an explicitly set
           # class name or derives it from the current namespace.

@@ -3,7 +3,6 @@
 module Yes
   module Core
     module CommandHandling
-
       # Raised when multiple processes attempt to update the same aggregate concurrently
       # This error is thrown when the pending_update_since mechanism detects a conflict
       class ConcurrentUpdateError < Yes::Core::Error
@@ -14,7 +13,7 @@ module Yes
         # @param original_error [Exception] The underlying database error
         def initialize(aggregate_class:, aggregate_id:, original_error: nil)
           message = build_error_message(aggregate_class, aggregate_id, original_error)
-          
+
           super(message, extra: {
             aggregate_class: aggregate_class.name,
             aggregate_id: aggregate_id,
@@ -35,10 +34,10 @@ module Yes
         def build_error_message(aggregate_class, aggregate_id, original_error)
           context = aggregate_class.context
           stream_name = aggregate_class.aggregate
-          
+
           base_message = "Concurrent update detected for #{context}::#{stream_name} with ID #{aggregate_id}. " \
-                        "Another process is currently updating this aggregate."
-          
+                         'Another process is currently updating this aggregate.'
+
           if original_error
             "#{base_message} Original error: #{original_error.message}"
           else
@@ -103,7 +102,7 @@ module Yes
             retries += 1
             # Don't clear pending state - another process owns it
             # Sleep with exponential backoff to give the other process time to finish
-            sleep([0.01 * (2 ** (retries - 1)), 1.0].min) if retries <= MAX_RETRIES
+            sleep([0.01 * (2**(retries - 1)), 1.0].min) if retries <= MAX_RETRIES
 
             # After several retries, check if pending state is stuck and attempt recovery
             # This prevents infinite retry loops when a process crashes leaving the flag set

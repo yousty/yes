@@ -1,3 +1,2 @@
 --format documentation
 --color
---require ./yes-core/spec/rails_helper.rb

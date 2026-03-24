@@ -47,9 +47,7 @@ module Yes
             return object.new(symbolized_hash.except(:_aj_serialized, :_type))
           end
 
-          if symbolized_hash[:transaction].is_a?(Hash)
-            symbolized_hash[:transaction] = Yes::Core::TransactionDetails.new(symbolized_hash[:transaction])
-          end
+          symbolized_hash[:transaction] = Yes::Core::TransactionDetails.new(symbolized_hash[:transaction]) if symbolized_hash[:transaction].is_a?(Hash)
 
           object.new(symbolized_hash.except(:_aj_serialized, :_type))
         end

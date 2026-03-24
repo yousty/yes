@@ -20,7 +20,7 @@ module Yes
         def deserialize(event)
           return event unless event.metadata.key?('created_at')
 
-          event.metadata['created_at'] = Time.parse(event.metadata['created_at'])
+          event.metadata['created_at'] = Time.zone.parse(event.metadata['created_at'])
           event
         end
       end

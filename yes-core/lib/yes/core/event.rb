@@ -89,9 +89,7 @@ module Yes
           raise ArgumentError, 'Version number must be an integer' unless number.is_a?(Integer)
 
           undefined_versions = (1...number).reject { |n| @versions.key?(n) }
-          if undefined_versions.any?
-            raise ArgumentError, "Previous versions not defined: #{undefined_versions.join(', ')}"
-          end
+          raise ArgumentError, "Previous versions not defined: #{undefined_versions.join(', ')}" if undefined_versions.any?
 
           @versions[number] = blk
         end
@@ -119,8 +117,8 @@ module Yes
       end
 
       # @return [String]
-      def to_json(*args)
-        as_json.to_json(*args)
+      def to_json(*)
+        as_json.to_json(*)
       end
 
       # @return [Hash] payload store fields with their values
@@ -151,7 +149,7 @@ module Yes
       # @return [Hash] the otl context
       # @param type [Symbol, nil] :publisher or :root
       def otl_context(type:)
-        return metadata.dig('otl_contexts') unless type
+        return metadata['otl_contexts'] unless type
 
         metadata.dig('otl_contexts', type.to_s) || {}
       end
@@ -214,7 +212,7 @@ module Yes
       # @param value [Object]
       # @return [Boolean]
       def valid_ps_value?(value)
-        Types::PAYLOAD_STORE_TYPE.(value)
+        Types::PAYLOAD_STORE_TYPE.call(value)
         true
       rescue Dry::Types::ConstraintError
         false

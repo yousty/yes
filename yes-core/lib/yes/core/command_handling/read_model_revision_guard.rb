@@ -110,7 +110,7 @@ module Yes
               failure_message: revision_mismatch_message,
               timeout_message: timeout_message,
               &
-            ) 
+            )
           rescue Yes::Core::Utils::ExponentialRetrier::RetryFailedError => e
             raise RevisionMismatchError, e.message
           rescue Yes::Core::Utils::ExponentialRetrier::TimeoutError => e

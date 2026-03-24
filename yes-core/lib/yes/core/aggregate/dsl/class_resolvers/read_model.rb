@@ -25,7 +25,7 @@ module Yes
             def initialize(read_model_name, context_name, aggregate_name, draft: false)
               @read_model_name = read_model_name
               @draft = draft
-              
+
               super(context_name, aggregate_name)
             end
 
@@ -37,7 +37,7 @@ module Yes
                 context_name,
                 aggregate_name,
                 find_or_generate_class,
-                draft: 
+                draft:
               )
             end
 

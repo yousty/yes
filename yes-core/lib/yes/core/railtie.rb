@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Yes
   module Core
     class Railtie < Rails::Railtie

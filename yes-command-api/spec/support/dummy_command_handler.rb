@@ -16,8 +16,7 @@ module Dummy
           Yes::Core::Commands::Response.new(cmd: cmd)
         end
 
-        def initialize(adapter:)
-        end
+        def initialize(adapter:); end
       end
     end
   end

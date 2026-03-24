@@ -9,7 +9,7 @@ RSpec.describe Yes::Core::Authorization::CommandCerbosAuthorizer do
 
     let(:principal) { OpenStruct.new(id: SecureRandom.uuid, identity_id:, role_ids: []) }
 
-    let(:command) { Dummy::User::Commands::ChangeFirstName::Command.new(name:, id: , company_id: ) }
+    let(:command) { Dummy::User::Commands::ChangeFirstName::Command.new(name:, id:, company_id:) }
     let(:name) { 'name' }
     let(:id) { SecureRandom.uuid }
     let(:company_id) { SecureRandom.uuid }

@@ -60,12 +60,20 @@ jobs:
         env:
           RAILS_ENV: test
 
+      - name: Set up message bus database
+        if: matrix.gem == 'yes-command-api'
+        run: bundle exec rake app:db:migrate:message_bus
+        working-directory: ${{ matrix.gem }}
+        env:
+          RAILS_ENV: test
+
       - name: Run specs
         run: bundle exec rspec
         working-directory: ${{ matrix.gem }}
         env:
           RAILS_ENV: test
           TEST_COVERAGE: 'true'
+          PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
   rubocop:
     runs-on: ubuntu-latest
@@ -80,6 +88,4 @@ jobs:
           bundler-cache: true
 
       - name: Run RuboCop
-        run: |
-          bundle install
-          bundle exec rubocop
+        run: bundle exec rubocop

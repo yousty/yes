@@ -18,7 +18,7 @@ module Yes
         # @param attrs [Hash] event attributes from the store
         # @return [Yes::Core::Event] the event instance with validation skipped
         def new(**attrs)
-          @klass.new(**attrs.merge(skip_validation: true))
+          @klass.new(**attrs, skip_validation: true)
         end
       end
 

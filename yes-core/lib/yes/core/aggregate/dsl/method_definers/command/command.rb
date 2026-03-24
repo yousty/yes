@@ -32,7 +32,7 @@ module Yes
                   # treat all remaining kwargs as payload
                   if payload.nil? && !options.empty?
                     payload = options
-                    options = {}
+                    {}
                   elsif payload.nil?
                     payload = {}
                   end

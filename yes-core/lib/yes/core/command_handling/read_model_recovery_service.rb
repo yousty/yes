@@ -15,24 +15,25 @@ module Yes
 
         class << self
           include Yes::Core::OpenTelemetry::Trackable
+
           # Finds and recovers all stuck read models
           # @param stuck_timeout [ActiveSupport::Duration] Time after which a model is considered stuck
           # @param batch_size [Integer] Number of read models to process at once
           # @return [Array<RecoveryResult>] Results of recovery attempts
           def recover_all_stuck_read_models(stuck_timeout: DEFAULT_STUCK_TIMEOUT, batch_size: 100)
             results = []
-            
+
             find_stuck_read_models_with_aggregates(stuck_timeout:, batch_size:).each do |entry|
               result = recover_read_model(
-                entry[:read_model], 
+                entry[:read_model],
                 aggregate_class: entry[:aggregate_class],
                 is_draft: entry[:is_draft]
               )
               results << result
-              
+
               log_recovery_result(result)
             end
-            
+
             results
           end
 
@@ -44,30 +45,28 @@ module Yes
           def recover_read_model(read_model, aggregate_class:, is_draft: false)
             # Use advisory lock to prevent concurrent recovery attempts
             lock_key = "read_model_recovery_#{read_model.class.name}_#{read_model.id}"
-            
+
             with_advisory_lock(lock_key) do
               # Re-check if still stuck after acquiring lock
               read_model.reload
 
-              unless read_model.pending_update_since?
-                return RecoveryResult.new(success: true, read_model:, error_message: 'Already recovered')
-              end
-              
+              return RecoveryResult.new(success: true, read_model:, error_message: 'Already recovered') unless read_model.pending_update_since?
+
               # Instantiate aggregate with proper parameters
               aggregate_id = determine_aggregate_id(read_model)
-              
+
               aggregate = if is_draft
                             aggregate_class.new(aggregate_id, draft: true)
                           else
                             aggregate_class.new(aggregate_id)
                           end
-              
+
               latest_event = aggregate.latest_event
-              
+
               # Reapply the update using ReadModelUpdater
               updater = ReadModelUpdater.new(aggregate)
               updater.call(latest_event, latest_event.data)
-              
+
               RecoveryResult.new(success: true, read_model:)
             end
           rescue ActiveRecord::ActiveRecordError => e
@@ -84,7 +83,7 @@ module Yes
               read_model:,
               error_message: "Event store error during recovery: #{e.message}"
             )
-          rescue => e
+          rescue StandardError => e
             # Unexpected errors - log them for debugging
             Rails.logger.error("Unexpected error recovering read model #{read_model.class.name}##{read_model.id}: #{e.class.name}")
             RecoveryResult.new(
@@ -149,13 +148,13 @@ module Yes
           # @return [Boolean] True if no recovery needed or recovery succeeded, false if recovery needed but failed
           def attempt_recovery_if_pending(read_model, threshold, aggregate:)
             read_model.reload
-            
+
             # Not pending - we're good
-            return true unless read_model.pending_update_since.present?
+            return true if read_model.pending_update_since.blank?
 
             # Pending but too recent - another process is working on it, proceed
             return true unless read_model.pending_update_since < threshold.ago
-            
+
             # Pending and old enough - attempt recovery now
             Rails.logger.info("Read model #{read_model.class.name}##{read_model.id} is in pending state, attempting recovery")
 
@@ -167,7 +166,7 @@ module Yes
               )
               Rails.logger.info("Successfully recovered read model #{read_model.class.name}##{read_model.id}")
               true
-            rescue Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError => e
+            rescue Yes::Core::CommandHandling::ReadModelRevisionGuard::RevisionAlreadyAppliedError
               # Another thread already recovered - this is a successful outcome
               Rails.logger.info("Recovery already completed by another thread for #{read_model.class.name}##{read_model.id}")
 
@@ -175,15 +174,15 @@ module Yes
               read_model.reload
               if read_model.pending_update_since.present?
                 read_model.update_column(:pending_update_since, nil)
-                Rails.logger.debug("Cleared lingering pending_update_since flag for #{read_model.class.name}##{read_model.id}")
+                Rails.logger.debug { "Cleared lingering pending_update_since flag for #{read_model.class.name}##{read_model.id}" }
               end
 
               true
             rescue ActiveRecord::ActiveRecordError, PgEventstore::Error => e
               # Expected errors during recovery
-              Rails.logger.debug("Recovery attempt failed for #{read_model.class.name}##{read_model.id}: #{e.message}")
+              Rails.logger.debug { "Recovery attempt failed for #{read_model.class.name}##{read_model.id}: #{e.message}" }
               false
-            rescue => e
+            rescue StandardError => e
               # Unexpected errors
               Rails.logger.error("Unexpected error during recovery attempt for #{read_model.class.name}##{read_model.id}: #{e.class.name} - #{e.message}")
               false
@@ -196,23 +195,23 @@ module Yes
           # @return [Array<Hash>] Stuck read models with their aggregate classes and draft flags
           def find_stuck_read_models_with_aggregates(stuck_timeout:, batch_size:)
             stuck_models = []
-            
+
             Yes::Core.configuration.all_read_models_with_aggregate_classes.each do |mapping|
               read_model_class = mapping[:read_model_class]
               aggregate_class = mapping[:aggregate_class]
               is_draft = mapping[:is_draft]
-              
+
               next unless read_model_class.column_names.include?('pending_update_since')
-              
-              read_model_class
-                .where.not(pending_update_since: nil)
-                .where('pending_update_since < ?', stuck_timeout.ago)
-                .limit(batch_size)
-                .each do |read_model|
+
+              read_model_class.
+                where.not(pending_update_since: nil).
+                where(pending_update_since: ...stuck_timeout.ago).
+                limit(batch_size).
+                each do |read_model|
                   stuck_models << { read_model:, aggregate_class:, is_draft: }
                 end
             end
-            
+
             stuck_models
           end
 
@@ -229,12 +228,12 @@ module Yes
           def with_advisory_lock(lock_key)
             # Use PostgreSQL advisory lock
             lock_id = Zlib.crc32(lock_key)
-            
+
             connection = ActiveRecord::Base.connection
             obtained = connection.execute("SELECT pg_try_advisory_lock(#{lock_id})").first['pg_try_advisory_lock']
-            
+
             return yield if obtained
-            
+
             raise "Could not obtain advisory lock for #{lock_key}"
           ensure
             connection.execute("SELECT pg_advisory_unlock(#{lock_id})") if obtained

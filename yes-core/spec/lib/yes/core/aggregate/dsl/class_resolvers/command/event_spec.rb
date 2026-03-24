@@ -219,7 +219,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         subject { super().new(data:) }
 
         it 'raises validation error when explicitly required attributes are missing' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+          expect { subject }.to raise_error(Yes::Core::Event::InvalidDataError)
         end
       end
     end
@@ -255,7 +255,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         subject { super().new(data:) }
 
         it 'raises validation error when explicitly non-nullable attributes are nil' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+          expect { subject }.to raise_error(Yes::Core::Event::InvalidDataError)
         end
       end
     end
@@ -291,7 +291,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         subject { super().new(data:) }
 
         it 'raises validation error when required non-nullable attributes are missing' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+          expect { subject }.to raise_error(Yes::Core::Event::InvalidDataError)
         end
       end
 
@@ -301,7 +301,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         subject { super().new(data:) }
 
         it 'raises validation error when required non-nullable attributes are nil' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Event::InvalidDataError)
+          expect { subject }.to raise_error(Yes::Core::Event::InvalidDataError)
         end
       end
     end

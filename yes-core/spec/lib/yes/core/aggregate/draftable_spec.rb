@@ -208,9 +208,9 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     context 'when combined with other options' do
       let(:combined_options_class) do
         Class.new(aggregate_class) do
-          draftable draft_aggregate: { context: 'CustomContext' }, 
-                   changes_read_model: :custom_model,
-                   changes_read_model_public: false
+          draftable draft_aggregate: { context: 'CustomContext' },
+                    changes_read_model: :custom_model,
+                    changes_read_model_public: false
         end
       end
 
@@ -225,7 +225,6 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
       end
     end
   end
-
 
   describe '#initialize' do
     context 'when aggregate is draftable' do
@@ -337,10 +336,10 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
       it 'returns the changes read model' do
         expect(subject.read_model).to eq(changes_read_model_instance)
       end
-      
+
       it 'calls find_or_create_by on changes read model class' do
         subject.read_model
-        
+
         expect(changes_read_model_class).to have_received(:find_or_create_by).with(id: aggregate_id)
       end
     end
@@ -351,10 +350,10 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
       it 'returns the normal read model' do
         expect(subject.read_model).to eq(normal_read_model_instance)
       end
-      
+
       it 'calls find_or_create_by on normal read model class' do
         subject.read_model
-        
+
         expect(normal_read_model_class).to have_received(:find_or_create_by).with(id: aggregate_id)
       end
     end
@@ -385,7 +384,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
 
       it 'updates the changes read model' do
         draft_instance.update_read_model(test_attributes)
-        
+
         aggregate_failures do
           expect(changes_read_model).to have_received(:update!).with(hash_including(test_attributes))
           expect(normal_read_model).not_to have_received(:update!)
@@ -394,7 +393,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
 
       it 'calls update_draft_aggregate' do
         draft_instance.update_read_model(test_attributes)
-        
+
         expect(draft_instance).to have_received(:update_draft_aggregate)
       end
     end
@@ -406,7 +405,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
 
       it 'updates the normal read model' do
         normal_instance.update_read_model(test_attributes)
-        
+
         aggregate_failures do
           expect(normal_read_model).to have_received(:update!).with(hash_including(test_attributes))
           expect(changes_read_model).not_to have_received(:update!)
@@ -415,7 +414,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
 
       it 'does not call update_draft_aggregate' do
         normal_instance.update_read_model(test_attributes)
-        
+
         expect(normal_instance).not_to have_received(:update_draft_aggregate)
       end
     end
@@ -504,7 +503,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
     let(:draft_read_model) { double('DraftReadModel', state_draft!: true) }
     let(:read_model) { double('ReadModel', update!: true, test_aggregate_id: 'base-id') }
     let(:test_attributes) { { name: 'Test' } }
-    
+
     before do
       allow(draft_instance).to receive(:read_model).and_return(read_model)
       allow(I18n).to receive(:with_locale).and_yield
@@ -527,7 +526,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
 
         it 'updates the draft read model state to draft' do
           draft_instance.update_read_model(test_attributes)
-          
+
           expect(draft_read_model).to have_received(:state_draft!)
         end
       end
@@ -542,10 +541,10 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
         it 'does not raise an error' do
           expect { draft_instance.update_read_model(test_attributes) }.not_to raise_error
         end
-        
+
         it 'does not call state_draft!' do
           draft_instance.update_read_model(test_attributes)
-          
+
           expect(draft_read_model).not_to have_received(:state_draft!)
         end
       end
@@ -559,7 +558,7 @@ RSpec.describe Yes::Core::Aggregate::Draftable do
 
       it 'does not update the draft aggregate' do
         draft_instance.update_read_model(test_attributes)
-        
+
         expect(draft_read_model_class).not_to have_received(:find_by)
       end
     end

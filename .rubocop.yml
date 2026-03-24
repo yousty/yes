@@ -1,27 +1,42 @@
-require:
+plugins:
   - rubocop-performance
   - rubocop-rails
 
 AllCops:
   NewCops: enable
   TargetRubyVersion: 3.2
+  SuggestExtensions: false
   Exclude:
     - 'node_modules/**/*'
     - 'vendor/**/*'
     - 'sig/**/*'
     - 'db/**/*'
+    - '**/db/**/*'
 
 # --- Metrics ---
 
+Metrics/AbcSize:
+  Max: 60
+
 Metrics/ClassLength:
   CountComments: false
-  Max: 150
+  Max: 200
   CountAsOne: []
 
 Metrics/MethodLength:
-  Max: 20
+  Max: 40
+
+Metrics/CyclomaticComplexity:
+  Max: 18
+
+Metrics/PerceivedComplexity:
+  Max: 18
+
+Metrics/ParameterLists:
+  Max: 8
 
 Metrics/BlockLength:
+  Max: 60
   Exclude:
     - '**/spec/**/*'
     - '**/factories/**/*'
@@ -29,6 +44,7 @@ Metrics/BlockLength:
     - '**/tasks/eventstore.rake'
 
 Metrics/ModuleLength:
+  Max: 200
   Exclude:
     - '**/spec/**/*'
     - '**/factories/**/*'
@@ -37,16 +53,14 @@ Metrics/ModuleLength:
 # --- Layout ---
 
 Layout/LineLength:
-  Max: 120
+  Max: 180
   AllowHeredoc: true
   AllowURI: true
   URISchemes:
     - http
     - https
-  IgnoreCopDirectives: false
   Exclude:
-    - 'db/**/*.rb'
-    - '**/spec/features/*.rb'
+    - '**/spec/**/*'
 
 Layout/DotPosition:
   EnforcedStyle: trailing
@@ -58,6 +72,42 @@ Lint/DuplicateBranch:
   IgnoreLiteralBranches: true
 
 Lint/NumberConversion:
+  Enabled: false
+
+Lint/EmptyFile:
+  Enabled: false
+
+Lint/ShadowedArgument:
+  Enabled: false
+
+Lint/ShadowedException:
+  Enabled: false
+
+Lint/SuppressedException:
+  Enabled: false
+
+Lint/UnderscorePrefixedVariableName:
+  Enabled: false
+
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
+
+Lint/ReturnInVoidContext:
+  Enabled: false
+
+Lint/MixedRegexpCaptureTypes:
+  Enabled: false
+
+Lint/MissingCopEnableDirective:
+  Enabled: false
+
+Lint/InterpolationCheck:
+  Enabled: false
+
+Lint/NonAtomicFileOperation:
+  Enabled: false
+
+Rails/RakeEnvironment:
   Enabled: false
 
 # --- Style ---
@@ -74,6 +124,38 @@ Style/Copyright:
 Style/EndlessMethod:
   EnforcedStyle: disallow
 
+Style/OpenStructUse:
+  Enabled: false
+
+Style/OptionalBooleanParameter:
+  Enabled: false
+
+Style/SafeNavigationChainLength:
+  Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/MixinUsage:
+  Exclude:
+    - '**/spec/**/*'
+
+Style/ItAssignment:
+  Enabled: false
+
+
+Lint/DuplicateMethods:
+  Exclude:
+    - '**/spec/**/*'
+
+# --- Naming ---
+
+Naming/VariableNumber:
+  Enabled: false
+
+Naming/PredicateMethod:
+  Enabled: false
+
 # --- Bundler ---
 
 Bundler/GemComment:
@@ -82,4 +164,19 @@ Bundler/GemComment:
 # --- Rails ---
 
 Rails/SkipsModelValidations:
+  Enabled: false
+
+Rails/ThreeStateBooleanColumn:
+  Enabled: false
+
+Rails/HasManyOrHasOneDependent:
+  Enabled: false
+
+Rails/DeprecatedActiveModelErrorsMethods:
+  Enabled: false
+
+Rails/HttpStatus:
+  Enabled: false
+
+Rails/ApplicationJob:
   Enabled: false

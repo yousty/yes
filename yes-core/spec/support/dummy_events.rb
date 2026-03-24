@@ -99,7 +99,7 @@ module Dummy
       def up
         [
           { join: [:name, ['%{data.first_name}', '%{data.last_name}']] },
-          { set: { name: '%{name}', user_id: '%{data.user_id}', title: '' } }
+          { set: { name: '%<name>s', user_id: '%{data.user_id}', title: '' } }
         ]
       end
     end

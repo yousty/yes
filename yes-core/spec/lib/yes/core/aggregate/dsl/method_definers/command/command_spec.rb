@@ -108,7 +108,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
             let(:payload_attributes) { { default_payload_test: { type: :string, default: 'foo' } } }
 
             it 'publishes the event with correct value' do
-              aggregate.test_command_with_default_payload()
+              aggregate.test_command_with_default_payload
 
               aggregate_failures do
                 expect(latest_event.type).to eq('Test::UserDefaultPayloadTestChanged')
@@ -195,9 +195,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
 
           before do
             # Remove the command method if it exists from a previous test
-            if Test::User::Aggregate.method_defined?(:test_command_with_guard)
-              Test::User::Aggregate.remove_method(:test_command_with_guard)
-            end
+            Test::User::Aggregate.remove_method(:test_command_with_guard) if Test::User::Aggregate.method_defined?(:test_command_with_guard)
 
             # Define a command with a guard that should fail
             Test::User::Aggregate.command :test_command_with_guard do
@@ -487,16 +485,15 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
         let(:draft_latest_event) { PgEventstore.client.read(draft_stream, options: { max_count: 1, direction: :desc }).first }
         let(:changes_read_model) do
           mock = instance_double('TestUserChange',
-            update!: true,
-            id: draft_aggregate.id,
-            revision: -1,
-            document_ids: nil,
-            another: nil,
-            pending_update_since: nil,
-            pending_update_since?: false
-          )
+                                 update!: true,
+                                 id: draft_aggregate.id,
+                                 revision: -1,
+                                 document_ids: nil,
+                                 another: nil,
+                                 pending_update_since: nil,
+                                 pending_update_since?: false)
           # Add column_names method to the mock's class
-          allow(mock.class).to receive(:column_names).and_return(['id', 'revision', 'document_ids', 'another', 'pending_update_since'])
+          allow(mock.class).to receive(:column_names).and_return(%w[id revision document_ids another pending_update_since])
           # Add reload method that returns self
           allow(mock).to receive(:reload).and_return(mock)
           # Add update_column method for pending state management
@@ -583,14 +580,13 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
         let(:payload) { 'test_shorthand_value' }
         let(:changes_read_model) do
           mock = instance_double('TestUserChange',
-            update!: true,
-            id: draft_aggregate.id,
-            revision: -1,
-            another: nil,
-            pending_update_since: nil,
-            pending_update_since?: false
-          )
-          allow(mock.class).to receive(:column_names).and_return(['id', 'revision', 'another', 'pending_update_since'])
+                                 update!: true,
+                                 id: draft_aggregate.id,
+                                 revision: -1,
+                                 another: nil,
+                                 pending_update_since: nil,
+                                 pending_update_since?: false)
+          allow(mock.class).to receive(:column_names).and_return(%w[id revision another pending_update_since])
           allow(mock).to receive(:reload).and_return(mock)
           allow(mock).to receive(:update_column).with(:pending_update_since, anything)
           mock

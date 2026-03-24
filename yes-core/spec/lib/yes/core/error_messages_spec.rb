@@ -19,7 +19,7 @@ RSpec.describe Yes::Core::ErrorMessages do
       before do
         # Set up I18n translations for testing
         I18n.backend.store_translations(
-          :"de-CH", {
+          :'de-CH', {
             aggregates: {
               test: {
                 user: {
@@ -62,7 +62,7 @@ RSpec.describe Yes::Core::ErrorMessages do
       before do
         # Set up I18n translations for testing with underscored keys
         I18n.backend.store_translations(
-          :"de-CH", {
+          :'de-CH', {
             aggregates: {
               test_context: {
                 user_aggregate: {

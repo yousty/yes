@@ -253,7 +253,6 @@ RSpec.describe Yes::Core::OpenTelemetry::OtlSpan do
     end
 
     describe 'links' do
-
       shared_examples 'no links' do
         it 'does not create links' do
           subject

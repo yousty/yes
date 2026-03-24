@@ -72,7 +72,7 @@ module Yes
         otl_trackable(
           :call,
           Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Update read model',
-                                                                     span_kind: :producer, track_sql: true)
+                                                         span_kind: :producer, track_sql: true)
         )
 
         private

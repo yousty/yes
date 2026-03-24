@@ -70,7 +70,7 @@ module Yes
         # Runs the given commands through their respective aggregates.
         # @param commands [Array<Command>] the commands to run
         # @return [Array<Response>] responses from the performed commands
-        def run_commands(commands, inline = false)
+        def run_commands(commands, _inline = false)
           commands.map do |cmd|
             cmd_response = run_command(cmd)
             command_notifiers.each { _1.notify_command_response(cmd_response) }

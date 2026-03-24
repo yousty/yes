@@ -17,7 +17,7 @@ module Yes
           attribute? :origin, Types::String.optional
           attribute? :batch_id, Types::String.optional
           attribute? :metadata, Types::Hash.optional
-          attribute :command_id, (Types::UUID.default { SecureRandom.uuid })
+          attribute(:command_id, Types::UUID.default { SecureRandom.uuid })
 
           # @param attributes [Hash] constructor parameters
           # @raise [Invalid] if the parameters are invalid
@@ -39,9 +39,9 @@ module Yes
 
           # @return [Array<Symbol>] List of subjects in the current context
           def own_context_subjects
-            commands
-              .select { _1.to_s.split('::')[0].underscore.to_sym == own_context }
-              .map { _1.to_s.split('::')[1].underscore.to_sym }.uniq
+            commands.
+              select { _1.to_s.split('::')[0].underscore.to_sym == own_context }.
+              map { _1.to_s.split('::')[1].underscore.to_sym }.uniq
           end
 
           # @return [Symbol] The context of the current command group

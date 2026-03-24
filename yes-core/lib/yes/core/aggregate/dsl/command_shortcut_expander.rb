@@ -73,7 +73,7 @@ module Yes
 
           private
 
-          def handle_toggle_commands # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+          def handle_toggle_commands
             raise InvalidShortcut if block.present?
 
             command_subject = args.second
@@ -118,7 +118,7 @@ module Yes
             ExpandedCommandShortcut.new(attributes:, commands:)
           end
 
-          def handle_change_command # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          def handle_change_command
             raise InvalidShortcut if args.size > 3
 
             command_subject = args[1]
@@ -159,7 +159,7 @@ module Yes
             ExpandedCommandShortcut.new(attributes:, commands:)
           end
 
-          def handle_enable_command # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+          def handle_enable_command
             raise InvalidShortcut if args.size > 2
 
             command_verb = args.first

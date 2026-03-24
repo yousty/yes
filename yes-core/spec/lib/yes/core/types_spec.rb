@@ -23,9 +23,9 @@ RSpec.describe Yes::Core::Types do
     context 'when given a valid hash' do
       let(:hash) do
         {
-          "2024" => "2023-09-10",
-          "2025" => "2024-12-11",
-          2026 => "2025-11-10"
+          '2024' => '2023-09-10',
+          '2025' => '2024-12-11',
+          2026 => '2025-11-10'
         }
       end
 
@@ -37,8 +37,8 @@ RSpec.describe Yes::Core::Types do
         context 'when key contains underscores' do
           let(:hash) do
             {
-              "2_0_2_4" => "2023-09-10",
-              "2025" => "2024-12-11"
+              '2_0_2_4' => '2023-09-10',
+              '2025' => '2024-12-11'
             }
           end
 
@@ -48,8 +48,8 @@ RSpec.describe Yes::Core::Types do
         context 'when key contains letters' do
           let(:hash) do
             {
-              "2024A" => "2023-09-10",
-              "2025" => "2024-12-11"
+              '2024A' => '2023-09-10',
+              '2025' => '2024-12-11'
             }
           end
         end
@@ -59,8 +59,8 @@ RSpec.describe Yes::Core::Types do
         context 'when date is not in the correct format' do
           let(:hash) do
             {
-              "2024" => "2023/09/10",
-              "2025" => "2024-12-11"
+              '2024' => '2023/09/10',
+              '2025' => '2024-12-11'
             }
           end
 

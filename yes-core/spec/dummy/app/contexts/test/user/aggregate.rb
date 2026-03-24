@@ -87,7 +87,7 @@ module Test
       end
 
       command :test_dynamic_default do
-        payload dynamic_default_test: { type: :datetime, default: -> { (Time.zone.now + 1.day).strftime('%Y-%m-%d %H:%M:%S') } }
+        payload dynamic_default_test: { type: :datetime, default: -> { 1.day.from_now.strftime('%Y-%m-%d %H:%M:%S') } }
 
         event :dynamic_default_test_changed
       end

@@ -11,7 +11,7 @@ module Yes
           return {} unless event.respond_to?(:ps_fields_with_values)
 
           keys = event.ps_fields_with_values
-          return {} if !keys || keys.empty?
+          return {} if keys.blank?
 
           raise Yes::Core::PayloadStore::Errors::MissingClient unless payload_store_client
 

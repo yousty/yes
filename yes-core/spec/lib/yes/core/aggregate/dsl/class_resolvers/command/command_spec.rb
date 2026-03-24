@@ -320,7 +320,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           let(:payload) { { user_id:, email:, name: } }
 
           it 'raises validation error when explicitly required attributes are missing' do
-            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+            expect { subject }.to raise_error(Yes::Core::Command::Invalid)
           end
         end
       end
@@ -364,7 +364,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           let(:payload) { { user_id:, email:, name:, phone: nil, age: nil } }
 
           it 'raises validation error when explicitly non-nullable attributes are nil' do
-            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+            expect { subject }.to raise_error(Yes::Core::Command::Invalid)
           end
         end
       end
@@ -408,7 +408,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           let(:payload) { { user_id:, email:, name: } }
 
           it 'raises validation error when required non-nullable attributes are missing' do
-            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+            expect { subject }.to raise_error(Yes::Core::Command::Invalid)
           end
         end
 
@@ -419,7 +419,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
           let(:payload) { { user_id:, email:, name:, phone: nil, age: nil } }
 
           it 'raises validation error when required non-nullable attributes are nil' do
-            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+            expect { subject }.to raise_error(Yes::Core::Command::Invalid)
           end
         end
       end

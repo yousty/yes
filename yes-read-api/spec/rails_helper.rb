@@ -19,11 +19,19 @@ rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
 
+FactoryBot.definition_file_paths = [File.join(__dir__, 'factories')]
+FactoryBot.find_definitions
+
 RSpec.configure do |config|
   config.use_transactional_fixtures = true
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
 
+  config.include FactoryBot::Syntax::Methods
   config.include JwtHelpers, type: :request
   config.include APIHelpers, type: :request
+
+  config.before do
+    Yes::Core.configuration.auth_adapter = DummyAuthAdapter.new
+  end
 end

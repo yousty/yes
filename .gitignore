@@ -13,7 +13,6 @@
 .rubocop-https*
 .idea
 
-Gemfile.lock
 .rspec_status
 
 # Dummy apps

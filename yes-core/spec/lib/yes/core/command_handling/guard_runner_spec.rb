@@ -58,7 +58,11 @@ RSpec.describe Yes::Core::CommandHandling::GuardRunner do
       end
 
       it 'sets error on aggregate' do
-        subject rescue nil
+        begin
+          subject
+        rescue StandardError
+          nil
+        end
 
         expect(aggregate.change_name_error).to include('no_change')
       end

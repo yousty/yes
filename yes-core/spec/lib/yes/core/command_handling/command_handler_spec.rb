@@ -249,27 +249,27 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
           expect { subject }.to raise_error(Yes::Core::CommandHandling::ConcurrentUpdateError)
         end
       end
-      
+
       context 'when recovery service fails' do
         before do
-          allow(Yes::Core::CommandHandling::ReadModelRecoveryService)
-            .to receive(:check_and_recover_with_retries)
-            .and_raise(StandardError, 'Recovery failed')
+          allow(Yes::Core::CommandHandling::ReadModelRecoveryService).
+            to receive(:check_and_recover_with_retries).
+            and_raise(StandardError, 'Recovery failed')
         end
-  
+
         it 'propagates the error' do
           expect { handler.call(command_name, payload) }.to raise_error(StandardError, 'Recovery failed')
         end
       end
-  
+
       context 'when command building fails' do
         let(:payload) { { name: 'Jane' } } # Missing required user_id
-  
+
         it 'raises an error' do
           # The command utilities will add user_id from aggregate_id by default,
           # so let's test with a completely invalid payload
           invalid_payload = { invalid_field: 'value' }
-  
+
           expect { handler.call(command_name, invalid_payload) }.to raise_error(Yes::Core::Command::Invalid)
         end
       end

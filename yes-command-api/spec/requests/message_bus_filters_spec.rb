@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require_relative '../rails_helper'
 
 RSpec.describe 'MessageBus filters' do
   subject do
@@ -17,6 +17,10 @@ RSpec.describe 'MessageBus filters' do
   let(:first_message) { { command: 'assign', published_at: 50, batch_id: 1, type: 'bar' } }
   let(:second_message) { { command: 'remove', published_at: 100, batch_id: 2, type: 'baz' } }
 
+  # MessageBus middleware bypasses Rails response handling, so parsed_body
+  # does not auto-parse JSON. Use explicit JSON.parse instead.
+  let(:parsed_response) { response.parsed_body }
+
   before do
     MessageBus.publish(channel_name, first_message)
     MessageBus.publish(channel_name, second_message)
@@ -26,8 +30,8 @@ RSpec.describe 'MessageBus filters' do
     it 'returns all events from the channel' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end
@@ -40,8 +44,8 @@ RSpec.describe 'MessageBus filters' do
     it 'returns messages, filtered by the given batch id' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).not_to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end
@@ -54,8 +58,8 @@ RSpec.describe 'MessageBus filters' do
     it 'returns messages, filtered by the given type' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).not_to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end
@@ -68,8 +72,8 @@ RSpec.describe 'MessageBus filters' do
     it 'returns messages, filtered by the given command name' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).not_to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end
@@ -82,20 +86,20 @@ RSpec.describe 'MessageBus filters' do
     it 'returns messages, filtered by the published time' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).not_to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end
 
   describe 'filtering by starting position' do
-    let(:last_viewed_id) { MessageBus::Rails::Message.first.id }
+    let(:last_viewed_id) { MessageBus.last_id(channel_name) - 1 }
 
     it 'returns all messages, starting after provided id' do
       subject
       aggregate_failures do
-        expect(response.parsed_body).not_to include(a_hash_including('data' => first_message.as_json))
-        expect(response.parsed_body).to include(a_hash_including('data' => second_message.as_json))
+        expect(parsed_response).not_to include(a_hash_including('data' => first_message.as_json))
+        expect(parsed_response).to include(a_hash_including('data' => second_message.as_json))
       end
     end
   end

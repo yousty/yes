@@ -119,9 +119,7 @@ module Yes
         # Returns the aggregate ID from the command.
         #
         # @return [String] the aggregate ID
-        def aggregate_id
-          cmd.aggregate_id
-        end
+        delegate :aggregate_id, to: :cmd
       end
     end
   end

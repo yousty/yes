@@ -53,7 +53,6 @@ RSpec.describe Yes::Core::Commands::Group do
     expect(cmd.command_id).not_to be_nil
   end
 
-
   context 'invalid transaction' do
     let(:transaction) { Class.new }
 
@@ -77,7 +76,7 @@ RSpec.describe Yes::Core::Commands::Group do
       expect(subject).to(
         eq(
           dummy: {
-            company: { company_id:, name: company_name, description:},
+            company: { company_id:, name: company_name, description: },
             user: { user_id:, first_name:, last_name: }
           }
         )
