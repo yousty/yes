@@ -7,7 +7,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :what, Yes::Core::Types::String
           attribute :id, Yes::Core::Types::UUID
-          alias subject_id id
+          alias aggregate_id id
         end
 
         class Authorizer < Yes::Core::Authorization::CommandAuthorizer
@@ -27,7 +27,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :what, Yes::Core::Types::String
           attribute :id, Yes::Core::Types::UUID
-          alias subject_id id
+          alias aggregate_id id
         end
       end
 
@@ -35,7 +35,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :what, Yes::Core::Types::String
           attribute :id, Yes::Core::Types::UUID
-          alias subject_id id
+          alias aggregate_id id
         end
 
         class Authorizer < Yes::Core::Authorization::CommandAuthorizer
@@ -49,7 +49,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :what, Yes::Core::Types::String
           attribute :id, Yes::Core::Types::UUID
-          alias subject_id id
+          alias aggregate_id id
         end
 
         class Authorizer < Yes::Core::Authorization::CommandAuthorizer
@@ -69,7 +69,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :what, Yes::Core::Types::String
           attribute :id, Yes::Core::Types::UUID
-          alias subject_id id
+          alias aggregate_id id
         end
 
         class Authorizer < Yes::Core::Authorization::CommandAuthorizer
@@ -104,7 +104,7 @@ module Dummy
           attribute :first_name, Yes::Core::Types::String
           attribute :last_name, Yes::Core::Types::String
           attribute :user_id, Yes::Core::Types::UUID
-          alias subject_id user_id
+          alias aggregate_id user_id
         end
       end
     end
@@ -116,7 +116,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :name, Yes::Core::Types::String
           attribute :company_id, Yes::Core::Types::UUID
-          alias subject_id company_id
+          alias aggregate_id company_id
         end
       end
 
@@ -124,7 +124,7 @@ module Dummy
         class Command < Yes::Core::Command
           attribute :description, Yes::Core::Types::String
           attribute :company_id, Yes::Core::Types::UUID
-          alias subject_id company_id
+          alias aggregate_id company_id
         end
       end
 
@@ -134,7 +134,7 @@ module Dummy
           attribute :company_id, Yes::Core::Types::UUID
           attribute :team_member_id, Yes::Core::Types::UUID
           attribute :name, Yes::Core::Types::String
-          alias subject_id company_id
+          alias aggregate_id company_id
         end
       end
 

@@ -75,7 +75,7 @@ module Yes
           private :events_cache, :cmd_helper, :cmd
 
           delegate :origin, :batch_id, :transaction, to: :cmd
-          delegate :subject_id, :context, :subject, :locale, :event_payload, to: :cmd_helper
+          delegate :aggregate_id, :context, :subject, :locale, :event_payload, to: :cmd_helper
           alias attributes event_payload
 
           # @param cmd [Yes::Core::Command]
@@ -138,7 +138,7 @@ module Yes
 
           # @return [PgEventstore::Stream]
           def stream
-            PgEventstore::Stream.new(context:, stream_name: stream_name(subject), stream_id: subject_id)
+            PgEventstore::Stream.new(context:, stream_name: stream_name(subject), stream_id: aggregate_id)
           end
 
           # @param subject [String]
@@ -214,16 +214,16 @@ module Yes
 
           # @param context [String]
           # @param subject [String]
-          # @param subject_id [String]
+          # @param aggregate_id [String]
           # @param stream_prefix [String, nil]
           # @return [Yes::Core::Commands::Stateless::Subject]
           def subject_data(
             context: self.class.to_s.split('::')[0],
             subject: self.class.to_s.split('::')[1],
-            subject_id: self.subject_id,
+            aggregate_id: self.aggregate_id,
             stream_prefix: nil
           )
-            Yes::Core::Commands::Stateless::Subject.new(context:, subject:, stream_prefix:, subject_id:)
+            Yes::Core::Commands::Stateless::Subject.new(context:, subject:, stream_prefix:, aggregate_id:)
           end
 
           # @param command [String]

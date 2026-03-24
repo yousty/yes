@@ -84,7 +84,7 @@ module Yes
         def run_command(cmd)
           command_helper = Yes::Core::Commands::Helper.new(cmd)
           draft = draft?(cmd)
-          aggregate = aggregate_class(cmd).new(cmd.subject_id, draft:)
+          aggregate = aggregate_class(cmd).new(cmd.aggregate_id, draft:)
           I18n.with_locale(command_helper.command_locale) do
             # Pass payload as first argument, guards as option
             aggregate.public_send(command_helper.command_name, cmd.to_h, guards: !draft)

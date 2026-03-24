@@ -168,17 +168,17 @@ module Yes
           # Returns a subject object composed based on the command group handler class
           # @param context [String] the context of the subject
           # @param subject [String] the subject of the command group
-          # @param subject_id [String] the id of the subject
+          # @param aggregate_id [String] the id of the aggregate
           # @param stream_prefix [String] the stream prefix of the subject
           # @return [Yes::Core::Commands::Stateless::Subject] the subject object
           def subject_data(
             context: self.class.to_s.split('::')[0],
             subject: self.class.to_s.split('::')[1],
-            subject_id: nil,
+            aggregate_id: nil,
             stream_prefix: nil
           )
             Yes::Core::Commands::Stateless::Subject.new(
-              context:, subject:, stream_prefix:, subject_id:
+              context:, subject:, stream_prefix:, aggregate_id:
             )
           end
         end

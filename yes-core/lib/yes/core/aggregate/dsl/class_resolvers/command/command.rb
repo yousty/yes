@@ -59,7 +59,6 @@ module Yes
                   end
 
                   alias_method :aggregate_id, :"#{aggregate.underscore}_id"
-                  alias_method :subject_id, :aggregate_id
                 end
               end
             end

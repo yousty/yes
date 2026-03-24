@@ -80,6 +80,13 @@ module Yes
 
         delegate :transaction, :origin, :batch_id, :metadata, :command_id, to: :group_attributes
 
+        # Returns the aggregate ID from the first command in the group.
+        #
+        # @return [String, nil] the aggregate ID
+        def aggregate_id
+          commands.first&.aggregate_id
+        end
+
         # Initialize a new Group.
         #
         # @param params [Hash] Parameters for the command group (meta attributes and command payload)

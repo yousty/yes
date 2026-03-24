@@ -7,7 +7,7 @@ module Yes
         # Subject object is responsible for holding subject data
         #
         # @attr subject [String]
-        # @attr subject_id [String]
+        # @attr aggregate_id [String]
         # @attr context [String]
         # @attr stream_prefix [String] value is optional
         #
@@ -15,9 +15,9 @@ module Yes
         #   Yes::Core::Commands::Stateless::Subject.new(
         #     context: 'ApprenticeshipPresentation',
         #     subject: 'Apprenticeship',
-        #     subject_id: '123'
+        #     aggregate_id: '123'
         #   )
-        class Subject < Data.define(:subject, :subject_id, :context, :stream_prefix)
+        class Subject < Data.define(:subject, :aggregate_id, :context, :stream_prefix)
           OPTIONAL_FIELDS = %i[stream_prefix].index_with(nil).freeze
 
           def initialize(**attrs)
@@ -27,7 +27,7 @@ module Yes
           # @return [PgEventstore::Stream]
           def stream
             parts = computed_stream_prefix.split('::')
-            PgEventstore::Stream.new(context: parts[0], stream_name: parts[1..].join('::'), stream_id: subject_id)
+            PgEventstore::Stream.new(context: parts[0], stream_name: parts[1..].join('::'), stream_id: aggregate_id)
           end
 
           # @return [String]
