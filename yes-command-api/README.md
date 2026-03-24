@@ -13,19 +13,16 @@ gem "yes-command-api"
 
 And then execute:
 ```bash
-$ bundle
-```
-
-Or install it yourself as:
-```bash
-$ gem install yes-command-api
+bundle install
 ```
 
 ## Usage
 
+See the [root README](../README.md) for the full DSL documentation, aggregate definition, and usage examples.
+
 ### Configuration
 
-The preferred way of issuing commands using the commands api is asyncronously.
+The preferred way of issuing commands using the commands API is asynchronously.
 
 For that, you need to configure Yes::Core to process commands asynchronously.
 
@@ -34,7 +31,7 @@ Yes::Core.configure do |config|
   config.process_commands_inline = false
 end
 ```
-If `process_commands_inline` is true, commands will be processed using the currently configured ActiveJob adapter.
+If `process_commands_inline` is true (the default), commands are processed synchronously in the request. When set to false, commands are enqueued via ActiveJob for asynchronous processing.
 
 
 ### Mounting the Endpoint
@@ -127,7 +124,7 @@ You can filter messages by providing filter params in the request url. Here they
 
 You can provide a starting message id to start receiving messages from certain position. As stated in docs - you should pass it in the payload along with a channel name to subscribe to:
 
-```ruby
+```javascript
 let payload = { 'some-channel-name': 123 }
 ```
 

@@ -1,4 +1,4 @@
-# Yes::Read::Api
+# Yes Read API
 
 This gem implements an endpoint to query read models.
 
@@ -14,7 +14,9 @@ and run `bundle install`
 
 ## Usage
 
-There are few steps you need to do in order to integrate this gem. In the examples bellow I assume you have an `Apprenticeship` read model class. Modules structure is strict.
+See the [root README](../README.md) for the full DSL documentation and aggregate definition.
+
+There are a few steps you need to do in order to integrate this gem. In the examples below we assume you have an `Apprenticeship` read model class. The module structure is strict.
 
 - Mount gem's endpoint to use it. Example(in `routes.rb`):
 
@@ -24,7 +26,7 @@ Rails.application.routes.draw do
 end
 ```
 
-- Define a set of registered models. You can do it as follows(in `application.rb`)
+- Define a set of registered models. You can do it as follows (in `application.rb`)
 
 ```ruby
 config.yes_read_api.read_models = ['apprenticeships']
@@ -64,7 +66,7 @@ module ReadModels
 end
 ```
 
-- _Optional._ Define authorizer of your read model:
+- _Optional._ Define an authorizer for your read model. You can inherit from `Yes::Core::ReadModelAuthorizer` or define your own base class:
 
 ```ruby
 module ReadModels
@@ -108,7 +110,7 @@ You can change this behavior per each request by adding `page[include_total]=tru
 
 If you wish to change the default behavior globally, so `X-Total` header is returned for the every request response by default, you can set globally `Pagy::DEFAULT[:countless_minimal] = false` or example in the `pagy_initializer.rb`. In this case `page[include_total]` param is ignored.
 
-More you can read here: [PAgy Countless](https://ddnexus.github.io/pagy/docs/extras/countless/)
+More you can read here: [Pagy Countless](https://ddnexus.github.io/pagy/docs/extras/countless/)
 
 
 

@@ -173,7 +173,7 @@ The attribute system supports various types:
 - `:date` - Date values
 - `:uuids` - Arrays of UUIDs
 
-For the complete list, see [lib/yes/type_lookup.rb](lib/yes/type_lookup.rb)
+For the complete list, see [yes-core/lib/yes/core/type_lookup.rb](yes-core/lib/yes/core/type_lookup.rb)
 
 ### Attribute Commands
 
@@ -471,7 +471,7 @@ end
 
 ### Command shortcuts
 
-For most frequently used cases *Yes* DSL allows to use shortcuts in `command` definitions.
+For the most frequently used cases *Yes* DSL allows to use shortcuts in `command` definitions.
 
 #### Change command with attribute
 
@@ -633,7 +633,7 @@ command :update_profile do
 
   # Will trigger a no-change transition error if bio hasn't changed
   guard :no_change do
-    payload.bio == bio
+    payload.bio != bio
   end
 
   # Will trigger an invalid transition error if bio contains prohibited words
@@ -1114,10 +1114,10 @@ Setup databases:
 ./bin/setup_db
 ```
 
-Enter a development console:
+Enter a development console (from a gem's `spec/dummy` directory):
 
 ```shell
-rails c
+cd yes-core/spec/dummy && rails c
 ```
 
 ### Example Usage
@@ -1131,10 +1131,10 @@ User.last.name # => "John Doe"
 
 ### Testing the APIs
 
-The dummy app includes mounted command and read APIs for testing. Start the server with:
+The dummy app includes mounted command and read APIs for testing. Start the server from a gem's `spec/dummy` directory:
 
 ```shell
-rails s
+cd yes-core/spec/dummy && rails s
 ```
 
 #### Setting Up Authentication
@@ -1195,16 +1195,26 @@ curl --location 'http://127.0.0.1:3000/queries/users' \
 
 ### Running Specs
 
-To run specs for any of the Yes gems:
+Each gem has its own test suite that runs in isolation with its own bundle context.
+
+Run specs for a single gem:
 
 ```shell
-bundle exec rspec <gem-directory>/spec
+rake yes_core:spec
+rake yes_command_api:spec
+rake yes_read_api:spec
 ```
 
-Example:
+Run specs for all gems:
 
 ```shell
-bundle exec rspec yes-core/spec
+rake spec
+```
+
+You can also run specs directly from within a gem directory:
+
+```shell
+cd yes-core && bundle exec rspec spec
 ```
 
 ### Gem Installation and Release
@@ -1227,4 +1237,12 @@ This creates a git tag, pushes commits and tags, and pushes the gem to [rubygems
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/yousty/yes.
+Bug reports and pull requests are welcome on GitHub at https://github.com/yousty/yes. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
+
+## License
+
+The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
