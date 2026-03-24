@@ -12,7 +12,7 @@ RSpec.describe Yes::Core::Commands::Bus do
     let(:batch_id) { SecureRandom.uuid }
 
     let(:do_something) do
-      Dummy::Commands::Activity::DoSomething.new(
+      Dummy::Activity::Commands::DoSomething::Command.new(
         id: SecureRandom.uuid, what: 'Make coffee'
       )
     end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require_relative '../../../../../rails_helper'
 
 RSpec.describe Yes::Command::Api::Commands::Deserializer do
   describe '.call' do
@@ -39,9 +39,9 @@ RSpec.describe Yes::Command::Api::Commands::Deserializer do
 
       it 'instantiates commands' do
         aggregate_failures do
-          expect(subject[0]).to be_a(Dummy::Commands::Activity::DoSomething)
+          expect(subject[0]).to be_a(Dummy::Activity::Commands::DoSomething::Command)
           expect(subject[0].attributes).to include(data1)
-          expect(subject[1]).to be_a(Dummy::Commands::Activity::DoSomethingElse)
+          expect(subject[1]).to be_a(Dummy::Activity::Commands::DoSomethingElse::Command)
           expect(subject[1].attributes).to include(data2)
         end
       end
@@ -93,9 +93,9 @@ RSpec.describe Yes::Command::Api::Commands::Deserializer do
 
         it 'instantiates commands' do
           aggregate_failures do
-            expect(subject[0]).to be_a(Dummy::Commands::Activity::DoSomething)
-            expect(subject[1]).to be_a(Dummy::Commands::Activity::DoSomethingElse)
-            expect(subject[1]).to be_a(Dummy::Commands::Activity::DoSomethingElse)
+            expect(subject[0]).to be_a(Dummy::Activity::Commands::DoSomething::Command)
+            expect(subject[1]).to be_a(Dummy::Activity::Commands::DoSomethingElse::Command)
+            expect(subject[1]).to be_a(Dummy::Activity::Commands::DoSomethingElse::Command)
           end
         end
 
@@ -131,7 +131,7 @@ RSpec.describe Yes::Command::Api::Commands::Deserializer do
 
         it 'instantiates commands' do
           aggregate_failures do
-            expect(subject[0]).to be_a(Dummy::Commands::Activity::DoSomething)
+            expect(subject[0]).to be_a(Dummy::Activity::Commands::DoSomething::Command)
             expect(subject[0].attributes).to include(data1)
             expect(subject[1]).to be_a(Dummy::Company::Commands::DoSomethingCompounded::Command)
             expect(subject[1].payload[:dummy]).to eq(data2)

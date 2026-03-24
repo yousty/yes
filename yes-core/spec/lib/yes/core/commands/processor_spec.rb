@@ -10,7 +10,7 @@ RSpec.describe Yes::Core::Commands::Processor do
   let(:batch_id) { nil }
 
   let(:single_command) do
-    Dummy::Commands::Activity::DoSomething.new(
+    Dummy::Activity::Commands::DoSomething::Command.new(
       id: SecureRandom.uuid, what: 'Make coffee'
     )
   end
@@ -146,10 +146,10 @@ RSpec.describe Yes::Core::Commands::Processor do
     context 'with multiple commands' do
       let(:do_something) do
         [
-          Dummy::Commands::Activity::DoSomething.new(
+          Dummy::Activity::Commands::DoSomething::Command.new(
             id: SecureRandom.uuid, what: 'Make coffee'
           ),
-          Dummy::Commands::Activity::DoSomethingElse.new(
+          Dummy::Activity::Commands::DoSomethingElse::Command.new(
             id: SecureRandom.uuid, what: 'Make tea'
           )
         ]
@@ -217,7 +217,7 @@ RSpec.describe Yes::Core::Commands::Processor do
       end
 
       before do
-        # Group commands don't have subject_id, so stub run_command directly
+        # Group commands don't have aggregate_id, so stub run_command directly
         allow_any_instance_of(described_class).to receive(:run_command).and_return(group_response)
       end
 
@@ -293,7 +293,7 @@ RSpec.describe Yes::Core::Commands::Processor do
           expect(published_messages[0][:commands]).to(
             eq(
               [{
-                command: 'Dummy::Commands::Activity::DoSomething',
+                command: 'Dummy::Activity::Commands::DoSomething::Command',
                 command_id: do_something.command_id
               }]
             )
@@ -301,7 +301,7 @@ RSpec.describe Yes::Core::Commands::Processor do
           expect(published_messages[1][:type]).to eq('command_success')
           expect(published_messages[1][:id]).to eq(do_something.command_id)
           expect(published_messages[2][:type]).to eq('batch_finished')
-          expect(published_messages[1][:command]).to eq('Dummy::Commands::Activity::DoSomething')
+          expect(published_messages[1][:command]).to eq('Dummy::Activity::Commands::DoSomething::Command')
 
           batch_messages = published_messages.values_at(0, 2)
           expect(batch_messages.pluck(:batch_id).uniq.length).to eq(1)
@@ -342,7 +342,7 @@ RSpec.describe Yes::Core::Commands::Processor do
             expect(published_messages[2][:failed_commands]).to eq(
               [
                 {
-                  command: 'Dummy::Commands::Activity::DoSomething',
+                  command: 'Dummy::Activity::Commands::DoSomething::Command',
                   command_id: do_something.command_id,
                   error: 'Not allowed'
                 }

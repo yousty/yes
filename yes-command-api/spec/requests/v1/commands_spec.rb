@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require_relative '../../rails_helper'
 
 RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
   include_context :request_header_variables
@@ -119,7 +119,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
       it_behaves_like 'open telemetry trackable' do
         let(:expected_spans_amount) { 3 }
         let(:extra_spans_name) { ['Set Channel'] }
-        let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel track_sql] } }
+        let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel root_track_sql track_sql] } }
       end
     end
 
@@ -145,7 +145,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         it_behaves_like 'open telemetry trackable' do
           let(:expected_spans_amount) { 3 }
           let(:extra_spans_name) { ['Set Channel'] }
-          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel track_sql] } }
+          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel root_track_sql track_sql] } }
         end
       end
 
@@ -163,7 +163,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         it_behaves_like 'open telemetry trackable' do
           let(:expected_spans_amount) { 3 }
           let(:extra_spans_name) { ['Set Channel'] }
-          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel track_sql] } }
+          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel root_track_sql track_sql] } }
         end
       end
 
@@ -181,7 +181,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         it_behaves_like 'open telemetry trackable' do
           let(:expected_spans_amount) { 3 }
           let(:extra_spans_name) { ['Set Channel'] }
-          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel track_sql] } }
+          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel root_track_sql track_sql] } }
         end
       end
 
@@ -199,7 +199,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         it_behaves_like 'open telemetry trackable' do
           let(:expected_spans_amount) { 3 }
           let(:extra_spans_name) { ['Set Channel'] }
-          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel track_sql] } }
+          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel root_track_sql track_sql] } }
         end
       end
 
@@ -212,7 +212,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         it_behaves_like 'open telemetry trackable' do
           let(:expected_spans_amount) { 3 }
           let(:extra_spans_name) { ['Set Channel'] }
-          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel track_sql] } }
+          let(:extra_attribute_keys) { { extra_spans_name[0] => %w[channel root_track_sql track_sql] } }
         end
       end
     end
@@ -232,7 +232,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
       it_behaves_like 'open telemetry trackable' do
         let(:expected_spans_amount) { 3 }
         let(:extra_spans_name) { ['Set Channel'] }
-        let(:extra_attribute_keys) { { extra_spans_name[0] => %w[track_sql] } }
+        let(:extra_attribute_keys) { { extra_spans_name[0] => %w[root_track_sql track_sql] } }
       end
     end
 
@@ -264,8 +264,8 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         let(:extra_spans_name) { ['Set Channel', 'Deserialize Commands'] }
         let(:extra_attribute_keys) do
           {
-            extra_spans_name[0] => %w[channel track_sql],
-            extra_spans_name[1] => %w[failed track_sql]
+            extra_spans_name[0] => %w[channel root_track_sql track_sql],
+            extra_spans_name[1] => %w[failed root_track_sql track_sql]
           }
         end
       end
@@ -298,8 +298,8 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         let(:extra_spans_name) { ['Set Channel', 'Deserialize Commands'] }
         let(:extra_attribute_keys) do
           {
-            extra_spans_name[0] => %w[channel track_sql],
-            extra_spans_name[1] => %w[failed track_sql]
+            extra_spans_name[0] => %w[channel root_track_sql track_sql],
+            extra_spans_name[1] => %w[failed root_track_sql track_sql]
           }
         end
       end
@@ -326,9 +326,9 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         let(:extra_spans_name) { ['Set Channel', 'Authorize Commands', 'Deserialize Commands'] }
         let(:extra_attribute_keys) do
           {
-            extra_spans_name[0] => %w[channel track_sql],
-            extra_spans_name[1] => %w[track_sql unauthorized],
-            extra_spans_name[2] => %w[track_sql]
+            extra_spans_name[0] => %w[channel root_track_sql track_sql],
+            extra_spans_name[1] => %w[root_track_sql track_sql unauthorized],
+            extra_spans_name[2] => %w[root_track_sql track_sql]
           }
         end
       end
@@ -355,9 +355,9 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         let(:extra_spans_name) { ['Set Channel', 'Authorize Commands', 'Deserialize Commands'] }
         let(:extra_attribute_keys) do
           {
-            extra_spans_name[0] => %w[channel track_sql],
-            extra_spans_name[1] => %w[track_sql],
-            extra_spans_name[2] => %w[track_sql]
+            extra_spans_name[0] => %w[channel root_track_sql track_sql],
+            extra_spans_name[1] => %w[root_track_sql track_sql],
+            extra_spans_name[2] => %w[root_track_sql track_sql]
           }
         end
       end
@@ -382,18 +382,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
       end
 
       before do
-        command_registry = Yes::Core::CommandRegistry.new
-        command_registry.register(
-          Dummy::Commands::Activity::DoSomethingElse,
-          Dummy::Commands::Activity::DummyHandler
-        )
-        command_registry.register(
-          Dummy::Commands::Activity::DoSomethingImpossible,
-          Dummy::Commands::Activity::DummyHandler
-        )
-        Yes::Core.configure do |config|
-          config.command_registry = command_registry
-        end
+        allow(Yes::Core.configuration).to receive(:guard_evaluator_class).and_return(double('GuardEvaluator'))
       end
 
       shared_examples 'publishes messages' do
@@ -417,10 +406,10 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
             expect(messages_data[3]['batch_id']).to eq(batch_id)
 
             expect(messages_data[1]['command']).to(
-              eq('Dummy::Commands::Activity::DoSomethingElse')
+              eq('Dummy::Activity::Commands::DoSomethingElse::Command')
             )
             expect(messages_data[2]['command']).to(
-              eq('Dummy::Commands::Activity::DoSomethingImpossible')
+              eq('Dummy::Activity::Commands::DoSomethingImpossible::Command')
             )
           end
         end
@@ -436,51 +425,52 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
 
         it_behaves_like 'successful inline write response'
         it_behaves_like 'open telemetry trackable' do
-          let(:expected_spans_amount) { 9 }
+          let(:expected_spans_amount) { 8 }
           let(:extra_spans_name) do
             [
               'Set Channel',
               'Authorize Commands',
               'Deserialize Commands',
               'Command Bus Schedule',
-              'Process Dummy::Commands::Activity::DoSomethingElse',
-              'Process Dummy::Commands::Activity::DoSomethingImpossible',
+              'Run Commands',
               'Command Processor Perform'
             ]
           end
           let(:extra_attribute_keys) do
             {
-              extra_spans_name[0] => %w[track_sql channel],
-              extra_spans_name[1] => %w[track_sql],
-              extra_spans_name[2] => %w[track_sql],
-              extra_spans_name[3] => %w[track_sql
-                                        perform_method
-                                        origin
-                                        name
-                                        correlation_id
-                                        caller_id
-                                        caller_type
-                                        otl_contexts.root.traceparent
-                                        otl_contexts.root.service],
-              extra_spans_name[4] => %w[command_response],
-              extra_spans_name[5] => %w[command_response],
-              extra_spans_name[6] => %w[total_commands_in_batch]
+              extra_spans_name[0] => %w[root_track_sql track_sql channel],
+              extra_spans_name[1] => %w[root_track_sql track_sql],
+              extra_spans_name[2] => %w[root_track_sql track_sql],
+              extra_spans_name[3] => %w[origin perform_method root_track_sql track_sql],
+              extra_spans_name[5] => %w[root_track_sql track_sql]
             }
           end
         end
 
         context 'executing commands' do
-          let(:handler) { instance_spy(Dummy::Commands::Activity::DummyHandler) }
+          let(:aggregate) { spy('Dummy::Activity::Aggregate') }
 
           before do
-            allow(Dummy::Commands::Activity::DummyHandler).to receive(:new).and_return(handler)
-            allow(handler).to receive(:call)
+            allow(Dummy::Activity::Aggregate).to receive(:new).and_return(aggregate)
+            allow(aggregate).to receive(:do_something_else).and_return(
+              Yes::Core::Commands::Response.new(
+                cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+              )
+            )
+            allow(aggregate).to receive(:do_something_impossible).and_return(
+              Yes::Core::Commands::Response.new(
+                cmd: Dummy::Activity::Commands::DoSomethingImpossible::Command.new(id: SecureRandom.uuid, what: 'x')
+              )
+            )
           end
 
           it 'calls command handlers' do
             subject
 
-            expect(handler).to have_received(:call).twice
+            aggregate_failures do
+              expect(aggregate).to have_received(:do_something_else).once
+              expect(aggregate).to have_received(:do_something_impossible).once
+            end
           end
 
           context 'adding identity id to command metadata' do
@@ -510,17 +500,8 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
             end
           end
 
+          # Inline processing suppresses notifiers, so only verify the response format
           it_behaves_like 'successful inline write response'
-          it_behaves_like 'publishes messages'
-
-          context 'when using custom channel' do
-            let(:channel) { 'custom_notifications/12345' }
-            let(:params) { { commands:, channel: } }
-            let(:identity_id) { nil }
-            let(:host) { 'www.xyz.ch' }
-
-            it_behaves_like 'publishes messages'
-          end
         end
       end
 
@@ -535,10 +516,8 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
             end
           end
 
+          # Inline processing suppresses notifiers
           it_behaves_like 'successful inline write response'
-          it_behaves_like 'publishes messages' do
-            let(:channel) { auth_user_uuid }
-          end
 
           context 'when more than 10 commands were submitted' do
             let(:commands) { super() * 6 }
@@ -590,10 +569,10 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           end
           let(:extra_attribute_keys) do
             {
-              extra_spans_name[0] => %w[track_sql channel],
-              extra_spans_name[1] => %w[track_sql],
-              extra_spans_name[2] => %w[track_sql],
-              extra_spans_name[3] => %w[origin perform_method track_sql]
+              extra_spans_name[0] => %w[root_track_sql track_sql channel],
+              extra_spans_name[1] => %w[root_track_sql track_sql],
+              extra_spans_name[2] => %w[root_track_sql track_sql],
+              extra_spans_name[3] => %w[origin perform_method root_track_sql track_sql]
             }
           end
         end
@@ -629,40 +608,43 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         ]
       end
 
-      let(:command_registry) { Yes::Core::CommandRegistry.new }
-
       before do
         Yes::Core.configure do |config|
           config.command_notifier_classes = []
           config.process_commands_inline = true
-
-          config.command_registry = command_registry
         end
 
-        command_registry.register(
-          Dummy::Commands::Activity::DoSomethingElse,
-          Dummy::Commands::Activity::DummyHandler
-        )
-        command_registry.register(
-          Dummy::Company::Commands::DoSomethingCompounded::Command,
-          Dummy::Commands::Activity::DummyHandler
-        )
+        allow(Yes::Core.configuration).to receive(:guard_evaluator_class).and_return(double('GuardEvaluator'))
       end
 
       it_behaves_like 'successful inline write response'
 
       context 'executing commands' do
-        let(:handler) { instance_spy(Dummy::Commands::Activity::DummyHandler) }
+        let(:activity_aggregate) { spy('Dummy::Activity::Aggregate') }
+        let(:company_aggregate) { spy('Dummy::Company::Aggregate') }
 
         before do
-          allow(Dummy::Commands::Activity::DummyHandler).to receive(:new).and_return(handler)
-          allow(handler).to receive(:call)
+          allow(Dummy::Activity::Aggregate).to receive(:new).and_return(activity_aggregate)
+          allow(Dummy::Company::Aggregate).to receive(:new).and_return(company_aggregate)
+          allow(activity_aggregate).to receive(:do_something_else).and_return(
+            Yes::Core::Commands::Response.new(
+              cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+            )
+          )
+          allow(company_aggregate).to receive(:do_something_compounded).and_return(
+            Yes::Core::Commands::Response.new(
+              cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+            )
+          )
         end
 
         it 'calls command handlers' do
           subject
 
-          expect(handler).to have_received(:call).twice
+          aggregate_failures do
+            expect(activity_aggregate).to have_received(:do_something_else).once
+            expect(company_aggregate).to have_received(:do_something_compounded).once
+          end
         end
 
         context 'when calling authorizers' do

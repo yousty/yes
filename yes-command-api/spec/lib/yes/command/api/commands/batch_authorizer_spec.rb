@@ -11,7 +11,7 @@ RSpec.describe Yes::Command::Api::Commands::BatchAuthorizer do
     context 'when a command has no authorizer defined' do
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomething.new(what: 'something', id: SecureRandom.uuid)
+          Dummy::Activity::Commands::DoSomething::Command.new(what: 'something', id: SecureRandom.uuid)
         ]
       end
 
@@ -25,10 +25,10 @@ RSpec.describe Yes::Command::Api::Commands::BatchAuthorizer do
     context 'when all commands are authorized' do
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomethingElse.new(
+          Dummy::Activity::Commands::DoSomethingElse::Command.new(
             what: 'something', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingAuthorized.new(
+          Dummy::Activity::Commands::DoSomethingAuthorized::Command.new(
             what: 'something else', id: SecureRandom.uuid
           ),
           Dummy::Actions::Commands::DoSomething::Command.new(
@@ -54,13 +54,13 @@ RSpec.describe Yes::Command::Api::Commands::BatchAuthorizer do
 
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomethingAuthorized.new(
+          Dummy::Activity::Commands::DoSomethingAuthorized::Command.new(
             what: 'something', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingAuthorized.new(
+          Dummy::Activity::Commands::DoSomethingAuthorized::Command.new(
             what: 'something else', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingUnauthorized.new(
+          Dummy::Activity::Commands::DoSomethingUnauthorized::Command.new(
             unauthorized_command_attributes
           )
         ]
@@ -74,7 +74,7 @@ RSpec.describe Yes::Command::Api::Commands::BatchAuthorizer do
               [
                 {
                   message: "Don't do this",
-                  command: 'Dummy::Commands::Activity::DoSomethingUnauthorized',
+                  command: 'Dummy::Activity::Commands::DoSomethingUnauthorized::Command',
                   command_id: unauthorized_command_id,
                   data: unauthorized_command_payload,
                   metadata: unauthorized_command_metadata
@@ -98,10 +98,10 @@ RSpec.describe Yes::Command::Api::Commands::BatchAuthorizer do
 
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomethingAuthorized.new(
+          Dummy::Activity::Commands::DoSomethingAuthorized::Command.new(
             what: 'something', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingElse.new(
+          Dummy::Activity::Commands::DoSomethingElse::Command.new(
             what: 'something else', id: SecureRandom.uuid
           ),
           Dummy::Actions::Commands::DoSomething::Command.new(

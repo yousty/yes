@@ -9,7 +9,7 @@ RSpec.describe Yes::Command::Api::Commands::BatchValidator do
     context 'when a command has no validator' do
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomething.new(
+          Dummy::Activity::Commands::DoSomething::Command.new(
             what: 'something', id: SecureRandom.uuid
           )
         ]
@@ -23,10 +23,10 @@ RSpec.describe Yes::Command::Api::Commands::BatchValidator do
     context 'when all commands are valid' do
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomething.new(
+          Dummy::Activity::Commands::DoSomething::Command.new(
             what: 'something', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingElse.new(
+          Dummy::Activity::Commands::DoSomethingElse::Command.new(
             what: 'something else', id: SecureRandom.uuid
           ),
           Dummy::Actions::Commands::DoSomething::Command.new(
@@ -50,13 +50,13 @@ RSpec.describe Yes::Command::Api::Commands::BatchValidator do
 
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomething.new(
+          Dummy::Activity::Commands::DoSomething::Command.new(
             what: 'something', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingElse.new(
+          Dummy::Activity::Commands::DoSomethingElse::Command.new(
             what: 'something else', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingInvalid.new(
+          Dummy::Activity::Commands::DoSomethingInvalid::Command.new(
             invalid_command_attributes
           )
         ]
@@ -70,7 +70,7 @@ RSpec.describe Yes::Command::Api::Commands::BatchValidator do
               [
                 {
                   message: 'Command is invalid',
-                  command: 'Dummy::Commands::Activity::DoSomethingInvalid',
+                  command: 'Dummy::Activity::Commands::DoSomethingInvalid::Command',
                   command_id: invalid_command_id,
                   data: invalid_command_payload,
                   metadata: invalid_command_metadata,
@@ -93,10 +93,10 @@ RSpec.describe Yes::Command::Api::Commands::BatchValidator do
 
       let(:commands) do
         [
-          Dummy::Commands::Activity::DoSomething.new(
+          Dummy::Activity::Commands::DoSomething::Command.new(
             what: 'something', id: SecureRandom.uuid
           ),
-          Dummy::Commands::Activity::DoSomethingElse.new(
+          Dummy::Activity::Commands::DoSomethingElse::Command.new(
             what: 'something else', id: SecureRandom.uuid
           ),
           Dummy::Actions::Commands::DoSomethingInvalid::Command.new(

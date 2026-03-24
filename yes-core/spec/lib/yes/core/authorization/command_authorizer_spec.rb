@@ -7,7 +7,7 @@ RSpec.describe Yes::Core::Authorization::CommandAuthorizer do
     let(:auth_data) { { identity_id: } }
     let(:identity_id) { SecureRandom.uuid }
     let(:command) do
-      Dummy::Commands::Activity::DoSomething.new(what: 'something', id: SecureRandom.uuid)
+      Dummy::Activity::Commands::DoSomething::Command.new(what: 'something', id: SecureRandom.uuid)
     end
 
     context 'when user is admin' do

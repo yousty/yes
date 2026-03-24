@@ -71,10 +71,9 @@ module Yes
       HandlerHelpers = Commands::Stateless::HandlerHelpers
     end
 
-    # Command Helpers
+    # Command Helpers (kept for backward compatibility)
     module CommandHelpers
-      HelpersV1 = Commands::Helpers::V1
-      HelpersV2 = Commands::Helpers::V2
+      HelpersV2 = Commands::Helper
     end
 
     # Command Notifiers (kept for backward compatibility)

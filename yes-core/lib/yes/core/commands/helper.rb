@@ -3,49 +3,22 @@
 module Yes
   module Core
     module Commands
-      # Factory class that determines the correct command helper variant
-      # based on the command's folder structure (V1 or V2).
+      # Provides naming resolution helpers for commands following the V2 folder structure
+      # (e.g. Context::Subject::Commands::DoSomething::Command).
       #
       # @example
       #   helper = Yes::Core::Commands::Helper.new(command)
       #   helper.command_name
       class Helper
-        VERSION_REGEXP = /::(?<version>V\d+)::/.freeze
+        AGGREGATE_CLASSNAME = 'Aggregate'
+        VERSION_REGEXP = /::(?<version>V\d+)::/
 
         attr_reader :inflector, :cmd
         private :inflector, :cmd
 
-        delegate :splitted_command, :folder_structure_v2?, to: :class
+        delegate :splitted_command, to: :class
 
         class << self
-          # Creates the appropriate helper variant based on folder structure.
-          #
-          # @param cmd [Yes::Core::Command] the command instance
-          # @return [Helpers::V1, Helpers::V2] the helper instance
-          def new(cmd)
-            return super unless self == Helper
-
-            helper_variant(cmd)
-          end
-
-          # Determines if the command uses V2 folder structure.
-          #
-          # @param cmd [Yes::Core::Command] the command instance
-          # @return [Boolean] true if V2 folder structure
-          def folder_structure_v2?(cmd)
-            splitted_command(cmd).last == 'Command'
-          end
-
-          # Returns the appropriate helper variant for the command.
-          #
-          # @param cmd [Yes::Core::Command] the command instance
-          # @return [Helpers::V1, Helpers::V2] the helper instance
-          def helper_variant(cmd)
-            return Helpers::V2.new(cmd) if folder_structure_v2?(cmd)
-
-            Helpers::V1.new(cmd)
-          end
-
           # Splits the command class name into module parts.
           #
           # @param cmd [Yes::Core::Command] the command instance
@@ -67,7 +40,7 @@ module Yes
         def command_context
           splitted_command(cmd).first
         end
-        alias_method :context, :command_context
+        alias context command_context
 
         # Returns the locale for the command.
         #
@@ -75,7 +48,7 @@ module Yes
         def command_locale
           cmd.respond_to?(:locale) ? cmd.locale : I18n.locale
         end
-        alias_method :locale, :command_locale
+        alias locale command_locale
 
         # Extracts the version from the command class name.
         #
@@ -89,6 +62,65 @@ module Yes
         # @return [Hash] the deep stringified event payload
         def event_payload
           cmd.payload.deep_stringify_keys
+        end
+
+        # Returns the underscored command name.
+        #
+        # @return [String] the command name
+        def command_name
+          inflector.underscore(splitted_command(cmd)[-2])
+        end
+
+        # Returns the aggregate class name.
+        #
+        # @return [String] the aggregate class name
+        def aggregate_classname
+          AGGREGATE_CLASSNAME
+        end
+
+        # Returns the aggregate module name.
+        #
+        # @return [String] the aggregate module name
+        def aggregate_module
+          splitted_command(cmd)[-4]
+        end
+        alias subject aggregate_module
+
+        # Returns the fully qualified authorizer class name.
+        #
+        # @return [String] the authorizer class name
+        def authorizer_classname
+          spl = splitted_command(cmd)
+          spl[0] == 'CommandGroups' ? "#{spl[0..1].join('::')}::Authorizer" : "#{spl[0..3].join('::')}::Authorizer"
+        end
+
+        # Returns the fully qualified validator class name.
+        #
+        # @return [String] the validator class name
+        def validator_classname
+          spl = splitted_command(cmd)
+          spl[0] == 'CommandGroups' ? "#{spl[0..1].join('::')}::Validator" : "#{spl[0..3].join('::')}::Validator"
+        end
+
+        # Returns the aggregate class constant.
+        #
+        # @return [Class] the aggregate class
+        def aggregate_class
+          inflector.constantize(
+            [
+              command_context,
+              command_version,
+              aggregate_module,
+              aggregate_classname
+            ].compact.join('::')
+          )
+        end
+
+        # Returns the aggregate ID from the command.
+        #
+        # @return [String] the aggregate ID
+        def aggregate_id
+          cmd.aggregate_id
         end
       end
     end

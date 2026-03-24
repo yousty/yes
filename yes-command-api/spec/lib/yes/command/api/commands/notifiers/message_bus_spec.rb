@@ -23,7 +23,7 @@ RSpec.describe Yes::Command::Api::Commands::Notifiers::MessageBus do
   let(:published_at) { Time.now.to_i }
 
   let(:cmd) do
-    Dummy::Commands::Activity::DoSomething.new(
+    Dummy::Activity::Commands::DoSomething::Command.new(
       transaction:,
       what: 'something',
       id: SecureRandom.uuid
@@ -70,7 +70,7 @@ RSpec.describe Yes::Command::Api::Commands::Notifiers::MessageBus do
         type: 'batch_started',
         transaction: transaction.to_h,
         commands: [{
-          command: 'Dummy::Commands::Activity::DoSomething',
+          command: 'Dummy::Activity::Commands::DoSomething::Command',
           command_id: cmd.command_id
         }]
       }
@@ -91,7 +91,7 @@ RSpec.describe Yes::Command::Api::Commands::Notifiers::MessageBus do
         type: 'batch_finished',
         transaction: transaction.to_h,
         failed_commands: [{
-          command: 'Dummy::Commands::Activity::DoSomething',
+          command: 'Dummy::Activity::Commands::DoSomething::Command',
           error: 'some error',
           command_id: cmd.command_id
         }]

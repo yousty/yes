@@ -78,7 +78,7 @@ RSpec.describe Yes::Core::Commands::Stateless::Handler do
 
     context 'when command is a v1 command' do
       let(:cmd) do
-        Dummy::Commands::User::ChangeFirstName.new(name: 'some name', id: SecureRandom.uuid)
+        Dummy::User::Commands::ChangeFirstName::Command.new(name: 'some name', id: SecureRandom.uuid)
       end
 
       let(:event_name) { 'FirstNameChanged' }
@@ -110,7 +110,7 @@ RSpec.describe Yes::Core::Commands::Stateless::Handler do
       let(:user_id) { SecureRandom.uuid }
       let(:company_id) { SecureRandom.uuid }
       let(:cmd) do
-        Dummy::Commands::User::ChangeFirstName.new(
+        Dummy::User::Commands::ChangeFirstName::Command.new(
           id: user_id, name: 'some name', company_id:
         )
       end

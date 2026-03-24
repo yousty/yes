@@ -42,7 +42,7 @@ RSpec.describe Yes::Core::Command do
   end
 
   it 'works for nested commands' do
-    cmd = Dummy::Commands::Activity::DoSomething.new(
+    cmd = Dummy::Activity::Commands::DoSomething::Command.new(
       id: activity_id, transaction:, what: 'Clean your teeth'
     )
 
@@ -59,7 +59,7 @@ RSpec.describe Yes::Core::Command do
     subject { cmd.payload }
 
     let(:cmd) do
-      Dummy::Commands::Activity::DoSomething.new(
+      Dummy::Activity::Commands::DoSomething::Command.new(
         id: activity_id,
         transaction:,
         origin:,
@@ -77,7 +77,7 @@ RSpec.describe Yes::Core::Command do
 
     context 'with nullable attributes' do
       let(:cmd) do
-        Dummy::Commands::Activity::DoSomethingWithNullable.new(
+        Dummy::Activity::Commands::DoSomethingWithNullable::Command.new(
           id: activity_id,
           transaction:,
           origin:,
