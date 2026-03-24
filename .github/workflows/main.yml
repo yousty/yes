@@ -48,11 +48,11 @@ jobs:
 
       - name: Set up EventStore DB
         if: matrix.gem != 'yes-read-api'
-        run: |
-          PG_EVENTSTORE_URI="postgresql://postgres:postgres@localhost:5532/eventstore_test" bundle exec rake pg_eventstore:create pg_eventstore:migrate
+        run: bundle exec rake pg_eventstore:create pg_eventstore:migrate
         working-directory: ${{ matrix.gem }}
         env:
           RAILS_ENV: test
+          PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
       - name: Set up test database
         run: bundle exec rake db:create db:migrate
@@ -72,7 +72,6 @@ jobs:
         working-directory: ${{ matrix.gem }}
         env:
           RAILS_ENV: test
-          TEST_COVERAGE: 'true'
           PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
   rubocop:

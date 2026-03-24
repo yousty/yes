@@ -1,29 +1,5 @@
 # frozen_string_literal: true
 
-if ENV['TEST_COVERAGE'] == 'true'
-  require 'simplecov'
-  require 'simplecov-formatter-badge'
-
-  SimpleCov.profiles.define 'yes-read-api' do
-    add_filter 'spec/'
-    add_filter 'lib/yes/read/api/version.rb'
-    add_group 'Gem', 'lib'
-    add_group 'App', 'app'
-    track_files '{lib,app}/**/*.rb'
-  end
-
-  SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new(
-    [
-      SimpleCov::Formatter::HTMLFormatter,
-      SimpleCov::Formatter::BadgeFormatter
-    ]
-  )
-
-  SimpleCov.minimum_coverage 50
-
-  SimpleCov.start 'yes-read-api'
-end
-
 # Require support filesTestHelper
 Dir['spec/support/**/*.rb'].each do |f|
   load f

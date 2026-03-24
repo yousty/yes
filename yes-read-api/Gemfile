@@ -18,8 +18,6 @@ group :development, :test do
   gem 'rbnacl'
   gem 'rspec', '~> 3.0'
   gem 'rspec-rails', '~> 6.0.2'
-  gem 'simplecov', '~> 0.21'
-  gem 'simplecov-formatter-badge', '~> 0.1'
 end
 
 instance_eval(File.read(File.expand_path('spec/dummy/Gemfile', __dir__)))
