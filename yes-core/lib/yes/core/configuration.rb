@@ -28,8 +28,16 @@ module Yes
       # @return [#call] A callable that receives auth_data and returns boolean indicating super admin status
       attr_accessor :super_admin_check
 
-      # @return [#call] A callable that receives auth_data and returns a principal data hash for Cerbos
+      # @return [#call] A callable that receives auth_data and returns a principal data hash for Cerbos (commands)
       attr_accessor :cerbos_principal_data_builder
+
+      # @return [#call] A callable that receives auth_data and returns a principal data hash for Cerbos (read requests)
+      # Falls back to cerbos_principal_data_builder if not set.
+      attr_writer :cerbos_read_principal_data_builder
+
+      def cerbos_read_principal_data_builder
+        @cerbos_read_principal_data_builder || @cerbos_principal_data_builder
+      end
 
       # @return [String] URL of the Cerbos server
       attr_accessor :cerbos_url

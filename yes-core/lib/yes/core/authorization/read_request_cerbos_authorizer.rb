@@ -94,7 +94,7 @@ module Yes
           # @param auth_data [Hash] authorization data
           # @return [Hash] principal data for Cerbos check_resource
           def principal_data(auth_data)
-            Yes::Core.configuration.cerbos_principal_data_builder.call(auth_data)
+            Yes::Core.configuration.cerbos_read_principal_data_builder.call(auth_data)
           end
 
           # @return [String] scope for Cerbos check_resource

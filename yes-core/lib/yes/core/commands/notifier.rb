@@ -6,6 +6,15 @@ module Yes
   module Core
     module Commands
       class Notifier
+        attr_reader :channel
+        private :channel
+
+        # @param options [Hash] notifier options
+        # @option options [String] :channel the notification channel
+        def initialize(options = {})
+          @channel = options[:channel]
+        end
+
         # Implement this method to notify that a batch has started processing
         # @param batch_id [String] batch id of the batch that has started processing
         # @param transaction [TransactionDetails] the transaction details of the current transaction
