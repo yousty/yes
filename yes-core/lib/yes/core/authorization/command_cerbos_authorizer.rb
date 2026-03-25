@@ -3,7 +3,12 @@
 module Yes
   module Core
     module Authorization
-      # @abstract command Cerbos authorizer base class.
+      # Cerbos-based command authorizer base class.
+      #
+      # Subclasses must define a RESOURCE constant:
+      #   RESOURCE = { name: 'apprenticeship', read_model: Apprenticeship, draft_read_model: ApprenticeshipDraft }
+      #
+      # @abstract
       class CommandCerbosAuthorizer < Yes::Core::Authorization::CommandAuthorizer
         NEW_RESOURCE_ID = 'new'
 
@@ -16,12 +21,16 @@ module Yes
           # @raise [CommandNotAuthorized] if command is not authorized
           def call(command, auth_data)
             singleton_class.current_span&.add_attributes({ 'command' => command.to_json })
+
             check_principal_id_present(auth_data)
+            singleton_class.current_span&.add_event('Principal Id Checked')
 
             resource = load_resource(command)
+            singleton_class.current_span&.add_event('Resource Loaded')
 
             decision = authorize(command, resource, auth_data)
             singleton_class.current_span&.add_event('Cerbos Decision', attributes: { 'decision' => decision.to_json })
+
             return true if decision.allow_all?
 
             raise_command_unauthorized_error!(decision)
@@ -31,7 +40,7 @@ module Yes
           private
 
           # @param decision [Cerbos::Output::CheckResources::Result]
-          # raise [NotAuthorized]
+          # @raise [CommandNotAuthorized]
           def raise_command_unauthorized_error!(decision)
             msg = 'You are not allowed to execute this command'
             singleton_class.current_span&.status = ::OpenTelemetry::Trace::Status.error(msg)
@@ -40,8 +49,8 @@ module Yes
           end
 
           # @param auth_data [Hash] authorization data
-          # @return [Boolean] true if user_uuid is present in auth_data
-          # @raise [CommandNotAuthorized] if user_uuid is not present in auth_data
+          # @return [Boolean] true if identity_id is present in auth_data
+          # @raise [CommandNotAuthorized] if identity_id is not present in auth_data
           def check_principal_id_present(auth_data)
             return true if principal_id(auth_data)
 
@@ -60,7 +69,21 @@ module Yes
               raise StandardError, message
             end
 
-            self::RESOURCE[:read_model].find_by(id: command.send("#{self::RESOURCE[:name]}_id"))
+            read_model(command).find_by(id: command.send("#{self::RESOURCE[:name]}_id"))
+          end
+
+          # Returns the appropriate read model class for the command.
+          # Uses the draft read model when the command is an edit template command
+          # and a draft_read_model is configured in RESOURCE.
+          #
+          # @param command [Yes::Core::Command] command to authorize
+          # @return [Class] the read model class
+          def read_model(command)
+            if command.metadata&.dig(:edit_template_command) && self::RESOURCE[:draft_read_model]
+              return self::RESOURCE[:draft_read_model]
+            end
+
+            self::RESOURCE[:read_model]
           end
 
           # @return [Cerbos::Client] Cerbos client
@@ -71,8 +94,18 @@ module Yes
             )
           end
 
+          # @param command [Yes::Core::Command]
+          # @param resource [ActiveRecord::Base]
+          # @param auth_data [Hash]
+          # @return [Cerbos::Output::CheckResources::Result]
           def authorize(...)
-            cerbos_client.check_resource(**cerbos_payload(...))
+            singleton_class.current_span&.add_event('Authorization Started')
+            payload = cerbos_payload(...)
+            singleton_class.current_span&.add_event('Cerbos Payload Built')
+
+            singleton_class.with_otl_span('Authorize request to Cerbos') do
+              cerbos_client.check_resource(**payload)
+            end
           end
 
           # @param command [Yes::Core::Command] command to authorize
@@ -92,18 +125,20 @@ module Yes
           # @param command [Yes::Core::Command] command to authorize
           # @return [Hash] resource data for Cerbos check_resource
           def resource_data(resource, command)
+            attribs = resource_attributes(resource, command)
             {
-              kind: resource_kind(resource),
+              kind: resource_kind(resource, attribs),
               scope: scope(command),
               id: resource_id(resource),
-              attributes: resource_attributes(resource, command)
+              attributes: attribs
             }
           end
 
           # @param resource [ActiveRecord::Base] resource to authorize
+          # @param attribs [Hash] resource attributes
           # @return [String] resource kind for Cerbos check_resource
-          def resource_kind(resource)
-            resource&.id ? self::RESOURCE[:name] : new_resource_id
+          def resource_kind(resource, attribs)
+            ((attribs.values.any? { !_1.nil? } || attribs.empty?) && resource&.id) ? self::RESOURCE[:name] : new_resource_id
           end
 
           # @param resource [ActiveRecord::Base] resource to authorize
