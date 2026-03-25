@@ -38,5 +38,6 @@ RSpec.configure do |config|
   config.after do
     PgEventstore::TestHelpers.clean_up_db
     TestHelper.clean_up_config
+    DummyRepository.reset
   end
 end
