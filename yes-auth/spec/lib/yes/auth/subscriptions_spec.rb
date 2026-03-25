@@ -2,16 +2,96 @@
 
 require 'spec_helper'
 
+# Stub the ReadModels namespace and builders since yes-core is not loaded in yes-auth specs
+module Yes
+  module Auth
+    module ReadModels
+      module Principals
+        module Role
+          class Builder; end
+        end
+
+        module User
+          class Builder; end
+        end
+
+        module WriteResourceAccess
+          class Builder; end
+        end
+
+        module ReadResourceAccess
+          class Builder; end
+        end
+      end
+    end
+  end
+end
+
 RSpec.describe Yes::Auth::Subscriptions do
   describe '.call' do
     subject(:call) { described_class.call(subscriptions) }
 
-    let(:subscriptions) { double('subscriptions') }
+    let(:subscriptions) { instance_double('Subscriptions') }
 
-    it 'raises NotImplementedError' do
-      expect { call }.to raise_error(
-        NotImplementedError,
-        'Auth subscription builders need to be ported from yousty-eventsourcing'
+    before do
+      allow(subscriptions).to receive(:subscribe_to_all)
+    end
+
+    it 'subscribes the role builder' do
+      call
+
+      expect(subscriptions).to have_received(:subscribe_to_all).with(
+        an_instance_of(Yes::Auth::ReadModels::Principals::Role::Builder),
+        { event_types: ['Authorization::RoleNameChanged'] }
+      )
+    end
+
+    it 'subscribes the user builder' do
+      call
+
+      expect(subscriptions).to have_received(:subscribe_to_all).with(
+        an_instance_of(Yes::Auth::ReadModels::Principals::User::Builder),
+        { event_types: [
+          'Authorization::PrincipalRoleAdded',
+          'Authorization::PrincipalRoleRemoved',
+          'Authorization::PrincipalAttributeChanged',
+          'Authorization::PrincipalIdentityAssigned',
+          'Authorization::PrincipalRemoved'
+        ] }
+      )
+    end
+
+    it 'subscribes the write resource access builder' do
+      call
+
+      expect(subscriptions).to have_received(:subscribe_to_all).with(
+        an_instance_of(Yes::Auth::ReadModels::Principals::WriteResourceAccess::Builder),
+        { event_types: [
+          'Authorization::WriteResourceAccessAttributeChanged',
+          'Authorization::WriteResourceAccessContextChanged',
+          'Authorization::WriteResourceAccessPrincipalAssigned',
+          'Authorization::WriteResourceAccessRemoved',
+          'Authorization::WriteResourceAccessResourceAssigned',
+          'Authorization::WriteResourceAccessResourceTypeChanged',
+          'Authorization::WriteResourceAccessRoleChanged'
+        ] }
+      )
+    end
+
+    it 'subscribes the read resource access builder' do
+      call
+
+      expect(subscriptions).to have_received(:subscribe_to_all).with(
+        an_instance_of(Yes::Auth::ReadModels::Principals::ReadResourceAccess::Builder),
+        { event_types: [
+          'Authorization::ReadResourceAccessPrincipalAssigned',
+          'Authorization::ReadResourceAccessResourceTypeChanged',
+          'Authorization::ReadResourceAccessRemoved',
+          'Authorization::ReadResourceAccessResourceAssigned',
+          'Authorization::ReadResourceAccessRoleChanged',
+          'Authorization::ReadResourceAccessScopeChanged',
+          'Authorization::ReadResourceAccessServiceChanged'
+        ] }
       )
     end
   end
