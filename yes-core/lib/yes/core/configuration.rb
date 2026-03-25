@@ -99,7 +99,7 @@ module Yes
         @cerbos_principal_data_builder = lambda { |auth_data|
           { id: auth_data[:identity_id], roles: [], attr: {} }
         }
-        @cerbos_url = ENV.fetch('CERBOS_URL', nil)
+        @cerbos_url = ENV.fetch('CERBOS_URL', 'cerbos-cluster-ip-service:3593')
         @cerbos_commands_authorizer_include_metadata = false
         @cerbos_read_authorizer_include_metadata = false
         @cerbos_read_authorizer_actions = %w[read]
