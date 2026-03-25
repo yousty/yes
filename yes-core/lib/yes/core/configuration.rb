@@ -72,6 +72,12 @@ module Yes
       # @return [Boolean] Whether to raise on missing handler methods in aggregate state
       attr_accessor :raise_on_missing_handler_method
 
+      # @return [String, nil] URL for subscription heartbeat pings (default: nil, disables heartbeat)
+      attr_accessor :subscriptions_heartbeat_url
+
+      # @return [Integer] Interval in seconds between heartbeat pings (default: 30)
+      attr_accessor :subscriptions_heartbeat_interval
+
       # @return [String] Service name for telemetry and identification
       attr_accessor :service_name
 
@@ -106,6 +112,8 @@ module Yes
         @command_notifier_classes = []
         @otl_tracer = nil
         @raise_on_missing_handler_method = defined?(Rails) ? Rails.env.local? : false
+        @subscriptions_heartbeat_url = nil
+        @subscriptions_heartbeat_interval = 30
         @service_name = ENV.fetch('SERVICE_NAME', nil)
         @service_version = ENV.fetch('APP_VERSION', '')
         @auth_adapter = nil

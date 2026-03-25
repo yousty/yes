@@ -17,6 +17,7 @@ module Yes
           loader.tag = 'yes-core'
           loader.push_dir(File.expand_path('..', __dir__))
           loader.ignore("#{__dir__}/core/version.rb")
+          loader.ignore("#{__dir__}/core/test_support")
           loader.collapse("#{__dir__}/core/models")
           loader.setup
           loader
@@ -70,6 +71,9 @@ module Yes
       Subject = Commands::Stateless::Subject
       HandlerHelpers = Commands::Stateless::HandlerHelpers
     end
+
+    # Subscriptions
+    Subscriptions = Yes::Core::Subscriptions
 
     # Command Helpers (kept for backward compatibility)
     module CommandHelpers
