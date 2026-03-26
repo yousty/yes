@@ -1313,7 +1313,7 @@ Setup databases:
 Enter a development console (from a gem's `spec/dummy` directory):
 
 ```shell
-cd yes-core/spec/dummy && rails c
+bundle exec rails c
 ```
 
 ### Example Usage
@@ -1330,7 +1330,7 @@ TestUser.last.name # => "John Doe"
 The dummy app includes mounted command and read APIs for testing. Start the server:
 
 ```shell
-cd yes-core/spec/dummy && rails s
+bundle exec rails s
 ```
 
 #### Authentication

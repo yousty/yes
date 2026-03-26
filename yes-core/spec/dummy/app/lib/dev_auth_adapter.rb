@@ -24,7 +24,7 @@ class DevAuthAdapter
     token = extract_token(request)
     return {} unless token
 
-    JSON.parse(Base64.strict_decode64(token)).symbolize_keys
+    JSON.parse(Base64.strict_decode64(token)).with_indifferent_access
   rescue ArgumentError, JSON::ParserError
     {}
   end
