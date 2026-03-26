@@ -31,5 +31,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'jsonapi-serializer'
   spec.add_dependency 'pg_eventstore', '~> 1.0'
   spec.add_dependency 'rails', '>= 7.1'
+  spec.add_dependency 'opentelemetry-sdk'
   spec.add_dependency 'zeitwerk'
 end

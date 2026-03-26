@@ -13,6 +13,7 @@ module Yes
           loader.tag = 'yes-auth'
           loader.push_dir(File.expand_path('..', __dir__))
           loader.ignore("#{__dir__}/auth/version.rb")
+          loader.ignore("#{__dir__}/auth/railtie.rb")
           loader.setup
           loader
         end
@@ -22,4 +23,5 @@ module Yes
 end
 
 require_relative 'auth/version'
+require_relative 'auth/railtie' if defined?(Rails::Railtie)
 Yes::Auth.loader.eager_load
