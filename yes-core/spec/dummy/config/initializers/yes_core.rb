@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../../app/lib/dev_auth_adapter'
+
 Yes::Core.configure do |config|
-  # This config option seems to be unavailable in the current version
-  # config.command_notifier_classes = [
-  #   Yes::Command::Api::Commands::Notifiers::MessageBus
-  # ]
+  config.auth_adapter = DevAuthAdapter.new
 end

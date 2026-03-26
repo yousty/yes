@@ -1319,43 +1319,34 @@ cd yes-core/spec/dummy && rails c
 ### Example Usage
 
 ```ruby
-user = Users::User::Aggregate.new
-user.change_name(name: "John Doe") # assuming command: true was set
+user = Test::User::Aggregate.new
+user.change_name(name: "John Doe")
 user.name # => "John Doe"
-User.last.name # => "John Doe"
+TestUser.last.name # => "John Doe"
 ```
 
 ### Testing the APIs
 
-The dummy app includes mounted command and read APIs for testing. Start the server from a gem's `spec/dummy` directory:
+The dummy app includes mounted command and read APIs for testing. Start the server:
 
 ```shell
 cd yes-core/spec/dummy && rails s
 ```
 
-#### Setting Up Authentication
+#### Authentication
 
-Set the required JWT token authentication environment variables:
-
-```shell
-export JWT_TOKEN_AUTH_PUBLIC_KEY=2f8c6129d816cf51c374bc7f08c3e63ed156cf78aefb4a6550d97b87997977ee
-export JWT_TOKEN_AUTH_PRIVATE_KEY=12345678901234567890123456789012
-```
-
-Generate an authentication token with:
+The dummy app uses a simple Base64-encoded auth adapter for development. Generate a token:
 
 ```ruby
-require 'jwt'
-require 'rbnacl'
+require 'base64'
+user_id = "47330036-7246-40b4-a3c7-7038df508774"
+token = Base64.strict_encode64({ identity_id: user_id, user_id: user_id }.to_json)
+```
 
-private_key = RbNaCl::Signatures::Ed25519::SigningKey.new(
-  ENV['JWT_TOKEN_AUTH_PRIVATE_KEY']
-)
+Or from the command line:
 
-identity_id = "<some uuid>"
-JWT.encode(
-  {identity_id:}.merge(exp: 2.years.from_now.to_i), private_key, 'ED25519'
-)
+```shell
+TOKEN=$(echo -n '{"identity_id":"47330036-7246-40b4-a3c7-7038df508774","user_id":"47330036-7246-40b4-a3c7-7038df508774"}' | base64)
 ```
 
 #### Testing Command API
@@ -1365,7 +1356,7 @@ Execute a command with curl:
 ```shell
 curl --location 'http://127.0.0.1:3000/commands' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Bearer <your auth token>' \
+--header "Authorization: Bearer $TOKEN" \
 --data '{
   "commands": [{
     "subject": "User",
@@ -1375,7 +1366,8 @@ curl --location 'http://127.0.0.1:3000/commands' \
       "user_id": "47330036-7246-40b4-a3c7-7038df508774",
       "name": "Judydoody Doodle"
     }
-  }]
+  }],
+  "channel": "test-notifications"
 }'
 ```
 
@@ -1384,9 +1376,9 @@ curl --location 'http://127.0.0.1:3000/commands' \
 Query the read models:
 
 ```shell
-curl --location 'http://127.0.0.1:3000/queries/users' \
+curl --location 'http://127.0.0.1:3000/queries/test_users' \
 --header 'Content-Type: application/json' \
---header 'Authorization: Bearer <your auth token>'
+--header "Authorization: Bearer $TOKEN"
 ```
 
 ### Running Specs
