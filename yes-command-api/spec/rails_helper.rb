@@ -27,6 +27,11 @@ RSpec.configure do |config|
   config.include JwtHelpers, type: :request
   config.include APIHelpers, type: :request
   config.include EventHelpers
+  config.include ActiveSupport::Testing::TimeHelpers
+
+  config.around(:each, timecop: true) do |example|
+    freeze_time { example.run }
+  end
 
   config.before do
     stub_const('Yes::Core::Aggregate::RETRY_DELAY_SECONDS', 0)
