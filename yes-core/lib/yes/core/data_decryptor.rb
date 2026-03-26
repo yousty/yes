@@ -32,7 +32,7 @@ module Yes
       # @param schema [Hash, nil] the encryption metadata from the event
       # @param repository [#find, #decrypt] the key repository
       def initialize(data:, schema:, repository:)
-        @encrypted_data = deep_dup(data).transform_keys!(&:to_s)
+        @encrypted_data = Yes::Core::Utils::HashUtils.deep_dup(data).transform_keys!(&:to_s)
         @key_repository = repository
         @encryption_metadata = schema&.transform_keys(&:to_s) || {}
       end
@@ -48,14 +48,6 @@ module Yes
         decrypted.each { |k, value| data[k] = value if data.key?(k) }
         data.delete('es_encrypted')
         data
-      end
-
-      def deep_dup(hash)
-        return hash unless hash.instance_of?(Hash)
-
-        dupl = hash.dup
-        dupl.each { |k, v| dupl[k] = v.instance_of?(Hash) ? deep_dup(v) : v }
-        dupl
       end
 
       # @return [Dry::Monads::Result]

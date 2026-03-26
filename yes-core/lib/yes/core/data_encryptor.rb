@@ -43,7 +43,7 @@ module Yes
       # @param schema [Hash] the encryption schema
       # @param repository [#find, #create, #encrypt, #decrypt] the key repository
       def initialize(data:, schema:, repository:)
-        @encrypted_data = deep_dup(data).transform_keys!(&:to_s)
+        @encrypted_data = Yes::Core::Utils::HashUtils.deep_dup(data).transform_keys!(&:to_s)
         @key_repository = repository
         @encryption_metadata = EncryptionMetadata.new(data:, schema:).call
       end
@@ -54,14 +54,6 @@ module Yes
         attributes.each { |att| data[att.to_s] = 'es_encrypted' if data.key?(att.to_s) }
         data['es_encrypted'] = encrypted.attributes[:message]
         data
-      end
-
-      def deep_dup(hash)
-        return hash unless hash.instance_of?(Hash)
-
-        dupl = hash.dup
-        dupl.each { |k, v| dupl[k] = v.instance_of?(Hash) ? deep_dup(v) : v }
-        dupl
       end
     end
   end

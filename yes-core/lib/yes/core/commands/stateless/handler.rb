@@ -258,7 +258,7 @@ module Yes
           # @param result [PgEventstore::Event]
           # @return [void]
           def otl_record_response(result)
-            if ENV['STATSD_ADDR'].present?
+            if ENV['STATSD_ADDR'].present? && defined?(StatsD)
               StatsD.increment(
                 'events_processing_total',
                 tags: {

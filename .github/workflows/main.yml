@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gem: [yes-core, yes-command-api, yes-read-api]
+        gem: [yes-core, yes-command-api, yes-read-api, yes-auth]
 
     services:
       postgres:
@@ -47,7 +47,7 @@ jobs:
           working-directory: ${{ matrix.gem }}
 
       - name: Set up EventStore DB
-        if: matrix.gem != 'yes-read-api'
+        if: matrix.gem != 'yes-read-api' && matrix.gem != 'yes-auth'
         run: bundle exec rake pg_eventstore:create pg_eventstore:migrate
         working-directory: ${{ matrix.gem }}
         env:
@@ -55,6 +55,7 @@ jobs:
           PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
       - name: Set up test database
+        if: matrix.gem != 'yes-auth'
         run: bundle exec rake db:create db:migrate
         working-directory: ${{ matrix.gem }}
         env:

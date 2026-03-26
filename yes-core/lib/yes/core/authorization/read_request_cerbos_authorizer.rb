@@ -8,6 +8,7 @@ module Yes
       class ReadRequestCerbosAuthorizer < Yes::Core::Authorization::ReadRequestAuthorizer
         class << self
           include OpenTelemetry::Trackable
+          include CerbosClientProvider
 
           # Implement this method to authorize a read request.
           # Needs to return true if read request is authorized, otherwise raise NotAuthorized.
@@ -48,14 +49,6 @@ module Yes
           # @raise [NotAuthorized]
           def check_authorization_data(_params)
             raise NotImplementedError, 'You need to implement check_authorization_data'
-          end
-
-          # @return [Cerbos::Client] Cerbos client
-          def cerbos_client
-            Cerbos::Client.new(
-              Yes::Core.configuration.cerbos_url,
-              tls: false
-            )
           end
 
           def authorize(...)

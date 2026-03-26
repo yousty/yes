@@ -84,8 +84,8 @@ module Yes
             sleep Yes::Core.configuration.subscriptions_heartbeat_interval
             uri = URI(Yes::Core.configuration.subscriptions_heartbeat_url)
             Net::HTTP.get(uri)
-          rescue StandardError
-            # Keep heartbeat going regardless of errors
+          rescue StandardError => e
+            Rails.logger.warn("Subscriptions heartbeat failed: #{e.message}") if defined?(Rails)
           end
         end
       end

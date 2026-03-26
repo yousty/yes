@@ -30,13 +30,13 @@ module Yes
             # @param principal_id [String] the principal's database ID
             # @return [ActiveRecord::Relation] read resource accesses with joined roles
             def load_read_resource_accesses(principal_id)
-              Principals::ReadResourceAccess.joins(:role).where(principal_id:)
+              Principals::ReadResourceAccess.eager_load(:role).where(principal_id:)
             end
 
             # @param identity_id [String] the identity ID to look up
             # @return [Yes::Auth::Principals::User, nil] the found principal or nil
             def load_principal(identity_id)
-              Principals::User.find_by(identity_id:)
+              Principals::User.includes(:roles).find_by(identity_id:)
             end
 
             # @param principal [Yes::Auth::Principals::User] the principal user

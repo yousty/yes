@@ -1,7 +1,7 @@
 PATH
   remote: ../yes-core
   specs:
-    yes-core (1.0.0)
+    yes-core (1.0.0.pre1)
       cerbos (~> 0.8)
       dry-inflector
       dry-schema
@@ -17,9 +17,9 @@ PATH
 PATH
   remote: .
   specs:
-    yes-auth (1.0.0)
+    yes-auth (1.0.0.pre3)
       rails (>= 7.1)
-      yes-core (~> 1.0)
+      yes-core (>= 1.0.0.pre1)
 
 GEM
   remote: https://rubygems.org/
@@ -157,12 +157,18 @@ GEM
     google-protobuf (4.34.1-arm64-darwin)
       bigdecimal
       rake (~> 13.3)
+    google-protobuf (4.34.1-x86_64-linux-gnu)
+      bigdecimal
+      rake (~> 13.3)
     googleapis-common-protos-types (1.22.0)
       google-protobuf (~> 4.26)
     grpc (1.78.1)
       google-protobuf (>= 3.25, < 5.0)
       googleapis-common-protos-types (~> 1.0)
     grpc (1.78.1-arm64-darwin)
+      google-protobuf (>= 3.25, < 5.0)
+      googleapis-common-protos-types (~> 1.0)
+    grpc (1.78.1-x86_64-linux-gnu)
       google-protobuf (>= 3.25, < 5.0)
       googleapis-common-protos-types (~> 1.0)
     has_scope (0.9.0)
@@ -209,6 +215,8 @@ GEM
     nio4r (2.7.5)
     nokogiri (1.19.2-arm64-darwin)
       racc (~> 1.4)
+    nokogiri (1.19.2-x86_64-linux-gnu)
+      racc (~> 1.4)
     opentelemetry-api (1.8.0)
       logger
     opentelemetry-common (0.23.0)
@@ -224,6 +232,7 @@ GEM
       opentelemetry-api (~> 1.0)
     pg (1.6.3)
     pg (1.6.3-arm64-darwin)
+    pg (1.6.3-x86_64-linux)
     pg_eventstore (1.13.4)
       connection_pool (~> 2.4)
       pg (~> 1.5)
@@ -316,6 +325,7 @@ GEM
       rack-session (>= 2.0.0, < 3)
       tilt (~> 2.0)
     sqlite3 (2.9.2-arm64-darwin)
+    sqlite3 (2.9.2-x86_64-linux-gnu)
     stringio (3.2.0)
     thor (1.5.0)
     tilt (2.7.0)
@@ -333,6 +343,7 @@ GEM
 
 PLATFORMS
   arm64-darwin
+  x86_64-linux
 
 DEPENDENCIES
   factory_bot (~> 6.0)

@@ -14,6 +14,7 @@ module Yes
 
         class << self
           include OpenTelemetry::Trackable
+          include CerbosClientProvider
 
           # @param command [Yes::Core::Command] command to authorize
           # @param auth_data [Hash] authorization data
@@ -82,14 +83,6 @@ module Yes
             return self::RESOURCE[:draft_read_model] if command.metadata&.dig(:edit_template_command) && self::RESOURCE[:draft_read_model]
 
             self::RESOURCE[:read_model]
-          end
-
-          # @return [Cerbos::Client] Cerbos client
-          def cerbos_client
-            Cerbos::Client.new(
-              Yes::Core.configuration.cerbos_url,
-              tls: false
-            )
           end
 
           # @param command [Yes::Core::Command]

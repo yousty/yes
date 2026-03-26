@@ -6,6 +6,22 @@ module Yes
       # Utility class for deep hash operations
       class HashUtils
         class << self
+          # Returns a deep duplicate of a hash, recursively duplicating nested hashes.
+          #
+          # @param hash [Hash] the hash to deep duplicate
+          # @return [Hash, Object] the deep duplicated hash, or the original object if not a Hash
+          #
+          # @example
+          #   HashUtils.deep_dup({ a: { b: 1 } })
+          #   # => { a: { b: 1 } } (a completely independent copy)
+          def deep_dup(hash)
+            return hash unless hash.instance_of?(Hash)
+
+            dupl = hash.dup
+            dupl.each { |k, v| dupl[k] = v.instance_of?(Hash) ? deep_dup(v) : v }
+            dupl
+          end
+
           # Returns a hash with the keys flattened
           #
           # @param obj [Hash, Array] the object to flatten

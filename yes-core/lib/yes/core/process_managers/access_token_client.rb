@@ -10,17 +10,7 @@ module Yes
       #   access_token = client.call(client_id: 'id', client_secret: 'secret')
       class AccessTokenClient
         # Custom error class for AccessTokenClient failures.
-        class Error < StandardError
-          # @return [Hash] additional error context
-          attr_accessor :extra
-
-          # @param msg [String] the error message
-          # @param extra [Hash] additional error information
-          def initialize(msg, extra: {})
-            @extra = extra
-            super(msg)
-          end
-        end
+        class Error < Yes::Core::ProcessManagers::Base::Error; end
 
         # Holds structured response data from the token request.
         Response = Data.define(:response, :request_body, :request_url, :body, :parsed_body, :status_code)
