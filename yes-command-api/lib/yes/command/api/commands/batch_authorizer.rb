@@ -24,7 +24,11 @@ module Yes
 
               commands.each do |command|
                 authorizer = authorizer_for(command)
-                authorizer.call(command, auth_data)
+                if authorizer.instance_methods(false).include?(:call)
+                  authorizer.new.call(command, auth_data)
+                else
+                  authorizer.call(command, auth_data)
+                end
               rescue CommandAuthorizerNotFound
                 unauthorized << unauthorized_data(command, 'Not allowed').tap do
                   trace_error('Command authorizer not found', { command: command.to_json })
