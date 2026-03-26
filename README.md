@@ -11,6 +11,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [command](#command)
 - [Attribute Details](#attribute-details)
   - [Available Types](#available-types)
+  - [Custom Types](#custom-types)
   - [Attribute Commands](#attribute-commands)
 - [Command Details](#command-details)
   - [Command Authorization](#command-authorization)
@@ -28,12 +29,21 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Customizing Read Models](#customizing-read-models)
   - [Read Model Schema Generator](#read-model-schema-generator)
   - [Pending Update Tracking Generator](#pending-update-tracking-generator)
+- [Subscriptions](#subscriptions)
+  - [Setting Up Subscriptions](#setting-up-subscriptions)
+  - [Heartbeat](#heartbeat)
+- [Process Managers](#process-managers)
+  - [ServiceClient](#serviceclient)
+  - [CommandRunner](#commandrunner)
+  - [State](#state)
 - [Additional Features](#additional-features)
   - [Parent Aggregates](#parent-aggregates)
   - [Primary Context](#primary-context)
   - [Aggregate Authorization](#aggregate-authorization)
+  - [Auth Adapter](#auth-adapter)
   - [Removable](#removable)
   - [Draftable](#draftable)
+- [Configuration Reference](#configuration-reference)
 - [Development](#development)
   - [Example Usage](#example-usage)
   - [Testing the APIs](#testing-the-apis)
@@ -174,6 +184,23 @@ The attribute system supports various types:
 - `:uuids` - Arrays of UUIDs
 
 For the complete list, see [yes-core/lib/yes/core/type_lookup.rb](yes-core/lib/yes/core/type_lookup.rb)
+
+### Custom Types
+
+You can register application-specific types using the type registry:
+
+```ruby
+# config/initializers/yes_types.rb
+Yes::Core::Types.register(:subscription_type, Yes::Core::Types::String.enum('premium', 'basic'))
+Yes::Core::Types.register(:team_role, Yes::Core::Types::String.enum('lead', 'member'))
+Yes::Core::Types.register(:training_year, Yes::Core::Types::Coercible::Integer.constrained(gteq: 1, lteq: 4))
+```
+
+Registered types can then be used in aggregate definitions:
+
+```ruby
+attribute :role, :team_role, command: true
+```
 
 ### Attribute Commands
 
@@ -826,6 +853,101 @@ Yes::Core::CommandHandling::ReadModelRecoveryService.recover(read_model)
 Yes::Core::CommandHandling::ReadModelRecoveryService.recover_all_stale
 ```
 
+## Subscriptions
+
+Yes wraps [PgEventstore](https://github.com/yousty/pg_eventstore) subscriptions for processing events in real-time.
+
+### Setting Up Subscriptions
+
+```ruby
+# lib/tasks/eventstore.rb
+subscriptions = Yes::Core::Subscriptions.new
+
+subscriptions.subscribe_to_all(
+  MyReadModel::Builder.new,
+  { event_types: ['MyContext::SomethingHappened', 'MyContext::SomethingElseHappened'] }
+)
+
+subscriptions.start
+```
+
+Start subscriptions via the PgEventstore CLI:
+
+```shell
+bundle exec pg-eventstore subscriptions start -r ./lib/tasks/eventstore.rb
+```
+
+### Heartbeat
+
+Configure a heartbeat URL for monitoring subscription health:
+
+```ruby
+Yes::Core.configure do |config|
+  config.subscriptions_heartbeat_url = ENV['SUBSCRIPTIONS_HEARTBEAT_URL']
+  config.subscriptions_heartbeat_interval = 30 # seconds
+end
+```
+
+## Process Managers
+
+Process managers coordinate commands across services via HTTP.
+
+### ServiceClient
+
+Sends commands to another service's command API:
+
+```ruby
+client = Yes::Core::ProcessManagers::ServiceClient.new('media')
+# Resolves to MEDIA_SERVICE_URL env var or http://media-cluster-ip-service:3000
+
+client.call(access_token: token, commands_data: [...], channel: '/notifications')
+```
+
+### CommandRunner
+
+Base class for process managers that publish commands to external services:
+
+```ruby
+class MyProcessManager < Yes::Core::ProcessManagers::CommandRunner
+  def call(event)
+    publish(
+      client_id: ENV['MY_CLIENT_ID'],
+      client_secret: ENV['MY_CLIENT_SECRET'],
+      commands_data: build_commands(event)
+    )
+  end
+end
+```
+
+### State
+
+Reconstructs entity state from events for use in process managers:
+
+```ruby
+class UserState < Yes::Core::ProcessManagers::State
+  RELEVANT_EVENTS = ['Auth::UserCreated', 'Auth::UserNameChanged'].freeze
+
+  attr_reader :name
+
+  private
+
+  def stream
+    PgEventstore::Stream.new(context: 'Auth', stream_name: 'User', stream_id: @id)
+  end
+
+  def required_attributes
+    [:name]
+  end
+
+  def apply_user_name_changed(event)
+    @name = event.data['name']
+  end
+end
+
+state = UserState.load(user_id)
+state.valid? # true if all required_attributes are present
+```
+
 ## Additional Features
 
 ### Parent Aggregates
@@ -998,6 +1120,45 @@ Inside the `cerbos_payload` block, you can access:
 
 These blocks allow you to precisely control what data is sent to Cerbos for authorization decisions on a per-command basis.
 
+### Auth Adapter
+
+To use the command and read APIs, configure an auth adapter that handles JWT authentication:
+
+```ruby
+# config/initializers/yes.rb
+Yes::Core.configure do |config|
+  config.auth_adapter = MyAuthAdapter.new
+end
+```
+
+The adapter must implement the following interface:
+
+```ruby
+class MyAuthAdapter
+  # Authenticates the request. Raise an error inheriting from
+  # Yes::Core::AuthenticationError if authentication fails.
+  # The read API uses the return value as auth_data.
+  def authenticate(request)
+    # ... verify JWT token, return auth data hash
+  end
+
+  # Returns auth data extracted from the request.
+  def auth_data(request)
+    # ... return { identity_id: '...', host: '...' }
+  end
+
+  # Verifies a raw JWT token (used by MessageBus user lookup).
+  def verify_token(token)
+    # ... return OpenStruct.new(token: [decoded_payload])
+  end
+
+  # Returns error classes the controller should rescue as auth failures.
+  def error_classes
+    [MyAuthError]
+  end
+end
+```
+
 ### Removable
 
 Define a default removal behavior for an aggregate:
@@ -1097,6 +1258,41 @@ draftable draft_aggregate: { context: 'DraftContext', aggregate: 'MyDraft' }, ch
 ```
 
 When `changes_read_model` is not specified, it defaults to using the main read model name with "_change" appended (e.g., if the read model is "article", the changes read model becomes "article_change").
+
+## Configuration Reference
+
+```ruby
+Yes::Core.configure do |config|
+  # Command processing
+  config.process_commands_inline = true          # Process commands synchronously (default: true)
+  config.command_notifier_classes = []            # Array of notifier classes for command batch notifications
+
+  # Authentication
+  config.auth_adapter = nil                      # Auth adapter instance (required for command/read APIs)
+
+  # Cerbos Authorization
+  config.cerbos_url = ENV['CERBOS_URL']          # Cerbos server URL (default from env var)
+  config.cerbos_principal_data_builder = -> {}    # Lambda to build Cerbos principal data for commands
+  config.cerbos_read_principal_data_builder = nil # Lambda for read requests (falls back to above)
+  config.cerbos_commands_authorizer_include_metadata = false
+  config.cerbos_read_authorizer_include_metadata = false
+  config.cerbos_read_authorizer_actions = %w[read]
+  config.cerbos_read_authorizer_resource_id_prefix = 'read-'
+  config.cerbos_read_authorizer_principal_anonymous_id = 'anonymous'
+  config.super_admin_check = ->(_auth_data) { false }
+
+  # Subscriptions
+  config.subscriptions_heartbeat_url = nil       # URL to ping for subscription health monitoring
+  config.subscriptions_heartbeat_interval = 30   # Heartbeat interval in seconds
+
+  # Observability
+  config.otl_tracer = nil                        # OpenTelemetry tracer instance
+  config.logger = Rails.logger                   # Logger instance
+
+  # Error reporting
+  config.error_reporter = nil                    # Callable for error reporting (e.g. Sentry)
+end
+```
 
 ## Development
 

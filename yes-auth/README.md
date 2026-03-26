@@ -32,6 +32,29 @@ Or if using a monorepo with path references:
 gem 'yes-auth', path: 'yes-auth'
 ```
 
+### Auto-Configuration
+
+When loaded in a Rails application, yes-auth automatically configures the Cerbos principal data builders in yes-core:
+
+- `config.cerbos_principal_data_builder` → `Yes::Auth::Cerbos::WriteResourceAccess::PrincipalData`
+- `config.cerbos_read_principal_data_builder` → `Yes::Auth::Cerbos::ReadResourceAccess::PrincipalData`
+
+This means you don't need to manually configure these in your initializer — just adding `yes-auth` to your Gemfile is enough.
+
+To override the default builders, set them explicitly in your initializer (after yes-auth's railtie runs):
+
+```ruby
+Yes::Core.configure do |config|
+  config.cerbos_principal_data_builder = MyCustomPrincipalDataBuilder.method(:call)
+end
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CERBOS_URL` | `cerbos-cluster-ip-service:3593` | Cerbos server address (set via yes-core config) |
+
 ## Usage
 
 ### Principal Models
