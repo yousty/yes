@@ -6,9 +6,9 @@ module Yes
     class Railtie < Rails::Railtie
       initializer 'yes_auth.configure_cerbos' do
         Yes::Core.configure do |config|
-          config.cerbos_principal_data_builder ||=
+          config.cerbos_principal_data_builder =
             Yes::Auth::Cerbos::WriteResourceAccess::PrincipalData.method(:call)
-          config.cerbos_read_principal_data_builder ||=
+          config.cerbos_read_principal_data_builder =
             Yes::Auth::Cerbos::ReadResourceAccess::PrincipalData.method(:call)
         end
       end

@@ -8,7 +8,7 @@ module Yes
       # @example Finding a user and checking roles
       #   user = Yes::Auth::Principals::User.find_by(identity_id: 'some-uuid')
       #   user.read_resource_access_authorization_roles
-      class User < ActiveRecord::Base
+      class User < ApplicationRecord
         self.table_name = 'auth_principals_users'
 
         NO_AUTHORIZATION_ROLES_YET = ['no-roles-yet'].freeze

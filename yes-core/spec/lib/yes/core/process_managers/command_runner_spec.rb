@@ -45,9 +45,9 @@ RSpec.describe Yes::Core::ProcessManagers::CommandRunner do
       subject(:command_runner) { described_class.new }
 
       it 'raises an ArgumentError' do
-        expect {
+        expect do
           command_runner.send(:publish, client_id:, client_secret:, commands_data:)
-        }.to raise_error(ArgumentError, /No API client available/)
+        end.to raise_error(ArgumentError, /No API client available/)
       end
     end
 
@@ -67,9 +67,9 @@ RSpec.describe Yes::Core::ProcessManagers::CommandRunner do
       end
 
       it 'raises a ProcessManagers::Base::Error' do
-        expect {
+        expect do
           command_runner.send(:publish, client_id:, client_secret:, commands_data:)
-        }.to raise_error(Yes::Core::ProcessManagers::Base::Error, /Process Manager: failed to send commands/)
+        end.to raise_error(Yes::Core::ProcessManagers::Base::Error, /Process Manager: failed to send commands/)
 
         expect(logger).to have_received(:error)
       end
@@ -97,9 +97,9 @@ RSpec.describe Yes::Core::ProcessManagers::CommandRunner do
     end
 
     it 'logs the error and raises a ProcessManagers::Base::Error' do
-      expect {
+      expect do
         command_runner.send(:process_manager_error!, response, error_msg: 'Test error')
-      }.to raise_error(Yes::Core::ProcessManagers::Base::Error) do |error|
+      end.to raise_error(Yes::Core::ProcessManagers::Base::Error) do |error|
         aggregate_failures do
           expect(error.message).to eq('Process Manager: failed to send commands')
           expect(error.extra).to include(:error_msg, :request, :response)

@@ -24,7 +24,7 @@ module Yes
 
         key_id = encryption_metadata[:key]
         res = key_repository.find(key_id)
-        res = res.failure? ? key_repository.create(key_id) : res
+        res = key_repository.create(key_id) if res.failure?
         key = res.value!
 
         encryption_metadata[:iv] = key.attributes[:iv]

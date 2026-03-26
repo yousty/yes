@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-# Stub the ReadModels namespace and builders since yes-core is not loaded in yes-auth specs
+# rubocop:disable Lint/EmptyClass
 module Yes
   module Auth
     module ReadModels
@@ -26,6 +26,7 @@ module Yes
     end
   end
 end
+# rubocop:enable Lint/EmptyClass
 
 RSpec.describe Yes::Auth::Subscriptions do
   describe '.call' do

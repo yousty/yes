@@ -11,15 +11,15 @@ RSpec.describe Yes::Core::ProcessManagers::AccessTokenClient do
   describe '#call' do
     context 'when the request is successful' do
       before do
-        stub_request(:post, "#{auth_url}/oauth/token")
-          .with(
+        stub_request(:post, "#{auth_url}/oauth/token").
+          with(
             body: {
               client_id:,
               client_secret:,
               grant_type: 'client_credentials'
             }
-          )
-          .to_return(
+          ).
+          to_return(
             status: 200,
             body: { access_token: }.to_json,
             headers: { 'Content-Type' => 'application/json' }
@@ -33,8 +33,8 @@ RSpec.describe Yes::Core::ProcessManagers::AccessTokenClient do
 
     context 'when the request fails' do
       before do
-        stub_request(:post, "#{auth_url}/oauth/token")
-          .to_return(
+        stub_request(:post, "#{auth_url}/oauth/token").
+          to_return(
             status: 400,
             body: { error: 'invalid_client' }.to_json,
             headers: { 'Content-Type' => 'application/json' }
@@ -48,8 +48,8 @@ RSpec.describe Yes::Core::ProcessManagers::AccessTokenClient do
 
     context 'when the response is successful but does not contain an access token' do
       before do
-        stub_request(:post, "#{auth_url}/oauth/token")
-          .to_return(
+        stub_request(:post, "#{auth_url}/oauth/token").
+          to_return(
             status: 200,
             body: {}.to_json,
             headers: { 'Content-Type' => 'application/json' }

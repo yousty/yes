@@ -8,7 +8,7 @@ module Yes
       # @example Checking if an access is complete
       #   access = Yes::Auth::Principals::ReadResourceAccess.find(id)
       #   access.authorization_complete?
-      class ReadResourceAccess < ActiveRecord::Base
+      class ReadResourceAccess < ApplicationRecord
         self.table_name = 'auth_principals_read_resource_accesses'
 
         belongs_to :role, class_name: 'Yes::Auth::Principals::Role', optional: true

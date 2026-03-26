@@ -5,6 +5,7 @@ require 'dry-inflector'
 require 'dry-schema'
 require 'dry-struct'
 require 'dry-types'
+require 'opentelemetry-sdk'
 require 'pg_eventstore'
 require 'zeitwerk'
 

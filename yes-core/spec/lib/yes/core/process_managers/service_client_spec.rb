@@ -42,15 +42,15 @@ RSpec.describe Yes::Core::ProcessManagers::ServiceClient do
     end
 
     it 'raises an ArgumentError if access_token is nil' do
-      expect {
+      expect do
         client.call(access_token: nil, commands_data:, channel:)
-      }.to raise_error(ArgumentError, 'channel and access_token is required')
+      end.to raise_error(ArgumentError, 'channel and access_token is required')
     end
 
     it 'raises an ArgumentError if channel is nil' do
-      expect {
+      expect do
         client.call(access_token:, commands_data:, channel: nil)
-      }.to raise_error(ArgumentError, 'channel and access_token is required')
+      end.to raise_error(ArgumentError, 'channel and access_token is required')
     end
   end
 end

@@ -17,6 +17,7 @@ PATH
       dry-types
       has_scope
       jsonapi-serializer
+      opentelemetry-sdk
       pg_eventstore (~> 1.0)
       rails (>= 7.1)
       zeitwerk
@@ -261,6 +262,19 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.10-x86_64-linux-musl)
       racc (~> 1.4)
+    opentelemetry-api (1.8.0)
+      logger
+    opentelemetry-common (0.23.0)
+      opentelemetry-api (~> 1.0)
+    opentelemetry-registry (0.4.0)
+      opentelemetry-api (~> 1.1)
+    opentelemetry-sdk (1.10.0)
+      opentelemetry-api (~> 1.1)
+      opentelemetry-common (~> 0.20)
+      opentelemetry-registry (~> 0.2)
+      opentelemetry-semantic_conventions
+    opentelemetry-semantic_conventions (1.36.0)
+      opentelemetry-api (~> 1.0)
     pagy (6.5.0)
     parallel (1.27.0)
     parser (3.3.10.0)

@@ -79,9 +79,7 @@ module Yes
           # @param command [Yes::Core::Command] command to authorize
           # @return [Class] the read model class
           def read_model(command)
-            if command.metadata&.dig(:edit_template_command) && self::RESOURCE[:draft_read_model]
-              return self::RESOURCE[:draft_read_model]
-            end
+            return self::RESOURCE[:draft_read_model] if command.metadata&.dig(:edit_template_command) && self::RESOURCE[:draft_read_model]
 
             self::RESOURCE[:read_model]
           end
@@ -138,7 +136,7 @@ module Yes
           # @param attribs [Hash] resource attributes
           # @return [String] resource kind for Cerbos check_resource
           def resource_kind(resource, attribs)
-            ((attribs.values.any? { !_1.nil? } || attribs.empty?) && resource&.id) ? self::RESOURCE[:name] : new_resource_id
+            (attribs.values.any? { !_1.nil? } || attribs.empty?) && resource&.id ? self::RESOURCE[:name] : new_resource_id
           end
 
           # @param resource [ActiveRecord::Base] resource to authorize

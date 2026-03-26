@@ -105,7 +105,7 @@ module Yes
         @aggregate_shortcuts = false
         @super_admin_check = ->(_auth_data) { false }
         @cerbos_principal_data_builder = lambda { |auth_data|
-          { id: auth_data[:identity_id], roles: [], attr: {} }
+          { id: auth_data[:identity_id], roles: [], attributes: {} }
         }
         @cerbos_url = ENV.fetch('CERBOS_URL', 'cerbos-cluster-ip-service:3593')
         @cerbos_commands_authorizer_include_metadata = false

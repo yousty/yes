@@ -3,14 +3,14 @@
 # Dummy ActiveRecord models used by specs as resource targets.
 # These simulate external domain models (companies, apprenticeships, locations)
 # that are referenced by resource access records.
-class Company < ActiveRecord::Base
+class Company < ApplicationRecord
   self.table_name = 'companies'
 end
 
-class Apprenticeship < ActiveRecord::Base
+class Apprenticeship < ApplicationRecord
   self.table_name = 'apprenticeships'
 end
 
-class Location < ActiveRecord::Base
+class Location < ApplicationRecord
   self.table_name = 'locations'
 end
