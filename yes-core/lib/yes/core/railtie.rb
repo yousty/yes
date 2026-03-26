@@ -51,7 +51,7 @@ module Yes
 
       # Load aggregate shortcuts when Rails console starts
       console do
-        Yes::Core::AggregateShortcuts.load!
+        Yes::Core::Utils::AggregateShortcuts.load!
       end
     end
   end

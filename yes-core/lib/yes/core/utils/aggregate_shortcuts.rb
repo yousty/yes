@@ -2,11 +2,12 @@
 
 module Yes
   module Core
-    # Provides convenient shortcuts for accessing aggregate classes in Rails console
-    # @example
-    #   # Instead of: ApprenticeshipPresentation::Apprenticeship::Aggregate.new(id)
-    #   # Use: AP::Appr.new(id)
-    class AggregateShortcuts
+    module Utils
+      # Provides convenient shortcuts for accessing aggregate classes in Rails console
+      # @example
+      #   # Instead of: ApprenticeshipPresentation::Apprenticeship::Aggregate.new(id)
+      #   # Use: AP::Appr.new(id)
+      class AggregateShortcuts
       class << self
         # Load aggregate shortcuts in Rails console
         # Creates module aliases and constants for convenient access
@@ -156,6 +157,7 @@ module Yes
             end
           end
         end
+      end
       end
     end
   end
