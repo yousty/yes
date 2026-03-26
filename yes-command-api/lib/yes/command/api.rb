@@ -7,6 +7,7 @@ require 'yes/command/api/commands/params_validator'
 require 'yes/command/api/commands/deserializer'
 require 'yes/command/api/commands/batch_authorizer'
 require 'yes/command/api/commands/batch_validator'
+require 'yes/command/api/commands/notifiers/action_cable'
 require 'yes/command/api/commands/notifiers/message_bus'
 
 module Yes
