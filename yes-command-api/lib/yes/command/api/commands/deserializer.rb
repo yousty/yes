@@ -52,10 +52,14 @@ module Yes
             # @param command [Hash] command data
             # @return [String] command class name
             def command_class_name(command)
-              return command_group_class(command) if Object.const_defined?(command_group_class(command))
-              return command_v2_class(command) if Object.const_defined?(command_v2_class(command))
-
-              command_class(command)
+              [command_group_class(command), command_v2_class(command), command_class(command)].each do |name|
+                Kernel.const_get(name)
+                return name
+              rescue NameError
+                next
+              end
+              # None found — return V2 name so const_get in caller raises NameError
+              command_v2_class(command)
             end
 
             # Returns the V1 command class name.
