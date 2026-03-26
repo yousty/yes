@@ -28,8 +28,8 @@ RSpec.describe Yes::Core::Aggregate do
 
         it 'executes the defined block logic' do
           aggregate_failures do
-            expect(authorizer_instance.call(command_matching, auth_data)).to be true
-            expect(authorizer_instance.call(command_mismatch, auth_data)).to be false
+            expect(resolved_class.call(command_matching, auth_data)).to be true
+            expect(resolved_class.call(command_mismatch, auth_data)).to be false
           end
         end
       end

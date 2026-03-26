@@ -52,14 +52,13 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command do
     end
 
     context 'with block' do
-      let(:instance) { authorizer_class.new }
       let(:cmd) { double('Command', another: name) }
       let(:name) { 'John' }
 
       it 'executes the simple authorizer block correctly' do
         aggregate_failures do
-          expect(instance.call(cmd, { name: })).to be true
-          expect(instance.call(cmd, { name: 'Jane' })).to be false
+          expect(authorizer_class.call(cmd, { name: })).to be true
+          expect(authorizer_class.call(cmd, { name: 'Jane' })).to be false
         end
       end
     end

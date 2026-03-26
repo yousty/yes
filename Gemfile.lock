@@ -1,7 +1,7 @@
 PATH
   remote: yes-command-api
   specs:
-    yes-command-api (1.0.0.pre2)
+    yes-command-api (1.0.0.pre3)
       message_bus
       rails (>= 7.1)
       yes-core
@@ -9,7 +9,7 @@ PATH
 PATH
   remote: yes-core
   specs:
-    yes-core (1.0.0.pre2)
+    yes-core (1.0.0.pre3)
       cerbos (~> 0.8)
       dry-inflector
       dry-schema

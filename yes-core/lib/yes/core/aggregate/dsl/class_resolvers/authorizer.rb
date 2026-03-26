@@ -110,23 +110,17 @@ module Yes
                       "A block must be provided to define the 'call' method logic when not using CommandCerbosAuthorizer."
               end
 
-              # Define helper methods to access command/auth_data within the block via instance variables
-              klass.define_method(:command) { @_exec_command }
-              klass.define_method(:auth_data) { @_exec_auth_data }
-
-              # Define the main call method
-              klass.define_method(:call) do |current_command, current_auth_data|
-                # Store command/auth_data temporarily for the block execution context
+              # Define call as a class method (matching CommandCerbosAuthorizer pattern)
+              klass.define_singleton_method(:call) do |current_command, current_auth_data|
                 @_exec_command = current_command
                 @_exec_auth_data = current_auth_data
+                define_singleton_method(:command) { @_exec_command }
+                define_singleton_method(:auth_data) { @_exec_auth_data }
                 begin
-                  # Execute the user's block within the instance context.
-                  # The block can now use the `command` and `auth_data` helper methods.
                   instance_exec(&_custom_logic)
                 ensure
-                  # Clean up temporary instance variables
-                  remove_instance_variable(:@_exec_command) if instance_variable_defined?(:@_exec_command)
-                  remove_instance_variable(:@_exec_auth_data) if instance_variable_defined?(:@_exec_auth_data)
+                  @_exec_command = nil
+                  @_exec_auth_data = nil
                 end
               end
             end

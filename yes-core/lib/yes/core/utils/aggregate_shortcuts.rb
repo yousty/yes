@@ -152,7 +152,7 @@ module Yes
             # Define global helper method for console
             Object.class_eval do
               define_method(:shortcuts) do |filter = nil|
-                Yes::Core::AggregateShortcuts.display(filter)
+                Yes::Core::Utils::AggregateShortcuts.display(filter)
                 nil # Don't return anything to avoid console clutter
               end
             end

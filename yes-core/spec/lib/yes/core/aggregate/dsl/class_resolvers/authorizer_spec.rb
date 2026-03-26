@@ -142,7 +142,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
             expect(subject::RESOURCE).to eq({ read_model: dummy_read_model_class,
                                               name: default_resource_name }.freeze)
             # Ensure call method is NOT defined dynamically for Cerbos authorizer
-            expect(subject.instance_methods).not_to include(:call)
+            expect(subject.singleton_class.instance_methods(false)).not_to include(:call)
           end
         end
 
@@ -205,8 +205,8 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
 
         it 'generates a class with a call method executing the block' do
           # Check if the call method exists and executes the block logic correctly
-          expect(subject.new.call(command_double, auth_data_double)).to eq([command_double, auth_data_double,
-                                                                            block_return_value])
+          expect(subject.call(command_double, auth_data_double)).to eq([command_double, auth_data_double,
+                                                                        block_return_value])
         end
 
         it 'registers the generated class (with custom call method)' do
@@ -223,7 +223,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Authorizer do
             expect(subject.name).to eq("#{context_name}::#{aggregate_name}::Commands::#{aggregate_name}Authorizer")
             expect(subject).to be < Yes::Core::Authorization::CommandAuthorizer
             expect(subject.const_defined?(:RESOURCE)).to be false
-            expect(subject.instance_methods).to include(:call) # call method defined
+            expect(subject.singleton_class.instance_methods(false)).to include(:call) # call method defined
           end
         end
       end

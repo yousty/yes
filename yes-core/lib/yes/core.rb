@@ -73,9 +73,6 @@ module Yes
       HandlerHelpers = Commands::Stateless::HandlerHelpers
     end
 
-    # Subscriptions
-    Subscriptions = Yes::Core::Subscriptions
-
     # Command Helpers (kept for backward compatibility)
     module CommandHelpers
       HelpersV2 = Commands::Helper

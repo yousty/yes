@@ -22,24 +22,22 @@ module Yes
                 klass
               end
 
-              # Adds a `call` instance method that executes the user-provided block
+              # Adds a `call` class method that executes the user-provided block
               #
               # @param klass [Class] the class being generated
               def apply_call_override(klass)
                 user_block = command_data.authorizer_block
 
-                # helper accessors for DSL convenience
-                klass.define_method(:command)    { @_cmd }
-                klass.define_method(:auth_data)  { @_auth }
-
-                klass.define_method(:call) do |cmd, auth|
+                klass.define_singleton_method(:call) do |cmd, auth|
                   @_cmd = cmd
                   @_auth = auth
+                  define_singleton_method(:command) { @_cmd }
+                  define_singleton_method(:auth_data) { @_auth }
                   begin
                     instance_exec(&user_block)
                   ensure
-                    remove_instance_variable(:@_cmd)  if instance_variable_defined?(:@_cmd)
-                    remove_instance_variable(:@_auth) if instance_variable_defined?(:@_auth)
+                    @_cmd = nil
+                    @_auth = nil
                   end
                 end
               end
