@@ -7,7 +7,7 @@ module Yes
       #
       # @example Finding the super admin role
       #   Yes::Auth::Principals::Role.super_admin_role
-      class Role < ApplicationRecord
+      class Role < ActiveRecord::Base
         self.table_name = 'auth_principals_roles'
 
         SUPER_ADMIN_ROLE_NAME = 'admin'

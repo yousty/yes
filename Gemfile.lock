@@ -1,7 +1,7 @@
 PATH
   remote: yes-command-api
   specs:
-    yes-command-api (1.0.0)
+    yes-command-api (1.0.0.pre1)
       message_bus
       rails (>= 7.1)
       yes-core
@@ -9,7 +9,7 @@ PATH
 PATH
   remote: yes-core
   specs:
-    yes-core (1.0.0)
+    yes-core (1.0.0.pre1)
       cerbos (~> 0.8)
       dry-inflector
       dry-schema
@@ -25,7 +25,7 @@ PATH
 PATH
   remote: yes-read-api
   specs:
-    yes-read-api (1.0.0)
+    yes-read-api (1.0.0.pre1)
       api-pagination (~> 5.0)
       pagy (~> 6.0)
       rails (>= 7.1)

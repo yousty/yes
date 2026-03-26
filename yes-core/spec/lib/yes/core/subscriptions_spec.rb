@@ -16,7 +16,10 @@ RSpec.describe Yes::Core::Subscriptions do
     end
 
     describe 'created subscription' do
-      subject { super(); instance.subscriptions_manager.subscriptions.last }
+      subject do
+        super()
+        instance.subscriptions_manager.subscriptions.last
+      end
 
       it 'has correct setup' do
         expect(subject.options).to eq(filter: filter_options, resolve_link_tos: true)
@@ -29,7 +32,7 @@ RSpec.describe Yes::Core::Subscriptions do
 
     before do
       Yes::Core.configure do |config|
-        config.subscriptions_heartbeat_url = "http://localhost:3000/heartbeat"
+        config.subscriptions_heartbeat_url = 'http://localhost:3000/heartbeat'
         config.subscriptions_heartbeat_interval = 1
       end
     end
