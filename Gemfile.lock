@@ -1,7 +1,7 @@
 PATH
   remote: yes-command-api
   specs:
-    yes-command-api (1.0.0.pre3)
+    yes-command-api (1.0.0.pre5)
       message_bus
       rails (>= 7.1)
       yes-core
