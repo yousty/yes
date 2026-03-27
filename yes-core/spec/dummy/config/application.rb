@@ -20,5 +20,8 @@ module Dummy
     config.paths.add 'db/migrate', with: 'db/migrate'
     config.i18n.available_locales = %i[en de-CH fr-CH it-CH]
     config.i18n.default_locale = :'de-CH'
+
+    config.yes_read_api = ActiveSupport::OrderedOptions.new
+    config.yes_read_api.read_models = %w[test_users]
   end
 end
