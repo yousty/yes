@@ -1,7 +1,7 @@
 PATH
   remote: ../yes-core
   specs:
-    yes-core (1.0.0.pre3)
+    yes-core (1.0.0.pre4)
       cerbos (~> 0.8)
       dry-inflector
       dry-schema

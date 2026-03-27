@@ -6,43 +6,39 @@ Yes is a framework for building event-sourced systems, originally developed to p
 
 - [Quick Start](#quick-start)
 - [Naming Conventions](#naming-conventions)
-- [Core DSL Methods](#core-dsl-methods)
+- [Aggregate DSL](#aggregate-dsl)
   - [attribute](#attribute)
   - [command](#command)
-- [Attribute Details](#attribute-details)
-  - [Available Types](#available-types)
-  - [Custom Types](#custom-types)
-  - [Attribute Commands](#attribute-commands)
-- [Command Details](#command-details)
-  - [Command Authorization](#command-authorization)
-  - [Command Configuration Options](#command-configuration-options)
-  - [State Update Behavior](#state-update-behavior)
-  - [Generated Command Methods](#generated-command-methods)
-  - [Command Shortcuts](#command-shortcuts)
-- [Guards](#guards)
-  - [Adding Guards to Attributes](#adding-guards-to-attributes)
-  - [Adding Guards to Commands](#adding-guards-to-commands)
-  - [Guard Error Types](#guard-error-types)
-  - [Custom Error Messages](#custom-error-messages)
-- [Read Models](#read-models)
-  - [Default Naming](#default-naming)
-  - [Customizing Read Models](#customizing-read-models)
-  - [Read Model Schema Generator](#read-model-schema-generator)
-  - [Pending Update Tracking Generator](#pending-update-tracking-generator)
-- [Subscriptions](#subscriptions)
-  - [Setting Up Subscriptions](#setting-up-subscriptions)
-  - [Heartbeat](#heartbeat)
-- [Process Managers](#process-managers)
-  - [ServiceClient](#serviceclient)
-  - [CommandRunner](#commandrunner)
-  - [State](#state)
-- [Additional Features](#additional-features)
+  - [Attribute Details](#attribute-details)
+  - [Command Details](#command-details)
+  - [Guards](#guards)
+  - [Read Models](#read-models)
   - [Parent Aggregates](#parent-aggregates)
   - [Primary Context](#primary-context)
-  - [Aggregate Authorization](#aggregate-authorization)
-  - [Auth Adapter](#auth-adapter)
   - [Removable](#removable)
   - [Draftable](#draftable)
+- [Authorization](#authorization)
+  - [Auth Adapter](#auth-adapter)
+  - [Aggregate Authorization](#aggregate-authorization)
+  - [Command Authorization](#command-authorization)
+  - [Cerbos Authorization](#cerbos-authorization)
+- [Command API](#command-api)
+  - [Command API Installation](#command-api-installation)
+  - [Request Format](#request-format)
+  - [Command Class Resolution](#command-class-resolution)
+  - [Processing Pipeline](#processing-pipeline)
+  - [Using Commands Without the DSL](#using-commands-without-the-dsl)
+  - [Real-Time Command Notifications](#real-time-command-notifications)
+- [Read API](#read-api)
+  - [Read API Installation](#read-api-installation)
+  - [Basic Queries](#basic-queries)
+  - [Advanced Queries](#advanced-queries)
+  - [Filters](#filters)
+  - [Read API Authorization](#read-api-authorization)
+  - [Serializers](#serializers)
+- [Event Processing](#event-processing)
+  - [Subscriptions](#subscriptions)
+  - [Process Managers](#process-managers)
 - [Configuration Reference](#configuration-reference)
 - [Development](#development)
   - [Example Usage](#example-usage)
@@ -105,7 +101,7 @@ When defining an aggregate, use the following namespacing pattern:
 
 For example: `Users::User::Aggregate` or `Companies::Company::Aggregate`
 
-## Core DSL Methods
+## Aggregate DSL
 
 ### `attribute`
 
@@ -168,11 +164,11 @@ module Companies
 end
 ```
 
-## Attribute Details
+### Attribute Details
 
 Attributes are the core properties of your aggregates.
 
-### Available Types
+#### Available Types
 
 The attribute system supports various types:
 - `:string` - Text values
@@ -185,7 +181,7 @@ The attribute system supports various types:
 
 For the complete list, see [yes-core/lib/yes/core/type_lookup.rb](yes-core/lib/yes/core/type_lookup.rb)
 
-### Custom Types
+#### Custom Types
 
 You can register application-specific types using the type registry:
 
@@ -202,11 +198,11 @@ Registered types can then be used in aggregate definitions:
 attribute :role, :team_role, command: true
 ```
 
-### Attribute Commands
+#### Attribute Commands
 
 If you specify `command: true` when defining an attribute, Yes generates:
 
-#### `change_<attribute>` Method
+##### `change_<attribute>` Method
 
 Changes the attribute's value through an event:
 
@@ -221,7 +217,7 @@ You can also pass parameters as a hash:
 user.change_age(age: 30)
 ```
 
-#### `can_change_<attribute>?` Method
+##### `can_change_<attribute>?` Method
 
 Validates a potential change without applying it:
 
@@ -236,49 +232,13 @@ user.can_change_email?("invalid-email") # => false
 user.email_change_error # Contains the error message
 ```
 
-## Command Details
+### Command Details
 
 Commands define operations that can be performed on your aggregate.
 
-### Command Authorization
+#### Command Configuration Options
 
-Commands can define per-command authorization that extends or overrides the [aggregate-level authorizer](#aggregate-authorization).
-
-```ruby
-# First define an aggregate level authorizer
-class Aggregate < Yes::Core::Aggregate
-  authorize do
-    # Base level authorization logic
-    auth_data[:identity_id].present?
-  end
-
-  # Then add command-specific refinements
-  command :publish do
-    payload user_id: :uuid
-
-    # Command-specific authorization logic
-    authorize do
-      # Has access to the command and auth_data
-      command.user_id == auth_data[:user_id]
-    end
-  end
-end
-```
-
-When an aggregate has declared `authorize` at the class level, commands can define their own
-authorization logic that inherits from the aggregate-level authorizer. Each command with an
-`authorize` block automatically receives its own `Authorizer` subclass that inherits from
-the aggregate-level authorizer.
-
-Command authorizers are registered in the configuration and can be retrieved with:
-
-```ruby
-Yes::Core.configuration.aggregate_class('Context', 'Aggregate', :publish, :authorizer)
-```
-
-### Command Configuration Options
-
-#### Payload
+##### Payload
 
 Define the input data for your command:
 
@@ -312,7 +272,7 @@ end
 
 **Note**: For commands, nullable attributes are automatically unwrapped from `Dry::Monads::Maybe::Some/None` when accessing `command.payload` to ensure compatibility with event creation.
 
-#### Guards
+##### Guards
 
 Add validation rules with guards:
 
@@ -328,7 +288,7 @@ command :publish do
 end
 ```
 
-#### Custom Event Names
+##### Custom Event Names
 
 Customize the generated event name:
 
@@ -340,7 +300,7 @@ end
 
 When no custom event name is provided, *Yes* automatically generates an event name based on the command name. Currently, only standard command prefixes are supported. If you use a command that doesn't start with a supported prefix, you must specify the event name explicitly. For a list of supported prefixes, see [lib/yes/core/utils/event_name_resolver.rb](yes-core/lib/yes/core/utils/event_name_resolver.rb).
 
-#### Encrypting Event Payload Attributes
+##### Encrypting Event Payload Attributes
 
 Yes supports encrypting sensitive data in events. You can mark payload attributes for encryption using three approaches:
 
@@ -376,7 +336,7 @@ command :change, :ssn, :string, encrypt: true
 - You can combine inline and separate encryption declarations in the same command
 - The encryption key is automatically derived from the aggregate ID
 
-#### Custom State Updates
+##### Custom State Updates
 
 Define exactly how state should change:
 
@@ -401,11 +361,11 @@ end
 
 Make sure the attributes updated in the `update_state` block are all defined on the aggregate.
 
-### State Update Behavior
+#### State Update Behavior
 
 Commands update the aggregate state in one of two ways:
 
-#### 1. Automatic State Updates (Without `update_state` Block)
+##### 1. Automatic State Updates (Without `update_state` Block)
 
 If you don't define an `update_state` block, the command will automatically update the aggregate's attributes based on the payload:
 
@@ -437,7 +397,7 @@ company.update_details(name: "Acme Inc", description: "Manufacturing company")
 - The system will validate this and raise an error if there's a mismatch
 - The attribute values will be updated directly from the payload values
 
-#### 2. Custom State Updates (With `update_state` Block)
+##### 2. Custom State Updates (With `update_state` Block)
 
 When you define an `update_state` block, you have complete control over how attributes are updated:
 
@@ -472,11 +432,11 @@ end
 - The system will validate this and raise an error if an undefined attribute is updated
 - You have full control over transformation logic
 
-### Generated Command Methods
+#### Generated Command Methods
 
 For each command, Yes generates:
 
-#### Command Method
+##### Command Method
 
 Executes the command:
 
@@ -484,7 +444,7 @@ Executes the command:
 company.assign_user(user_id: "123e4567-e89b-12d3-a456-426614174000")
 ```
 
-#### Can Command Method
+##### Can Command Method
 
 Validates if the command would succeed:
 
@@ -496,11 +456,11 @@ else
 end
 ```
 
-### Command shortcuts
+#### Command shortcuts
 
 For the most frequently used cases *Yes* DSL allows to use shortcuts in `command` definitions.
 
-#### Change command with attribute
+##### Change command with attribute
 
 ```ruby
 command :change, :age, :integer, localized: true
@@ -525,7 +485,7 @@ command :change, :age, :integer do
 end
 ```
 
-#### Boolean attribute command
+##### Boolean attribute command
 
 `:enable` and `:activate` command names are triggering this shortcut.
 
@@ -543,7 +503,7 @@ is expanded to
   end
 ```
 
-#### Toggle commands
+##### Toggle commands
 
 ```ruby
 command [:enable, :disable], :dropout
@@ -564,7 +524,7 @@ is expanded to
   end
 ```
 
-#### Publish command
+##### Publish command
 
 ```ruby
 command :publish
@@ -580,15 +540,15 @@ is expanded to
   end
 ```
 
-## Guards
+### Guards
 
 Guards are powerful validation mechanisms that enforce business rules by controlling when commands and attribute changes are permitted to execute. They act as gatekeepers that ensure all operations maintain the integrity of your domain logic.
 
-### Default Guards
+#### Default Guards
 
 Both commands and attributes automatically include a `:no_change` guard that ensures the aggregate's state would actually change when applying the command. For commands, this default guard is only active when there is no `update_state` block present in the command definition.
 
-### Adding Guards to Attributes
+#### Adding Guards to Attributes
 
 When defining an attribute with a command, you can add guards to implement validation:
 
@@ -600,7 +560,7 @@ attribute :email, :email, command: true do
 end
 ```
 
-### Adding Guards to Commands
+#### Adding Guards to Commands
 
 Similarly, you can add guards to commands to control when they can execute:
 
@@ -620,7 +580,7 @@ Inside any guard block you can access:
 - `payload` - The command payload with access to both data and metadata
 - Any aggregate attribute directly by name
 
-#### Accessing Metadata in Guards
+##### Accessing Metadata in Guards
 
 The payload object in guards provides access to command metadata alongside the regular payload data. This metadata can contain useful contextual information like user information, or tracking data.
 
@@ -633,11 +593,11 @@ command :update_status do
   guard :valid_response do
     # Method-style access
     payload.metadata.response_id.present?
-    
+
     # Hash-style access
     payload.metadata[:response_id].present?
   end
-  
+
   guard :authorized_user do
     # If a metadata key doesn't exist, nil is returned
     payload.metadata.user_role == 'admin' # returns nil if user_role is not in metadata
@@ -647,7 +607,7 @@ end
 
 This allows guards to make decisions based on both the command's data payload and any additional contextual metadata that was provided when the command was issued.
 
-### Guard Error Types
+#### Guard Error Types
 
 Guards have two distinct behaviors based on their name:
 
@@ -670,7 +630,7 @@ command :update_profile do
 end
 ```
 
-### Custom Error Messages
+#### Custom Error Messages
 
 You can provide custom localized error messages for guards using I18n translation files:
 
@@ -691,7 +651,7 @@ en:
 
 This allows you to define human-readable error messages that can be easily translated to different languages. These messages will be used instead of the default error messages when a guard fails.
 
-## Read Models
+### Read Models
 
 Each aggregate automatically gets a corresponding read model (ActiveRecord model) that persists its current state. This is how you access attribute values from an aggregate.
 
@@ -701,7 +661,7 @@ user.change_name("Jane Doe")
 user.name # => "Jane Doe" (reads from the read model)
 ```
 
-### Default Naming
+#### Default Naming
 
 By default, the read model's name is derived from the aggregate's context and name:
 
@@ -711,7 +671,7 @@ By default, the read model's name is derived from the aggregate's context and na
 # And the database table will be users_users
 ```
 
-### Customizing Read Models
+#### Customizing Read Models
 
 You can customize the read model name and visibility using the `read_model` method:
 
@@ -734,7 +694,7 @@ In this example:
 - The database table will be `custom_users`
 - `public: false` means this read model won't be accessible via the read API
 
-### Read Model Schema Generator
+#### Read Model Schema Generator
 
 When you add or remove aggregates or attributes, you need to update your database schema. Yes provides a Rails generator for this:
 
@@ -766,7 +726,7 @@ class UpdateReadModels < ActiveRecord::Migration[7.1]
 end
 ```
 
-#### Type Mapping
+##### Type Mapping
 
 Attribute types are mapped to database column types as follows:
 - `:string`, `:email`, `:url` → `:string`
@@ -776,7 +736,7 @@ Attribute types are mapped to database column types as follows:
 - `:hash` → `:jsonb`
 - `:aggregate` → `:uuid` (stored as `<attribute_name>_id`)
 
-### Pending Update Tracking Generator
+#### Pending Update Tracking Generator
 
 To ensure read model consistency and enable recovery from failures during event processing, Yes provides a generator that adds pending update tracking to your read models:
 
@@ -789,31 +749,31 @@ This generator creates a migration that:
 2. Creates indexes to efficiently track and recover stale pending updates
 3. Automatically handles PostgreSQL's 63-character index name limit by truncating long names
 
-#### What It Does
+##### What It Does
 
 The pending update tracking system helps prevent read models from getting stuck in an inconsistent state by:
 - Marking read models as "pending" before event publication
 - Clearing the pending state after successful updates
 - Allowing automatic recovery of stale pending states (default timeout: 5 minutes)
 
-#### Generated Migration Example
+##### Generated Migration Example
 
 ```ruby
 class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration[7.1]
   def up
     read_model_tables = Yes::Core.configuration.all_read_model_table_names
-    
+
     read_model_tables.each do |table_name|
       next unless ActiveRecord::Base.connection.table_exists?(table_name)
-      
+
       add_column table_name, :pending_update_since, :datetime
-      
+
       # Unique index to prevent concurrent updates to same aggregate
       add_index table_name, :id,
                 unique: true,
                 where: 'pending_update_since IS NOT NULL',
                 name: truncate_index_name("idx_#{table_name}_one_pending_per_aggregate")
-      
+
       # Index for efficient recovery queries
       add_index table_name, :pending_update_since,
                 where: 'pending_update_since IS NOT NULL',
@@ -823,7 +783,7 @@ class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration[7.1]
 end
 ```
 
-#### Recovery Job
+##### Recovery Job
 
 You can schedule a background job to automatically recover stale pending updates:
 
@@ -840,7 +800,7 @@ end
 ReadModelRecoveryJob.perform_later
 ```
 
-#### Manual Recovery
+##### Manual Recovery
 
 You can also manually trigger recovery for specific read models:
 
@@ -852,103 +812,6 @@ Yes::Core::CommandHandling::ReadModelRecoveryService.recover(read_model)
 # Recover all stale pending updates (older than 5 minutes by default)
 Yes::Core::CommandHandling::ReadModelRecoveryService.recover_all_stale
 ```
-
-## Subscriptions
-
-Yes wraps [PgEventstore](https://github.com/yousty/pg_eventstore) subscriptions for processing events in real-time.
-
-### Setting Up Subscriptions
-
-```ruby
-# lib/tasks/eventstore.rb
-subscriptions = Yes::Core::Subscriptions.new
-
-subscriptions.subscribe_to_all(
-  MyReadModel::Builder.new,
-  { event_types: ['MyContext::SomethingHappened', 'MyContext::SomethingElseHappened'] }
-)
-
-subscriptions.start
-```
-
-Start subscriptions via the PgEventstore CLI:
-
-```shell
-bundle exec pg-eventstore subscriptions start -r ./lib/tasks/eventstore.rb
-```
-
-### Heartbeat
-
-Configure a heartbeat URL for monitoring subscription health:
-
-```ruby
-Yes::Core.configure do |config|
-  config.subscriptions_heartbeat_url = ENV['SUBSCRIPTIONS_HEARTBEAT_URL']
-  config.subscriptions_heartbeat_interval = 30 # seconds
-end
-```
-
-## Process Managers
-
-Process managers coordinate commands across services via HTTP.
-
-### ServiceClient
-
-Sends commands to another service's command API:
-
-```ruby
-client = Yes::Core::ProcessManagers::ServiceClient.new('media')
-# Resolves to MEDIA_SERVICE_URL env var or http://media-cluster-ip-service:3000
-
-client.call(access_token: token, commands_data: [...], channel: '/notifications')
-```
-
-### CommandRunner
-
-Base class for process managers that publish commands to external services:
-
-```ruby
-class MyProcessManager < Yes::Core::ProcessManagers::CommandRunner
-  def call(event)
-    publish(
-      client_id: ENV['MY_CLIENT_ID'],
-      client_secret: ENV['MY_CLIENT_SECRET'],
-      commands_data: build_commands(event)
-    )
-  end
-end
-```
-
-### State
-
-Reconstructs entity state from events for use in process managers:
-
-```ruby
-class UserState < Yes::Core::ProcessManagers::State
-  RELEVANT_EVENTS = ['Auth::UserCreated', 'Auth::UserNameChanged'].freeze
-
-  attr_reader :name
-
-  private
-
-  def stream
-    PgEventstore::Stream.new(context: 'Auth', stream_name: 'User', stream_id: @id)
-  end
-
-  def required_attributes
-    [:name]
-  end
-
-  def apply_user_name_changed(event)
-    @name = event.data['name']
-  end
-end
-
-state = UserState.load(user_id)
-state.valid? # true if all required_attributes are present
-```
-
-## Additional Features
 
 ### Parent Aggregates
 
@@ -990,171 +853,6 @@ module Users
 
       attribute :name, :string, command: true
     end
-  end
-end
-```
-
-### Aggregate Authorization
-
-To make aggregates available via the command API, you must define an authorization scheme at the aggregate level. This controls who can execute commands on the aggregate.
-
-#### Simple Authorization
-
-The simplest authorization simply allows all commands to be executed:
-
-```ruby
-module Users
-  module User
-    class Aggregate < Yes::Core::Aggregate
-      # Allow all commands
-      authorize do
-        true
-      end
-
-      attribute :name, :string, command: true
-    end
-  end
-end
-```
-
-Inside the `authorize` block, you can access:
-- `command` - The command being executed
-- `auth_data` - The decoded data from the JWT authentication token
-
-This allows for custom authorization logic:
-
-```ruby
-authorize do
-  # Only allow commands if the authenticated identity matches the user
-  command.user_id == auth_data[:identity_id]
-end
-```
-
-#### Cerbos Authorization
-
-For more complex authorization needs, Yes integrates with [Cerbos](https://www.cerbos.dev/), a powerful authorization engine:
-
-```ruby
-module Users
-  module User
-    class Aggregate < Yes::Core::Aggregate
-      authorize cerbos: true
-
-      attribute :name, :string, command: true
-    end
-  end
-end
-```
-
-When using Cerbos, you can specify additional parameters:
-
-- `read_model_class` - The class used to load the read model for authorization checks (defaults to the aggregate's read model)
-- `resource_name` - The resource name used in Cerbos policies (defaults to the underscored aggregate name)
-
-```ruby
-module Companies
-  module CompanySettings
-    class Aggregate < Yes::Core::Aggregate
-      # Custom read model and resource name
-      authorize cerbos: true,
-                read_model_class: CustomCompanySettings,
-                resource_name: 'company_settings'
-
-      attribute :name, :string, command: true
-    end
-  end
-end
-```
-
-When using custom read models with Cerbos, the model must implement an `auth_attributes` method that returns a hash of attributes for authorization:
-
-```ruby
-class CustomCompanySettings < ApplicationRecord
-  def auth_attributes
-    { company_id: company_id || '' }
-  end
-end
-```
-
-These attributes are passed to Cerbos for making authorization decisions based on your policies.
-
-##### Customizing Cerbos Integration
-
-For advanced use cases, you can customize how Yes interacts with Cerbos by overriding the `resource_attributes` and `cerbos_payload` methods in your authorization block. Currently, this customization is only available within command-level authorization blocks, not at the aggregate level:
-
-```ruby
-module Universe
-  module Star
-    class Aggregate < Yes::Core::Aggregate
-      # Base aggregate-level Cerbos authorization
-      authorize cerbos: true
-
-      attribute :name, :string, command: true
-
-      # Command with customized Cerbos integration
-      command :update_details do
-        payload details: :string
-
-        # Command-level authorization with custom Cerbos integration
-        authorize do
-          # Override resource attributes sent to Cerbos
-          resource_attributes { { owner_id: 'test-user-id' } }
-
-          # Override the entire Cerbos payload
-          cerbos_payload { { principal: auth_data, resource_id: 'test-id' } }
-        end
-      end
-    end
-  end
-end
-```
-
-Inside the `resource_attributes` block, you can access:
-- `command` - The command being executed
-- `resource` - The read model instance for the aggregate
-
-Inside the `cerbos_payload` block, you can access:
-- `command` - The command being executed
-- `resource` - The read model instance for the aggregate
-- `auth_data` - The decoded data from the JWT authentication token
-
-These blocks allow you to precisely control what data is sent to Cerbos for authorization decisions on a per-command basis.
-
-### Auth Adapter
-
-To use the command and read APIs, configure an auth adapter that handles JWT authentication:
-
-```ruby
-# config/initializers/yes.rb
-Yes::Core.configure do |config|
-  config.auth_adapter = MyAuthAdapter.new
-end
-```
-
-The adapter must implement the following interface:
-
-```ruby
-class MyAuthAdapter
-  # Authenticates the request. Raise an error inheriting from
-  # Yes::Core::AuthenticationError if authentication fails.
-  # The read API uses the return value as auth_data.
-  def authenticate(request)
-    # ... verify JWT token, return auth data hash
-  end
-
-  # Returns auth data extracted from the request.
-  def auth_data(request)
-    # ... return { identity_id: '...', host: '...' }
-  end
-
-  # Verifies a raw JWT token (used by MessageBus user lookup).
-  def verify_token(token)
-    # ... return OpenStruct.new(token: [decoded_payload])
-  end
-
-  # Returns error classes the controller should rescue as auth failures.
-  def error_classes
-    [MyAuthError]
   end
 end
 ```
@@ -1215,10 +913,10 @@ module Articles
       # The draft aggregate has to exist already. The default draft aggregate is <CurrentAggregateContext>::<CurrentAggregateName>Draft.
       # Also configures a changes read model (defaults to "<read_model>_change")
       draftable
-      
+
       # Draftable with custom parameters
       # draftable draft_aggregate: { context: 'ArticleDrafts', aggregate: 'ArticleDraft' }, changes_read_model: :article_change
-      
+
       attribute :title, :string, command: true
       attribute :content, :string, command: true
     end
@@ -1244,7 +942,7 @@ draftable
 # Custom context only
 draftable draft_aggregate: { context: 'DraftContext' }
 
-# Custom aggregate name only  
+# Custom aggregate name only
 draftable draft_aggregate: { aggregate: 'MyDraft' }
 
 # Both context and aggregate
@@ -1258,6 +956,719 @@ draftable draft_aggregate: { context: 'DraftContext', aggregate: 'MyDraft' }, ch
 ```
 
 When `changes_read_model` is not specified, it defaults to using the main read model name with "_change" appended (e.g., if the read model is "article", the changes read model becomes "article_change").
+
+## Authorization
+
+### Auth Adapter
+
+Both the [Command API](#command-api) and [Read API](#read-api) delegate authentication to a configurable adapter. Configure it in an initializer:
+
+```ruby
+# config/initializers/yes.rb
+Yes::Core.configure do |config|
+  config.auth_adapter = MyAuthAdapter.new
+end
+```
+
+The adapter must implement three methods:
+
+| Method | Purpose | Called by |
+|--------|---------|----------|
+| `authenticate(request)` | Verify the JWT token and return an auth data hash. Raise a `Yes::Core::AuthenticationError` subclass on failure. | Both API controllers (before every request) |
+| `verify_token(token)` | Decode a raw JWT token string. Return an object responding to `.token` that returns `[decoded_payload_hash]`. | MessageBus user identification |
+| `error_classes` | Return an array of exception classes that represent authentication failures. | Command API controller (to rescue and render 401) |
+
+#### How It Works
+
+1. On every request, the controller calls `adapter.authenticate(request)`.
+2. The returned hash is stored as `auth_data` and passed to command authorizers, read request authorizers, and read model authorizers throughout the request lifecycle.
+3. The hash must include at minimum an `:identity_id` key, which is used for command metadata, MessageBus channel defaults, and authorization.
+
+#### Example Implementation
+
+```ruby
+class MyAuthAdapter
+  AuthError = Class.new(Yes::Core::AuthenticationError)
+
+  # @param request [ActionDispatch::Request]
+  # @raise [AuthError] if the token is missing or invalid
+  # @return [Hash] auth data passed to authorizers as auth_data
+  def authenticate(request)
+    token = request.headers['Authorization']&.delete_prefix('Bearer ')
+    raise AuthError, 'Token missing' unless token
+
+    payload = JWT.decode(token, public_key, true, algorithm: 'RS256').first
+    { identity_id: payload['sub'], host: request.host }.merge(payload.symbolize_keys)
+  end
+
+  # @param token [String] raw JWT token (extracted from Authorization header)
+  # @return [OpenStruct] object with .token returning [decoded_payload_hash]
+  def verify_token(token)
+    decoded = JWT.decode(token, public_key, true, algorithm: 'RS256')
+    OpenStruct.new(token: decoded)
+  end
+
+  # @return [Array<Class>] exception classes the controller rescues as 401
+  def error_classes
+    [AuthError, JWT::DecodeError]
+  end
+
+  private
+
+  def public_key
+    OpenSSL::PKey::RSA.new(ENV.fetch('JWT_PUBLIC_KEY'))
+  end
+end
+```
+
+### Aggregate Authorization
+
+To make aggregates available via the command API, you must define an authorization scheme at the aggregate level. This controls who can execute commands on the aggregate.
+
+#### Simple Authorization
+
+The simplest authorization simply allows all commands to be executed:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      # Allow all commands
+      authorize do
+        true
+      end
+
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
+
+Inside the `authorize` block, you can access:
+- `command` - The command being executed
+- `auth_data` - The decoded data from the JWT authentication token
+
+This allows for custom authorization logic:
+
+```ruby
+authorize do
+  # Only allow commands if the authenticated identity matches the user
+  command.user_id == auth_data[:identity_id]
+end
+```
+
+### Command Authorization
+
+Commands can define per-command authorization that extends or overrides the [aggregate-level authorizer](#aggregate-authorization).
+
+```ruby
+# First define an aggregate level authorizer
+class Aggregate < Yes::Core::Aggregate
+  authorize do
+    # Base level authorization logic
+    auth_data[:identity_id].present?
+  end
+
+  # Then add command-specific refinements
+  command :publish do
+    payload user_id: :uuid
+
+    # Command-specific authorization logic
+    authorize do
+      # Has access to the command and auth_data
+      command.user_id == auth_data[:user_id]
+    end
+  end
+end
+```
+
+When an aggregate has declared `authorize` at the class level, commands can define their own
+authorization logic that inherits from the aggregate-level authorizer. Each command with an
+`authorize` block automatically receives its own `Authorizer` subclass that inherits from
+the aggregate-level authorizer.
+
+Command authorizers are registered in the configuration and can be retrieved with:
+
+```ruby
+Yes::Core.configuration.aggregate_class('Context', 'Aggregate', :publish, :authorizer)
+```
+
+### Cerbos Authorization
+
+For more complex authorization needs, Yes integrates with [Cerbos](https://www.cerbos.dev/), a powerful authorization engine:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      authorize cerbos: true
+
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
+
+When using Cerbos, you can specify additional parameters:
+
+- `read_model_class` - The class used to load the read model for authorization checks (defaults to the aggregate's read model)
+- `resource_name` - The resource name used in Cerbos policies (defaults to the underscored aggregate name)
+
+```ruby
+module Companies
+  module CompanySettings
+    class Aggregate < Yes::Core::Aggregate
+      # Custom read model and resource name
+      authorize cerbos: true,
+                read_model_class: CustomCompanySettings,
+                resource_name: 'company_settings'
+
+      attribute :name, :string, command: true
+    end
+  end
+end
+```
+
+When using custom read models with Cerbos, the model must implement an `auth_attributes` method that returns a hash of attributes for authorization:
+
+```ruby
+class CustomCompanySettings < ApplicationRecord
+  def auth_attributes
+    { company_id: company_id || '' }
+  end
+end
+```
+
+These attributes are passed to Cerbos for making authorization decisions based on your policies.
+
+#### Customizing Cerbos Integration
+
+For advanced use cases, you can customize how Yes interacts with Cerbos by overriding the `resource_attributes` and `cerbos_payload` methods in your authorization block. Currently, this customization is only available within command-level authorization blocks, not at the aggregate level:
+
+```ruby
+module Universe
+  module Star
+    class Aggregate < Yes::Core::Aggregate
+      # Base aggregate-level Cerbos authorization
+      authorize cerbos: true
+
+      attribute :name, :string, command: true
+
+      # Command with customized Cerbos integration
+      command :update_details do
+        payload details: :string
+
+        # Command-level authorization with custom Cerbos integration
+        authorize do
+          # Override resource attributes sent to Cerbos
+          resource_attributes { { owner_id: 'test-user-id' } }
+
+          # Override the entire Cerbos payload
+          cerbos_payload { { principal: auth_data, resource_id: 'test-id' } }
+        end
+      end
+    end
+  end
+end
+```
+
+Inside the `resource_attributes` block, you can access:
+- `command` - The command being executed
+- `resource` - The read model instance for the aggregate
+
+Inside the `cerbos_payload` block, you can access:
+- `command` - The command being executed
+- `resource` - The read model instance for the aggregate
+- `auth_data` - The decoded data from the JWT authentication token
+
+These blocks allow you to precisely control what data is sent to Cerbos for authorization decisions on a per-command basis.
+
+## Command API
+
+The Command API (`yes-command-api`) provides an HTTP endpoint for executing commands as JSON batches. It is a standalone Rails engine that does **not** depend on the aggregate DSL — it works with any command class that follows one of the supported naming conventions.
+
+### Command API Installation
+
+Add the gem and mount the engine:
+
+```ruby
+# Gemfile
+gem 'yes-command-api'
+```
+
+```ruby
+# config/routes.rb
+mount Yes::Command::Api::Engine => '/v1/commands'
+```
+
+### Request Format
+
+Send a `POST` request with a JSON body containing a `commands` array:
+
+```json
+{
+  "commands": [
+    {
+      "context": "Users",
+      "subject": "User",
+      "command": "ChangeName",
+      "data": {
+        "user_id": "47330036-7246-40b4-a3c7-7038df508774",
+        "name": "Jane Doe"
+      },
+      "metadata": {}
+    }
+  ],
+  "channel": "my-notifications"
+}
+```
+
+Each command requires `context`, `subject`, `command`, and `data`. The optional `channel` parameter controls which MessageBus channel receives notifications (defaults to the authenticated user's `identity_id`).
+
+Set `async=true` or `async=false` as a query parameter to override the default processing mode (`Yes::Core.configuration.process_commands_inline`).
+
+### Command Class Resolution
+
+The deserializer resolves command classes by trying three naming conventions in order:
+
+| Priority | Convention | Class pattern | Typical use |
+|----------|-----------|---------------|-------------|
+| 1 | Command Group | `CommandGroups::<Command>::Command` | Composed commands |
+| 2 | V2 | `<Context>::<Subject>::Commands::<Command>::Command` | DSL-generated commands |
+| 3 | V1 | `<Context>::Commands::<Subject>::<Command>` | Manually created commands |
+
+The first matching constant wins. This means you can use the API with DSL-generated commands, manually created commands, or both.
+
+### Processing Pipeline
+
+When a request arrives, it passes through these stages:
+
+1. **Authentication** — the [auth adapter](#auth-adapter) verifies the JWT token
+2. **Params validation** — checks that each command hash contains `context`, `subject`, `command`, and `data`
+3. **Deserialization** — resolves class names and instantiates command objects
+4. **Expansion** — flattens command groups into individual commands
+5. **Authorization** — each command's authorizer is looked up and called with `auth_data`
+6. **Validation** — optional per-command validators are called
+7. **Command bus** — commands are dispatched (inline or via ActiveJob)
+
+### Using Commands Without the DSL
+
+You can create command classes manually and use them with the Command API. A complete command requires four parts: a **command**, a **handler**, an **event**, and an **authorizer**. The file structure follows a convention:
+
+```
+app/contexts/
+  billing/
+    invoice/
+      commands/
+        authorizer.rb            # shared base authorizer (optional)
+        create/
+          command.rb             # command definition
+          handler.rb             # command handler
+          authorizer.rb          # per-command authorizer
+      events/
+        created.rb               # event definition
+```
+
+#### Command
+
+Defines the payload attributes and identifies the aggregate:
+
+```ruby
+# app/contexts/billing/invoice/commands/create/command.rb
+module Billing
+  module Invoice
+    module Commands
+      module Create
+        class Command < Yes::Core::Command
+          attribute :invoice_id, Yes::Core::Types::UUID
+          attribute :amount, Yes::Core::Types::Integer
+          attribute :currency, Yes::Core::Types::String
+
+          alias aggregate_id invoice_id
+        end
+      end
+    end
+  end
+end
+```
+
+#### Handler
+
+Processes the command and publishes the event. The handler inherits from `Yes::Core::Commands::Stateless::Handler` and declares which event to emit:
+
+```ruby
+# app/contexts/billing/invoice/commands/create/handler.rb
+module Billing
+  module Invoice
+    module Commands
+      module Create
+        class Handler < Yes::Core::Commands::Stateless::Handler
+          self.event_name = 'Created'
+
+          def call
+            # Add guard logic here, e.g.:
+            # no_change_transition('Already exists') if already_exists?
+
+            super # publishes the event
+          end
+        end
+      end
+    end
+  end
+end
+```
+
+#### Event
+
+Defines the event schema for validation when writing to the event store:
+
+```ruby
+# app/contexts/billing/invoice/events/created.rb
+module Billing
+  module Invoice
+    module Events
+      class Created < Yes::Core::Event
+        def schema
+          Dry::Schema.Params do
+            required(:invoice_id).value(Yes::Core::Types::UUID)
+            required(:amount).value(:integer)
+            required(:currency).value(:string)
+          end
+        end
+      end
+    end
+  end
+end
+```
+
+#### Authorizer
+
+Controls who can execute the command. You can define a shared base authorizer for the aggregate and inherit from it:
+
+```ruby
+# app/contexts/billing/invoice/commands/authorizer.rb
+module Billing
+  module Invoice
+    module Commands
+      class Authorizer < Yes::Core::Authorization::CommandAuthorizer
+        def self.call(_command, auth_data)
+          raise CommandNotAuthorized, 'Not allowed' unless auth_data[:identity_id].present?
+        end
+      end
+    end
+  end
+end
+
+# app/contexts/billing/invoice/commands/create/authorizer.rb
+module Billing
+  module Invoice
+    module Commands
+      module Create
+        class Authorizer < Billing::Invoice::Commands::Authorizer
+          # Inherits base authorization; add command-specific checks here
+        end
+      end
+    end
+  end
+end
+```
+
+This command can then be executed via the API:
+
+```json
+{
+  "context": "Billing",
+  "subject": "Invoice",
+  "command": "Create",
+  "data": {
+    "invoice_id": "550e8400-e29b-41d4-a716-446655440000",
+    "amount": 10000,
+    "currency": "CHF"
+  }
+}
+```
+
+### Real-Time Command Notifications
+
+For performance and reliability, WebSocket-based notifications are the preferred way to inform frontends about command execution status. The Command API ships with two built-in notifiers and supports custom implementations.
+
+Notifiers are configured globally and broadcast three event types per command batch:
+
+| Event | When | Payload includes |
+|-------|------|-----------------|
+| `batch_started` | Before processing begins | `batch_id`, commands list |
+| Per-command response | After each command completes | Command result or error |
+| `batch_finished` | After all commands complete | `batch_id`, failed commands (if any) |
+
+#### Configuration
+
+Register one or more notifier classes in the initializer:
+
+```ruby
+Yes::Core.configure do |config|
+  config.command_notifier_classes = [
+    Yes::Command::Api::Commands::Notifiers::ActionCable,
+    Yes::Command::Api::Commands::Notifiers::MessageBus
+  ]
+end
+```
+
+The `channel` parameter from the API request (or the authenticated user's `identity_id` as fallback) is passed to each notifier, so clients only receive notifications for their own commands.
+
+#### ActionCable Notifier
+
+Broadcasts notifications via `ActionCable.server.broadcast`. This is well suited for use with a dedicated WebSocket gateway service that connects to the same Redis backend:
+
+```ruby
+config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::ActionCable]
+```
+
+The frontend subscribes to the channel and receives JSON messages:
+
+```json
+{ "type": "batch_started", "batch_id": "abc-123", "published_at": 1711540800, "commands": [...] }
+{ "type": "batch_finished", "batch_id": "abc-123", "published_at": 1711540801, "failed_commands": [] }
+```
+
+#### MessageBus Notifier
+
+Uses the [MessageBus](https://github.com/discourse/message_bus) gem for long-polling or WebSocket delivery. Messages are scoped to the authenticated user via `user_ids`:
+
+```ruby
+config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::MessageBus]
+```
+
+The auth adapter's `verify_token` method is used by MessageBus to identify subscribers by their `identity_id`.
+
+#### Custom Notifiers
+
+You can implement your own notifier by subclassing `Yes::Core::Commands::Notifier`:
+
+```ruby
+class SlackNotifier < Yes::Core::Commands::Notifier
+  def notify_batch_started(batch_id, transaction = nil, commands = nil)
+    # ...
+  end
+
+  def notify_batch_finished(batch_id, transaction = nil, responses = nil)
+    # ...
+  end
+
+  def notify_command_response(cmd_response)
+    # ...
+  end
+end
+```
+
+## Read API
+
+The Read API (`yes-read-api`) provides an HTTP endpoint for querying read models with filtering, pagination, and authorization. Like the Command API, it is a standalone Rails engine that does **not** depend on the aggregate DSL — it works with any ActiveRecord model that has a matching serializer.
+
+### Read API Installation
+
+Add the gem and mount the engine:
+
+```ruby
+# Gemfile
+gem 'yes-read-api'
+```
+
+```ruby
+# config/routes.rb
+mount Yes::Read::Api::Engine => '/queries'
+```
+
+### Basic Queries
+
+Send a `GET` request with the read model name as the path and optional query parameters:
+
+```
+GET /queries/users?filters[ids]=1,2,3&order[name]=asc&page[number]=1&page[size]=20&include=company
+```
+
+- `filters[<key>]` — filter by attribute (handled by the model's filter class)
+- `order[<key>]` — sort direction (`asc` or `desc`)
+- `page[number]` and `page[size]` — pagination
+- `include` — comma-separated list of associations to include in the response
+
+### Advanced Queries
+
+Send a `POST` request for complex filtering with AND/OR logic:
+
+```json
+{
+  "model": "users",
+  "filter_definition": {
+    "type": "filter_set",
+    "logical_operator": "and",
+    "filters": [
+      {
+        "type": "filter",
+        "attribute": "name",
+        "operator": "is",
+        "value": "Jane"
+      },
+      {
+        "type": "filter",
+        "attribute": "status",
+        "operator": "is_not",
+        "value": "archived"
+      }
+    ]
+  },
+  "order": { "name": "asc" },
+  "page": { "number": 1, "size": 20 }
+}
+```
+
+### Filters
+
+Filters are optional per-model classes that define available filter scopes. If no custom filter exists, the base `Yes::Core::ReadModel::Filter` is used.
+
+```ruby
+module ReadModels
+  module User
+    class Filter < Yes::Core::ReadModel::Filter
+      has_scope :name do |_controller, scope, value|
+        scope.where(name: value)
+      end
+
+      has_scope :ids do |_controller, scope, value|
+        scope.where(id: value.split(','))
+      end
+
+      private
+
+      def read_model_class
+        ::UserReadModel
+      end
+    end
+  end
+end
+```
+
+### Read API Authorization
+
+The Read API enforces two levels of authorization:
+
+1. **Request authorizer** — controls whether a user can query a given model at all. Looked up as `ReadModels::<Model>::RequestAuthorizer`.
+
+```ruby
+module ReadModels
+  module User
+    class RequestAuthorizer
+      def self.call(filter_options, auth_data)
+        unless auth_data[:identity_id].present?
+          raise Yes::Core::Authorization::ReadRequestAuthorizer::NotAuthorized, 'Not allowed'
+        end
+      end
+    end
+  end
+end
+```
+
+2. **Read model authorizer** — filters returned records based on what the user can access. Configured via `Yes::Core::Authorization::ReadModelsAuthorizer`.
+
+### Serializers
+
+Each read model requires a serializer class following the convention `ReadModels::<Model>::Serializers::<Model>`. The serializer receives `auth_data` and filter options, allowing it to customize the response based on the authenticated user.
+
+## Event Processing
+
+### Subscriptions
+
+Yes wraps [PgEventstore](https://github.com/yousty/pg_eventstore) subscriptions for processing events in real-time.
+
+#### Setting Up Subscriptions
+
+```ruby
+# lib/tasks/eventstore.rb
+subscriptions = Yes::Core::Subscriptions.new
+
+subscriptions.subscribe_to_all(
+  MyReadModel::Builder.new,
+  { event_types: ['MyContext::SomethingHappened', 'MyContext::SomethingElseHappened'] }
+)
+
+subscriptions.start
+```
+
+Start subscriptions via the PgEventstore CLI:
+
+```shell
+bundle exec pg-eventstore subscriptions start -r ./lib/tasks/eventstore.rb
+```
+
+#### Heartbeat
+
+Configure a heartbeat URL for monitoring subscription health:
+
+```ruby
+Yes::Core.configure do |config|
+  config.subscriptions_heartbeat_url = ENV['SUBSCRIPTIONS_HEARTBEAT_URL']
+  config.subscriptions_heartbeat_interval = 30 # seconds
+end
+```
+
+### Process Managers
+
+Process managers coordinate commands across services via HTTP.
+
+#### ServiceClient
+
+Sends commands to another service's command API:
+
+```ruby
+client = Yes::Core::ProcessManagers::ServiceClient.new('media')
+# Resolves to MEDIA_SERVICE_URL env var or http://media-cluster-ip-service:3000
+
+client.call(access_token: token, commands_data: [...], channel: '/notifications')
+```
+
+#### CommandRunner
+
+Base class for process managers that publish commands to external services:
+
+```ruby
+class MyProcessManager < Yes::Core::ProcessManagers::CommandRunner
+  def call(event)
+    publish(
+      client_id: ENV['MY_CLIENT_ID'],
+      client_secret: ENV['MY_CLIENT_SECRET'],
+      commands_data: build_commands(event)
+    )
+  end
+end
+```
+
+#### State
+
+Reconstructs entity state from events for use in process managers:
+
+```ruby
+class UserState < Yes::Core::ProcessManagers::State
+  RELEVANT_EVENTS = ['Auth::UserCreated', 'Auth::UserNameChanged'].freeze
+
+  attr_reader :name
+
+  private
+
+  def stream
+    PgEventstore::Stream.new(context: 'Auth', stream_name: 'User', stream_id: @id)
+  end
+
+  def required_attributes
+    [:name]
+  end
+
+  def apply_user_name_changed(event)
+    @name = event.data['name']
+  end
+end
+
+state = UserState.load(user_id)
+state.valid? # true if all required_attributes are present
+```
 
 ## Configuration Reference
 

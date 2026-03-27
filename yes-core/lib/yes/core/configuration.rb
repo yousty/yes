@@ -93,7 +93,7 @@ module Yes
       attr_accessor :service_version
 
       # @return [#call, nil] Authentication adapter for API controllers.
-      #   Must respond to #controller_concern (returns a module to include),
+      #   Must respond to #authenticate(request) (returns auth data hash, raises on failure),
       #   #verify_token(token) and #error_classes (returns array of error classes).
       attr_accessor :auth_adapter
 

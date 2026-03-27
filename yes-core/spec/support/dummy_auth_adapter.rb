@@ -8,16 +8,12 @@ require 'ostruct'
 class DummyAuthAdapter
   AuthError = Class.new(Yes::Core::AuthenticationError)
 
+  # @param request [ActionDispatch::Request]
+  # @raise [AuthError] if no valid token is present
+  # @return [Hash] auth data with identity_id and host
   def authenticate(request)
     token = extract_token(request)
     raise AuthError, 'Authentication token missing' unless token
-
-    { identity_id: token, host: request.host }
-  end
-
-  def auth_data(request)
-    token = extract_token(request)
-    return {} unless token
 
     { identity_id: token, host: request.host }
   end

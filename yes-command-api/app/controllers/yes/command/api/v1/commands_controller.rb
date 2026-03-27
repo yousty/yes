@@ -58,6 +58,7 @@ module Yes
           private
 
           # Authenticates the request using the configured auth adapter.
+          # Stores the returned auth data for use in subsequent actions.
           #
           # @raise [RuntimeError] if no auth adapter is configured
           # @return [void]
@@ -65,17 +66,13 @@ module Yes
             adapter = Yes::Core.configuration.auth_adapter
             raise 'No auth adapter configured. Set Yes::Core.configuration.auth_adapter.' unless adapter
 
-            adapter.authenticate(request)
+            @auth_data = adapter.authenticate(request)
           rescue *auth_error_classes => e
             auth_error_response(e)
           end
 
-          # Returns auth data from the configured auth adapter.
-          #
           # @return [Hash] the authentication data
-          def auth_data
-            Yes::Core.configuration.auth_adapter&.auth_data(request) || {}
-          end
+          attr_reader :auth_data
 
           # Returns the error classes defined by the auth adapter.
           #

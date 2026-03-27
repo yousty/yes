@@ -13,20 +13,14 @@
 class DevAuthAdapter
   AuthError = Class.new(Yes::Core::AuthenticationError)
 
+  # @param request [ActionDispatch::Request]
+  # @raise [AuthError] if no valid token is present
+  # @return [HashWithIndifferentAccess] decoded auth data
   def authenticate(request)
     token = extract_token(request)
     raise AuthError, 'Authentication token missing' unless token
 
-    auth_data(request)
-  end
-
-  def auth_data(request)
-    token = extract_token(request)
-    return {} unless token
-
     JSON.parse(Base64.strict_decode64(token)).with_indifferent_access
-  rescue ArgumentError, JSON::ParserError
-    {}
   end
 
   def verify_token(token)
