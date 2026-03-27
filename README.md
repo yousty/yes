@@ -1738,9 +1738,10 @@ TestUser.last.name # => "John Doe"
 
 ### Testing the APIs
 
-The dummy app includes mounted command and read APIs for testing. Start the server:
+The dummy app includes mounted command and read APIs for testing. Start the server from one of the gem dummy apps:
 
 ```shell
+cd yes-core/spec/dummy
 bundle exec rails s
 ```
 
