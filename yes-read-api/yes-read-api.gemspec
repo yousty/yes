@@ -27,5 +27,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'pagy', '~> 6.0'
   spec.add_dependency 'rails', '>= 7.1'
   spec.add_dependency 'yes-core'
-  spec.add_dependency 'zeitwerk'
+  spec.add_dependency 'zeitwerk', '~> 2.6'
 end

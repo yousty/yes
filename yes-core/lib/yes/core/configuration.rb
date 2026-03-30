@@ -42,6 +42,9 @@ module Yes
       # @return [String] URL of the Cerbos server
       attr_accessor :cerbos_url
 
+      # @return [Boolean] Whether to use TLS for Cerbos connections (default: true)
+      attr_accessor :cerbos_tls
+
       # @return [Boolean] Whether to include metadata in Cerbos command authorizer responses
       attr_accessor :cerbos_commands_authorizer_include_metadata
 
@@ -108,6 +111,7 @@ module Yes
           { id: auth_data[:identity_id], roles: [], attributes: {} }
         }
         @cerbos_url = ENV.fetch('CERBOS_URL', 'cerbos-cluster-ip-service:3593')
+        @cerbos_tls = true
         @cerbos_commands_authorizer_include_metadata = false
         @cerbos_read_authorizer_include_metadata = false
         @cerbos_read_authorizer_actions = %w[read]

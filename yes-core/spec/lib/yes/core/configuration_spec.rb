@@ -145,6 +145,20 @@ RSpec.describe Yes::Core::Configuration do
     end
   end
 
+  describe '#cerbos_tls' do
+    subject { configuration.cerbos_tls }
+
+    it 'defaults to true' do
+      expect(subject).to be true
+    end
+
+    context 'when set to false' do
+      before { configuration.cerbos_tls = false }
+
+      it { is_expected.to be false }
+    end
+  end
+
   describe 'plural model name handling' do
     describe '#all_read_model_class_names' do
       context 'with plural model names' do

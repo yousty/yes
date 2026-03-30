@@ -10,6 +10,8 @@ module Yes
           CommandsInvalid = Class.new(Yes::Core::Error)
 
           class << self
+            include Yes::Core::OpenTelemetry::Trackable
+
             # Validates the given commands, raises CommandsInvalid if any are invalid.
             #
             # @param commands [Array<Yes::Core::Command>] commands to validate
@@ -30,11 +32,17 @@ module Yes
                   data: command.payload,
                   metadata: command.metadata || {},
                   details: e.extra
-                }
+                }.tap do
+                  trace_error('Command validation failed', { command: command.to_json })
+                end
               end
 
-              raise CommandsInvalid.new(extra: invalid) if invalid.any?
+              return unless invalid.any?
+
+              trace_error('Commands invalid', { invalid: invalid.to_json })
+              raise CommandsInvalid.new(extra: invalid)
             end
+            otl_trackable :call, Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Validate Commands')
 
             private
 
@@ -48,6 +56,16 @@ module Yes
               Kernel.const_get(class_name)
             rescue NameError
               nil
+            end
+
+            # Traces an error on the current OpenTelemetry span.
+            #
+            # @param message [String] error message
+            # @param attributes [Hash] span attributes
+            # @return [void]
+            def trace_error(message, attributes = {})
+              singleton_class.current_span&.status = ::OpenTelemetry::Trace::Status.error(message)
+              singleton_class.current_span&.add_attributes(attributes.stringify_keys)
             end
           end
         end

@@ -17,6 +17,7 @@ module Yes
           before_action :set_channel
 
           rescue_from(StandardError, with: :handle_unexpected_error)
+          rescue_from(Yes::Core::AuthenticationError, with: :auth_error_response)
 
           rescue_from(
             Yes::Command::Api::Commands::ParamsValidator::CommandParamsInvalid,
@@ -64,7 +65,7 @@ module Yes
           # @return [void]
           def authenticate_with_token
             adapter = Yes::Core.configuration.auth_adapter
-            raise 'No auth adapter configured. Set Yes::Core.configuration.auth_adapter.' unless adapter
+            raise Yes::Core::AuthenticationError, 'No auth adapter configured. Set Yes::Core.configuration.auth_adapter.' unless adapter
 
             @auth_data = adapter.authenticate(request)
           rescue *auth_error_classes => e
@@ -150,14 +151,14 @@ module Yes
           # @return [void]
           def auth_error_response(error)
             render(
-              json: { title: 'Auth Token Invalid', details: error.message }.to_json,
+              json: { title: 'Auth Token Invalid', detail: error.message }.to_json,
               status: :unauthorized
             )
           end
 
           def commands_unauthorized_response(error)
             render(
-              json: { title: 'Unauthorized', details: error.extra }.to_json, status: :unauthorized
+              json: { title: 'Unauthorized', detail: error.extra }.to_json, status: :unauthorized
             )
           end
 

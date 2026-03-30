@@ -18,7 +18,7 @@ module Yes
         def cerbos_client
           Cerbos::Client.new(
             Yes::Core.configuration.cerbos_url,
-            tls: false
+            tls: Yes::Core.configuration.cerbos_tls
           )
         end
       end

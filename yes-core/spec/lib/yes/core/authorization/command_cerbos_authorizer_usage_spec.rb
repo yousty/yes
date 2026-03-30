@@ -102,7 +102,7 @@ RSpec.describe 'CerbosAuthorizer usage', type: :request do
       parsed = response.parsed_body
       aggregate_failures do
         expect(parsed['title']).to eq('Unauthorized')
-        expect(parsed['details']).to be_present
+        expect(parsed['detail']).to be_present
       end
     end
   end

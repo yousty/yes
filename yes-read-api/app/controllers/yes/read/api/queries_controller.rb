@@ -104,14 +104,14 @@ module Yes
 
         def auth_error_response(error)
           render(
-            json: { title: 'Auth Token Invalid', details: error.message }.to_json,
+            json: { title: 'Auth Token Invalid', detail: error.message }.to_json,
             status: :unauthorized
           )
         end
 
         def read_models_unauthorized_response(error)
           render(
-            json: { title: 'Unauthorized', details: error.message }.to_json,
+            json: { title: 'Unauthorized', detail: error.message }.to_json,
             status: :unauthorized
           )
         end
@@ -123,7 +123,7 @@ module Yes
           return if validation_result.success?
 
           render(
-            json: { title: 'Invalid Payload', details: validation_result.errors.to_h }.to_json,
+            json: { title: 'Invalid Payload', detail: validation_result.errors.to_h }.to_json,
             status: :unprocessable_entity
           )
         end

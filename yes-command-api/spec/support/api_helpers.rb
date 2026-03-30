@@ -87,7 +87,7 @@ module APIHelpers
   end
 
   RSpec.shared_examples_for 'authorization failure' do
-    let(:errors) { response.parsed_body['details'] }
+    let(:errors) { response.parsed_body['detail'] }
 
     before do
       subject

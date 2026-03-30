@@ -77,7 +77,7 @@ module Yes
             # @param message [String] error message
             # @param attributes [Hash] span attributes
             # @return [void]
-            def trace_error(message, attributes)
+            def trace_error(message, attributes = {})
               singleton_class.current_span&.status = ::OpenTelemetry::Trace::Status.error(message)
               singleton_class.current_span&.add_attributes(attributes.stringify_keys)
             end

@@ -351,13 +351,14 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
       it_behaves_like 'unprocessable entity response'
       it_behaves_like 'does not run any command'
       it_behaves_like 'open telemetry trackable' do
-        let(:expected_spans_amount) { 5 }
-        let(:extra_spans_name) { ['Set Channel', 'Authorize Commands', 'Deserialize Commands'] }
+        let(:expected_spans_amount) { 6 }
+        let(:extra_spans_name) { ['Set Channel', 'Authorize Commands', 'Deserialize Commands', 'Validate Commands'] }
         let(:extra_attribute_keys) do
           {
             extra_spans_name[0] => %w[channel root_track_sql track_sql],
             extra_spans_name[1] => %w[root_track_sql track_sql],
-            extra_spans_name[2] => %w[root_track_sql track_sql]
+            extra_spans_name[2] => %w[root_track_sql track_sql],
+            extra_spans_name[3] => %w[command invalid root_track_sql track_sql]
           }
         end
       end
@@ -425,12 +426,13 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
 
         it_behaves_like 'successful inline write response'
         it_behaves_like 'open telemetry trackable' do
-          let(:expected_spans_amount) { 8 }
+          let(:expected_spans_amount) { 9 }
           let(:extra_spans_name) do
             [
               'Set Channel',
               'Authorize Commands',
               'Deserialize Commands',
+              'Validate Commands',
               'Command Bus Schedule',
               'Run Commands',
               'Command Processor Perform'
@@ -441,8 +443,9 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
               extra_spans_name[0] => %w[root_track_sql track_sql channel],
               extra_spans_name[1] => %w[root_track_sql track_sql],
               extra_spans_name[2] => %w[root_track_sql track_sql],
-              extra_spans_name[3] => %w[origin perform_method root_track_sql track_sql],
-              extra_spans_name[5] => %w[root_track_sql track_sql]
+              extra_spans_name[3] => %w[root_track_sql track_sql],
+              extra_spans_name[4] => %w[origin perform_method root_track_sql track_sql],
+              extra_spans_name[6] => %w[root_track_sql track_sql]
             }
           end
         end
@@ -558,12 +561,13 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
 
         it_behaves_like 'successful write response'
         it_behaves_like 'open telemetry trackable' do
-          let(:expected_spans_amount) { 6 }
+          let(:expected_spans_amount) { 7 }
           let(:extra_spans_name) do
             [
               'Set Channel',
               'Authorize Commands',
               'Deserialize Commands',
+              'Validate Commands',
               'Command Bus Schedule'
             ]
           end
@@ -572,7 +576,8 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
               extra_spans_name[0] => %w[root_track_sql track_sql channel],
               extra_spans_name[1] => %w[root_track_sql track_sql],
               extra_spans_name[2] => %w[root_track_sql track_sql],
-              extra_spans_name[3] => %w[origin perform_method root_track_sql track_sql]
+              extra_spans_name[3] => %w[root_track_sql track_sql],
+              extra_spans_name[4] => %w[origin perform_method root_track_sql track_sql]
             }
           end
         end

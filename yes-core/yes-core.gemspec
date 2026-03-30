@@ -23,14 +23,14 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_dependency 'cerbos', '~> 0.8'
-  spec.add_dependency 'dry-inflector'
-  spec.add_dependency 'dry-schema'
-  spec.add_dependency 'dry-struct'
-  spec.add_dependency 'dry-types'
-  spec.add_dependency 'has_scope'
-  spec.add_dependency 'jsonapi-serializer'
-  spec.add_dependency 'opentelemetry-sdk'
+  spec.add_dependency 'dry-inflector', '~> 1.2'
+  spec.add_dependency 'dry-schema', '~> 1.13'
+  spec.add_dependency 'dry-struct', '~> 1.6'
+  spec.add_dependency 'dry-types', '~> 1.7'
+  spec.add_dependency 'has_scope', '~> 0.8'
+  spec.add_dependency 'jsonapi-serializer', '~> 2.2'
+  spec.add_dependency 'opentelemetry-sdk', '~> 1.0'
   spec.add_dependency 'pg_eventstore', '~> 1.0'
   spec.add_dependency 'rails', '>= 7.1'
-  spec.add_dependency 'zeitwerk'
+  spec.add_dependency 'zeitwerk', '~> 2.6'
 end

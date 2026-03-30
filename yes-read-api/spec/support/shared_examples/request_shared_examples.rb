@@ -72,7 +72,7 @@ RSpec.shared_examples_for 'authentication token missing' do
   it 'has correct error body' do
     expect(response.parsed_body).to include(
       'title' => 'Auth Token Invalid',
-      'details' => 'Authentication token missing'
+      'detail' => 'Authentication token missing'
     )
   end
 end
@@ -95,7 +95,7 @@ RSpec.shared_examples_for 'unauthorized response' do
   it 'has correct error body' do
     expect(response.parsed_body).to include(
       'title' => 'Unauthorized',
-      'details' => details
+      'detail' => details
     )
   end
 end
