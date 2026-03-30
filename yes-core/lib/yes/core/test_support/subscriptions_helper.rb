@@ -29,13 +29,13 @@ module Yes
         # @param timeout [Integer] timeout in seconds for subscriptions to start
         # @return [void]
         def assert_running_subscriptions(*subscriptions_paths, number_of_subscriptions, root: './lib/tasks', timeout: 5)
+          PgEventstore.connection.with { |c| c.exec('DELETE FROM subscriptions') }
           GRPC.prefork if defined?(GRPC)
           in_sub_process do
             GRPC.postfork_child if defined?(GRPC)
             require 'pg_eventstore/cli'
             PgEventstore.logger = Logger.new($stdout)
             PgEventstore.logger.level = :error
-            PgEventstore.connection.with { |c| c.exec('DELETE FROM subscriptions') }
             require_options = subscriptions_paths.flat_map do |path|
               ['-r', "#{root}/#{path}"]
             end
