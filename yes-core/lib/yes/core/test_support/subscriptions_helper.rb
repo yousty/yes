@@ -35,6 +35,7 @@ module Yes
             require 'pg_eventstore/cli'
             PgEventstore.logger = Logger.new($stdout)
             PgEventstore.logger.level = :error
+            PgEventstore.connection.with { |c| c.exec('DELETE FROM subscriptions') }
             require_options = subscriptions_paths.flat_map do |path|
               ['-r', "#{root}/#{path}"]
             end
