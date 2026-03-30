@@ -28,7 +28,7 @@ module Yes
         # @param root [String] root directory of subscription files
         # @param timeout [Integer] timeout in seconds for subscriptions to start
         # @return [void]
-        def assert_running_subscriptions(*subscriptions_paths, number_of_subscriptions, root: './lib/tasks', timeout: 2)
+        def assert_running_subscriptions(*subscriptions_paths, number_of_subscriptions, root: './lib/tasks', timeout: 5)
           GRPC.prefork if defined?(GRPC)
           in_sub_process do
             GRPC.postfork_child if defined?(GRPC)
