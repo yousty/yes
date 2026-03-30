@@ -32,32 +32,10 @@ module Yes
           GRPC.prefork if defined?(GRPC)
           in_sub_process do
             GRPC.postfork_child if defined?(GRPC)
-            require 'pg_eventstore/cli'
-            PgEventstore.logger = Logger.new($stdout)
-            PgEventstore.logger.level = :error
-            PgEventstore.connection.with { |c| c.exec('DELETE FROM subscriptions') }
-            sleep 0.5
-            require_options = subscriptions_paths.flat_map do |path|
-              ['-r', "#{root}/#{path}"]
-            end
-            runner = Thread.new do
-              PgEventstore::CLI.execute(['subscriptions', 'start', *require_options])
-            end
-            subscriptions_count = nil
-            timeout = timeout.seconds.from_now
-            loop do
-              subscriptions_count = PgEventstore.connection.with do |c|
-                c.exec(<<~SQL.squish)
-                  select count(*) filter (where state = 'running') as count_running, count(*) as count_all
-                    from subscriptions
-                SQL
-              end.first
-              break if (subscriptions_count['count_running'] == number_of_subscriptions &&
-                        subscriptions_count['count_all'] == number_of_subscriptions) ||
-                       Time.current > timeout
-
-              sleep 0.1
-            end
+            setup_eventstore_cli
+            require_options = subscriptions_paths.flat_map { |path| ['-r', "#{root}/#{path}"] }
+            runner = Thread.new { PgEventstore::CLI.execute(['subscriptions', 'start', *require_options]) }
+            subscriptions_count = poll_subscriptions(number_of_subscriptions, timeout)
 
             runner.exit
             aggregate_failures do
@@ -72,6 +50,37 @@ module Yes
           nil
         ensure
           GRPC.postfork_parent if defined?(GRPC)
+        end
+
+        private
+
+        # @return [void]
+        def setup_eventstore_cli
+          require 'pg_eventstore/cli'
+          PgEventstore.logger = Logger.new($stdout)
+          PgEventstore.logger.level = :error
+          PgEventstore.connection.with { |c| c.exec('DELETE FROM subscriptions') }
+          sleep 0.5
+        end
+
+        # @param expected_count [Integer] expected number of subscriptions
+        # @param timeout [Integer] timeout in seconds
+        # @return [Hash] subscription counts
+        def poll_subscriptions(expected_count, timeout)
+          deadline = timeout.seconds.from_now
+          loop do
+            counts = PgEventstore.connection.with do |c|
+              c.exec(<<~SQL.squish)
+                select count(*) filter (where state = 'running') as count_running, count(*) as count_all
+                  from subscriptions
+              SQL
+            end.first
+            break counts if (counts['count_running'] == expected_count &&
+                             counts['count_all'] == expected_count) ||
+                            Time.current > deadline
+
+            sleep 0.1
+          end
         end
       end
     end
