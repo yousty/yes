@@ -40,6 +40,10 @@ module Yes
                         optional(attr_name).value(Yes::Core::TypeLookup.type_for(type, context, :event))
                       end
 
+                      nullable_attribute = proc do |attr_name, type|
+                        required(attr_name).maybe(Yes::Core::TypeLookup.type_for(type, context, :event))
+                      end
+
                       # Define the aggregate_id attribute for the event
                       required(:"#{aggregate.underscore}_id").value(Yousty::Eventsourcing::Types::UUID)
 
@@ -47,6 +51,7 @@ module Yes
                       payload_attributes.each do |attr_name, attr_type|
                         next required_attribute.call(attr_name, attr_type) unless attr_type.is_a?(Hash)
                         next optional_attribute.call(attr_name, attr_type[:type]) if attr_type[:optional]
+                        next nullable_attribute.call(attr_name, attr_type[:type]) if attr_type[:nullable]
 
                         required_attribute.call(attr_name, attr_type[:type])
                       end

@@ -127,5 +127,89 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
         end
       end
     end
+
+    context 'with nil values on non-nullable required attributes' do
+      let(:user_id) { SecureRandom.uuid }
+
+      context 'when nil is passed for a required string attribute' do
+        subject { super().new(user_id:, email: nil, name: 'Test User') }
+
+        it 'raises an error' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+        end
+      end
+
+      context 'when nil is passed for a required integer attribute' do
+        let(:payload_attributes) do
+          {
+            email: :string,
+            age: :integer
+          }
+        end
+
+        subject { super().new(user_id:, email: 'test@example.com', age: nil) }
+
+        it 'raises an error' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+        end
+      end
+
+      context 'when nil is passed for a required float attribute' do
+        let(:payload_attributes) do
+          {
+            email: :string,
+            score: :float
+          }
+        end
+
+        subject { super().new(user_id:, email: 'test@example.com', score: nil) }
+
+        it 'raises an error' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+        end
+      end
+    end
+
+    context 'with nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          role: { type: :string, nullable: true }
+        }
+      end
+
+      context 'command instance' do
+        subject { super().new(payload) }
+
+        let(:user_id) { SecureRandom.uuid }
+
+        context 'when nil is passed for a nullable attribute' do
+          let(:payload) { { user_id:, email: 'test@example.com', role: nil } }
+
+          it 'accepts nil and stores it as nil' do
+            aggregate_failures do
+              expect(subject.role).to be_nil
+              expect(subject.email).to eq('test@example.com')
+            end
+          end
+        end
+
+        context 'when a valid value is passed for a nullable attribute' do
+          let(:payload) { { user_id:, email: 'test@example.com', role: 'admin' } }
+
+          it 'accepts and stores the value' do
+            expect(subject.role).to eq('admin')
+          end
+        end
+
+        context 'when nullable attribute is omitted entirely' do
+          let(:payload) { { user_id:, email: 'test@example.com' } }
+
+          it 'raises an error because the key is required' do
+            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+          end
+        end
+      end
+    end
   end
 end

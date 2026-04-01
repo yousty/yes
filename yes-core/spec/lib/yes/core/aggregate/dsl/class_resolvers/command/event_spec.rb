@@ -149,5 +149,37 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Event do
         expect(subject).not_to respond_to(:encryption_schema)
       end
     end
+
+    context 'with nullable attributes' do
+      let(:payload_attributes) do
+        {
+          email: :string,
+          role: { type: :string, nullable: true }
+        }
+      end
+
+      context 'when nil is passed for a nullable attribute' do
+        let(:data) { { user_id:, email: 'test@example.com', role: nil } }
+
+        subject { super().new(data:) }
+
+        it 'accepts nil for nullable attributes' do
+          aggregate_failures do
+            expect(subject.data[:role]).to be_nil
+            expect(subject.data[:email]).to eq('test@example.com')
+          end
+        end
+      end
+
+      context 'when a valid value is passed for a nullable attribute' do
+        let(:data) { { user_id:, email: 'test@example.com', role: 'admin' } }
+
+        subject { super().new(data:) }
+
+        it 'accepts and stores the value' do
+          expect(subject.data[:role]).to eq('admin')
+        end
+      end
+    end
   end
 end
