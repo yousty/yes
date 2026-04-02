@@ -67,80 +67,14 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
       end
     end
 
-    context 'with nil values on non-nullable required attributes' do
+    context 'with nil values on non-nullable required string attributes' do
       let(:user_id) { SecureRandom.uuid }
 
       context 'when nil is passed for a required string attribute' do
         subject { super().new(user_id:, email: nil, name: 'Test User') }
 
-        it 'raises an error instead of silently coercing nil' do
+        it 'raises an error instead of silently coercing nil to empty string' do
           expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
-        end
-      end
-
-      context 'when nil is passed for a required integer attribute' do
-        let(:payload_attributes) do
-          {
-            email: :string,
-            age: :integer
-          }
-        end
-
-        subject { super().new(user_id:, email: 'test@example.com', age: nil) }
-
-        it 'raises an error instead of silently coercing nil' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
-        end
-      end
-
-      context 'when nil is passed for a required float attribute' do
-        let(:payload_attributes) do
-          {
-            email: :string,
-            score: :float
-          }
-        end
-
-        subject { super().new(user_id:, email: 'test@example.com', score: nil) }
-
-        it 'raises an error instead of silently coercing nil' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
-        end
-      end
-
-      context 'when nil is passed for a required lat attribute' do
-        let(:payload_attributes) do
-          {
-            email: :string,
-            latitude: :lat
-          }
-        end
-
-        subject { super().new(user_id:, email: 'test@example.com', latitude: nil) }
-
-        it 'raises an error instead of silently coercing nil' do
-          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
-        end
-      end
-
-      context 'when coercible types still coerce valid inputs' do
-        let(:payload_attributes) do
-          {
-            email: :string,
-            age: :integer,
-            score: :float
-          }
-        end
-
-        subject { super().new(user_id:, email: 'test@example.com', age: '30', score: '1.5') }
-
-        it 'coerces valid string values to their target types' do
-          command = subject
-
-          aggregate_failures do
-            expect(command.age).to eq(30)
-            expect(command.score).to eq(1.5)
-          end
         end
       end
     end

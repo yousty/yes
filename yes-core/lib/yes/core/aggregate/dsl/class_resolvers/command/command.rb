@@ -8,9 +8,8 @@ module Yes
           module Command
             # Resolves or generates a command class for a command
             class Command < Base
-              # Type symbols that use Coercible types and silently coerce nil
-              # (e.g., nil.to_s → "", nil.to_i → 0)
-              COERCIBLE_TYPE_SYMBOLS = %i[string integer float lat lng].freeze
+              # Coercible::String silently coerces nil via Kernel.String(nil) → ""
+              NIL_COERCING_TYPE_SYMBOLS = %i[string].freeze
 
               private
 
@@ -66,7 +65,7 @@ module Yes
                   # Define payload attributes if any
                   payload_attributes.each do |attr_name, attr_type|
                     type_symbol = attr_type.is_a?(Hash) ? attr_type[:type] : attr_type
-                    coercible = COERCIBLE_TYPE_SYMBOLS.include?(type_symbol)
+                    coercible = NIL_COERCING_TYPE_SYMBOLS.include?(type_symbol)
 
                     # Handle simple type (not a hash) — always required, non-nullable
                     unless attr_type.is_a?(Hash)
