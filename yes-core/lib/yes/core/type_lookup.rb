@@ -20,7 +20,8 @@ module Yes
         when :lat, :lng
           @obj_type == :event ? :float : Yousty::Eventsourcing::Types::Coercible::Float
         when :string
-          Yousty::Eventsourcing::Types::Coercible::String
+          base = Yousty::Eventsourcing::Types::Coercible::String
+          @obj_type == :event ? base : base.prepend { |v| v.nil? ? raise(Dry::Types::CoercionError, 'nil is not a string') : v }
         when :integer
           Yousty::Eventsourcing::Types::Coercible::Integer
         when :boolean

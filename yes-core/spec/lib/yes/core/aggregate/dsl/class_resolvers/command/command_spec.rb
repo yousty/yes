@@ -67,6 +67,18 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
       end
     end
 
+    context 'with nil values on non-nullable required string attributes' do
+      let(:user_id) { SecureRandom.uuid }
+
+      context 'when nil is passed for a required string attribute' do
+        subject { super().new(user_id:, email: nil, name: 'Test User') }
+
+        it 'raises an error instead of silently coercing nil to empty string' do
+          expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
+        end
+      end
+    end
+
     context 'with optional attributes' do
       let(:payload_attributes) do
         {
@@ -123,6 +135,17 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::Command do
               expect(command.phone).to be_nil
               expect(command.age).to be_nil
             end
+          end
+        end
+
+        context 'when optional non-nullable attributes are explicitly passed as nil' do
+          let(:user_id) { SecureRandom.uuid }
+          let(:email) { 'test@example.com' }
+          let(:name) { 'Test User' }
+          let(:payload) { { user_id:, email:, name:, phone: nil } }
+
+          it 'raises an error instead of silently coercing nil' do
+            expect { subject }.to raise_error(Yousty::Eventsourcing::Command::Invalid)
           end
         end
       end
