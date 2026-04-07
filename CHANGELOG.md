@@ -1,16 +1,17 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
 ## [1.0.0] - 2026-03-21
 
-### Changed
-- Initial open-source release
-- Synchronized versioning across all gems (yes, yes-core, yes-command-api, yes-read-api)
-- Removed all private Yousty gem dependencies
-- Standardized dummy app locations to `spec/dummy/` in each gem
-- Standardized on PostgreSQL for all test databases
-- Consolidated docker-compose configuration
-- Inlined RuboCop configuration (removed private remote config dependency)
-- Standardized gemspec metadata (MIT license, consistent URIs, Ruby >= 3.2.0, Rails >= 7.1)
-- Deduplicated shared test support into `yes-core/lib/yes/core/test_support`
-- Resolved all TODO comments in codebase
-- Added SimpleCov coverage to yes-core
+### Added
+- Initial release of the Yes framework for building event-sourced Ruby on Rails applications
+- Core DSL for defining aggregates, commands, events, projections, and process managers
+- Command API engine with built-in authorization and validation
+- Read API engine with filterable, sortable, and paginatable query endpoints
+- Auth gem with Cerbos-based authorization and pluggable auth adapters
+- Encryption middleware for sensitive event data
+- ActionCable and MessageBus notifiers for real-time updates
+- Subscription management for event handlers
+- Comprehensive test support utilities
+- Full documentation and contributing guidelines
