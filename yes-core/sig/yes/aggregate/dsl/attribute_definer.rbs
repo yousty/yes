@@ -1,0 +1,31 @@
+module Yes
+  class Aggregate
+    module Dsl
+      class AttributeDefiner
+        private attr_reader attribute_data: AttributeData
+
+        def initialize: (AttributeData attribute_data) -> void
+
+        def call: () -> void
+
+        private
+
+        def define_classes: () -> void
+
+        def define_methods: () -> void
+      end
+
+      class AttributeData
+        attr_reader name: Symbol
+        attr_reader type: Symbol
+        attr_reader aggregate_class: Class
+        attr_reader context_name: String
+        attr_reader aggregate_name: String
+        attr_reader command_name: Symbol
+        attr_reader event_name: Symbol
+
+        def initialize: (Symbol name, Symbol type, Class aggregate_class, ?::Hash[Symbol, untyped] options) -> void
+      end
+    end
+  end
+end

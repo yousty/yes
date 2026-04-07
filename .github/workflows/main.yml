@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test ${{ matrix.gem }}
+    strategy:
+      fail-fast: false
+      matrix:
+        gem: [yes-core, yes-command-api, yes-read-api, yes-auth]
+
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5532:5432
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6479:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.5'
+          bundler-cache: true
+          working-directory: ${{ matrix.gem }}
+
+      - name: Set up EventStore DB
+        if: matrix.gem != 'yes-read-api' && matrix.gem != 'yes-auth'
+        run: bundle exec rake pg_eventstore:create pg_eventstore:migrate
+        working-directory: ${{ matrix.gem }}
+        env:
+          RAILS_ENV: test
+          PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
+
+      - name: Set up test database
+        if: matrix.gem != 'yes-auth'
+        run: bundle exec rake db:create db:migrate
+        working-directory: ${{ matrix.gem }}
+        env:
+          RAILS_ENV: test
+
+      - name: Set up message bus database
+        if: matrix.gem == 'yes-command-api'
+        run: bundle exec rake app:db:migrate:message_bus
+        working-directory: ${{ matrix.gem }}
+        env:
+          RAILS_ENV: test
+
+      - name: Run specs
+        run: bundle exec rspec
+        working-directory: ${{ matrix.gem }}
+        env:
+          RAILS_ENV: test
+          PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
+
+  rubocop:
+    runs-on: ubuntu-latest
+    name: RuboCop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.5'
+          bundler-cache: true
+
+      - name: Run RuboCop
+        run: bundle exec rubocop

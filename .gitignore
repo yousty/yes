@@ -1,0 +1,33 @@
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+
+# rspec failure tracking
+.rspec_status
+
+.rubocop-https*
+.idea
+
+.rspec_status
+
+# Dummy apps
+/yes-core/spec/dummy/db/*.sqlite3
+/yes-core/spec/dummy/db/*.sqlite3-*
+/yes-core/spec/dummy/log/*.log
+/yes-core/spec/dummy/tmp/
+/yes-core/spec/dummy/.sass-cache
+/yes-core/spec/dummy/storage/
+/yes-read-api/spec/dummy/log/*.log
+
+/db/postgresql/data
+
+/prompts/*
+
+.claude/
+.development/
+/dummy/

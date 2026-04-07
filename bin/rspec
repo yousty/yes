@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+cd yes-core
+BUNDLE_GEMFILE=../Gemfile bundle exec rspec "$@"

@@ -1,0 +1,20 @@
+# Aggregate Shortcuts Configuration for Dummy App
+# This file defines custom abbreviations for aggregate contexts and subjects.
+# When not specified, abbreviations are auto-generated from capital letters.
+#
+# Usage in Rails console:
+#   T::U.new(id)        # instead of Test::User::Aggregate.new(id)
+#   T::CI.new(id)       # instead of Test::ContactInfo::Aggregate.new(id)
+#   Un::S.new(id)       # instead of Universe::Star::Aggregate.new(id)
+
+contexts:
+  Test: T
+  Universe: Un
+
+subjects:
+  User: U
+  ContactInfo: CI
+  Location: Loc
+  PersonalInfo: PI
+  CustomResource: CR
+  Star: S

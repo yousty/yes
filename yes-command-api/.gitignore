@@ -1,0 +1,31 @@
+/.bundle/
+/doc/
+/log/*.log
+/pkg/
+/tmp/
+/spec/dummy/db/*.sqlite3
+/spec/dummy/db/*.sqlite3-*
+/spec/dummy/log/*.log
+/spec/dummy/storage/
+/spec/dummy/tmp/
+spec/examples.txt
+
+# rspec failure tracking
+.DS_Store
+
+#rubocop qa-tools default rules
+.rubocop-https*
+
+# Ignore coverage report
+/coverage
+
+/db
+log/
+
+#rubocop qa-tools default rules
+.rubocop-https*
+Gemfile.lock
+certs/
+.rspec_status
+
+yes-command-api-*.gem

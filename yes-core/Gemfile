@@ -1,0 +1,26 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+ruby '3.4.5'
+
+# Specify your gem's dependencies in yes.gemspec
+gemspec
+
+gem 'rake', '~> 13.0'
+
+group :development, :test do
+  gem 'factory_bot', '~> 6.0'
+  gem 'faker'
+  gem 'faraday'
+  gem 'generator_spec'
+  gem 'opentelemetry-sdk'
+  gem 'puma'
+  gem 'rails', '~> 7.2'
+  gem 'rspec', '~> 3.0'
+  gem 'rspec-rails', '~> 7.1'
+  gem 'rubocop', '~> 1.21'
+  gem 'webmock'
+  gem 'yes-command-api', path: '../yes-command-api'
+  gem 'yes-read-api', path: '../yes-read-api'
+end

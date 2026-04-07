@@ -1,0 +1,8 @@
+
+test:
+  adapter: postgresql
+  database: yes_read_api_test
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5532

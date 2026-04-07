@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+set -vx
+
+bundle install
+
+for gem_dir in yes-core yes-command-api yes-read-api; do
+  (cd "$gem_dir" && bundle install)
+done

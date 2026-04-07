@@ -1,0 +1,189 @@
+# frozen_string_literal: true
+
+module Yes
+  module Core
+    module CommandHandling
+      # Handles publishing events with revision checks
+      class EventPublisher
+        include Yes::Core::OpenTelemetry::Trackable
+
+        # Value object containing aggregate data needed for event publication
+        AggregateEventPublicationData = Struct.new(:id, :context, :name, :revision, keyword_init: true) do
+          def self.from_aggregate(aggregate)
+            new(
+              id: aggregate.id,
+              context: aggregate.class.context,
+              name: aggregate.class.name.split('::')[1],
+              revision: lambda {
+                if aggregate.class.read_model_enabled?
+                  aggregate.reload.revision
+                else
+                  # When read models are disabled, get revision directly from event stream
+                  begin
+                    latest = aggregate.latest_event
+                    latest ? latest.stream_revision : -1
+                  rescue PgEventstore::StreamNotFoundError
+                    # Stream doesn't exist yet - this is the first event
+                    -1
+                  end
+                end
+              }
+            )
+          end
+        end
+
+        # @param command [Object] The command instance
+        # @param aggregate_data [AggregateEventPublicationData] The aggregate publication data
+        # @param accessed_external_aggregates [Array<Hash>] List of accessed external aggregates with their revisions
+        # @param event_name [String, nil] Optional explicit event name to use
+        def initialize(command:, aggregate_data:, accessed_external_aggregates:, event_name: nil)
+          @command = command
+          @aggregate_data = aggregate_data
+          @accessed_external_aggregates = accessed_external_aggregates
+          @event_name = event_name
+          @command_utilities = Utils::CommandUtils.new(
+            context: aggregate_data.context,
+            aggregate: aggregate_data.name,
+            aggregate_id: aggregate_data.id
+          )
+        end
+
+        # Publishes the event after verifying revisions
+        #
+        # @return [PgEventstore::Event] The published event
+        # @raise [PgEventstore::WrongExpectedRevisionError] When revisions don't match
+        def call
+          verify_external_revisions!
+          publish_event
+        end
+
+        otl_trackable(
+          :call,
+          Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer, track_sql: true)
+        )
+
+        private
+
+        # @return [Object] The command instance
+        attr_reader :command
+        # @return [AggregateEventPublicationData] The aggregate publication data
+        attr_reader :aggregate_data
+        # @return [Array<Hash>] List of accessed external aggregates with their revisions
+        attr_reader :accessed_external_aggregates
+        # @return [String, nil] The explicit event name to use
+        attr_reader :event_name
+        # @return [CommandUtils] The command utilities instance
+        attr_reader :command_utilities
+
+        delegate :payload, :origin, :batch_id, :metadata, to: :command
+
+        # Publishes the event to the event store
+        #
+        # @return [PgEventstore::Event] The published event
+        def publish_event
+          revision = aggregate_data.revision.call
+          expected_revision = revision == -1 ? :no_stream : revision
+
+          event = event_with_metadata
+          otl_record_event_data(event)
+
+          PgEventstore.client.append_to_stream(
+            command_utilities.build_stream(metadata:),
+            event,
+            options: { expected_revision: }
+          ).tap { otl_record_response(_1) }
+        end
+
+        # Verifies revisions of all accessed external aggregates
+        #
+        # @return [void]
+        # @raise [PgEventstore::WrongExpectedRevisionError] When revisions don't match
+        def verify_external_revisions!
+          accessed_external_aggregates.each do |aggregate_data|
+            stream = command_utilities.build_stream(
+              context: aggregate_data[:context],
+              name: aggregate_data[:name],
+              id: aggregate_data[:id]
+            )
+            expected_revision = command_utilities.stream_revision(stream)
+            aggregate_revision = aggregate_data[:revision].call
+            normalized_revision = aggregate_revision == -1 ? :no_stream : aggregate_revision
+
+            next if normalized_revision == expected_revision
+
+            raise PgEventstore::WrongExpectedRevisionError.new(
+              revision: aggregate_revision,
+              expected_revision:,
+              stream:
+            )
+          end
+        end
+
+        # Builds an event with metadata from the command
+        #
+        # @return [PgEventstore::Event] The event with metadata
+        def event_with_metadata
+          command_utilities.build_event(
+            command_name: command.class.name.split('::')[-2].underscore.to_sym,
+            payload:,
+            metadata: event_metadata
+          )
+        end
+
+        # Builds the event metadata
+        #
+        # @return [Hash] The event metadata
+        def event_metadata
+          meta = {}
+          meta['origin'] = origin if origin.present?
+          meta['batch_id'] = batch_id if batch_id.present?
+          meta['yes-dsl'] = true
+          meta.merge!(metadata) if metadata.present?
+
+          meta[:otl_contexts][:publisher] = self.class.propagate_context(service_name: true) if meta[:otl_contexts].present?
+
+          meta
+        end
+
+        def otl_record_event_data(event)
+          self.class.current_span&.add_attributes(
+            {
+              'event.type' => event.type,
+              'event.data' => event.data.to_json,
+              'event.metadata' => event.metadata.to_json
+            }
+          )
+        end
+
+        def otl_record_response(result)
+          if ENV['STATSD_ADDR'].present?
+            StatsD.increment(
+              'events_processing_total',
+              tags: {
+                service: Rails.application.class.module_parent.name,
+                source: "#{Rails.application.class.module_parent.name}-#{result.type}",
+                target: "#{Rails.application.class.module_parent.name}-#{result.type}",
+                type: 'producer',
+                event: result.type
+              }
+            )
+          end
+
+          self.class.current_span&.status = ::OpenTelemetry::Trace::Status.ok
+          self.class.current_span&.add_event(
+            'Event Published to PgEventstore',
+            timestamp: result.created_at,
+            attributes: {
+              'event.type' => result.type,
+              'event.link_id' => result.link_id || '',
+              'global_position' => result.global_position,
+              'stream' => result.stream.to_json,
+              'stream.revision' => result.stream_revision,
+              'timestamp_ms' => (result.created_at.to_f * 1000).to_i
+            }
+          )
+        end
+      end
+    end
+  end
+end

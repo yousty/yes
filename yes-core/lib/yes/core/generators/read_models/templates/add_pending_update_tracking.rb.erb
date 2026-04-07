@@ -1,0 +1,122 @@
+# frozen_string_literal: true
+
+class AddPendingUpdateTrackingToReadModels < ActiveRecord::Migration<%= migration_version %>
+  def up
+    # Get all read model tables from the configuration
+    read_model_tables = Yes::Core.configuration.all_read_model_table_names
+
+    read_model_tables.each do |table_name|
+      # Skip if table doesn't exist (might not have been migrated yet)
+      next unless ActiveRecord::Base.connection.table_exists?(table_name)
+      
+      add_pending_tracking_to_table(table_name)
+    end
+  end
+
+  def down
+    # Get all read model tables from the configuration
+    read_model_tables = Yes::Core.configuration.all_read_model_table_names
+
+    read_model_tables.each do |table_name|
+      # Skip if table doesn't exist
+      next unless ActiveRecord::Base.connection.table_exists?(table_name)
+      
+      remove_pending_tracking_from_table(table_name)
+    end
+  end
+
+  private
+
+  # Truncates an index name to fit within PostgreSQL's 63 character limit
+  # @param name [String] The index name to potentially truncate
+  # @return [String] The truncated index name
+  def truncate_index_name(name)
+    return name if name.length <= 62
+    
+    # Create a short hash for uniqueness
+    require 'digest'
+    hash = Digest::SHA256.hexdigest(name)[0..7]
+    
+    # Take first part of name and append hash
+    "#{name[0..52]}_#{hash}"
+  end
+
+  # Adds pending_update_since tracking to a table
+  # @param table_name [String] The table to modify
+  def add_pending_tracking_to_table(table_name)
+    # Add pending_update_since column if it doesn't exist
+    unless column_exists?(table_name, :pending_update_since)
+      add_column table_name, :pending_update_since, :datetime
+      say "Added pending_update_since column to #{table_name}", :green
+    end
+
+    # Create trigger function if it doesn't exist
+    create_pending_update_trigger_function
+
+    # Create trigger on the table
+    trigger_name = "trg_#{table_name}_prevent_concurrent_pending"
+    # Truncate trigger name if too long
+    trigger_name = trigger_name[0..62] if trigger_name.length > 63
+    
+    execute <<-SQL
+      DROP TRIGGER IF EXISTS #{trigger_name} ON #{table_name};
+      CREATE TRIGGER #{trigger_name}
+        BEFORE UPDATE ON #{table_name}
+        FOR EACH ROW
+        EXECUTE FUNCTION prevent_concurrent_pending_update();
+    SQL
+    say "Added concurrent update prevention trigger on #{table_name}", :green
+
+    # Create regular index for efficient recovery queries
+    recovery_index_name = truncate_index_name("idx_#{table_name}_pending_recovery")
+    unless index_exists?(table_name, :pending_update_since, name: recovery_index_name)
+      add_index table_name,
+                :pending_update_since,
+                where: 'pending_update_since IS NOT NULL',
+                name: recovery_index_name
+      say "Added recovery index on #{table_name}.pending_update_since", :green
+    end
+  end
+
+  # Creates the PostgreSQL function to prevent concurrent pending updates
+  def create_pending_update_trigger_function
+    execute <<-SQL
+      CREATE OR REPLACE FUNCTION prevent_concurrent_pending_update()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        -- If trying to set pending_update_since when it's already set
+        IF NEW.pending_update_since IS NOT NULL AND 
+           OLD.pending_update_since IS NOT NULL AND
+           NEW.pending_update_since != OLD.pending_update_since THEN
+          RAISE EXCEPTION 'Concurrent pending update not allowed for record %', NEW.id
+            USING ERRCODE = 'unique_violation';
+        END IF;
+        
+        -- Allow clearing pending_update_since (setting to NULL)
+        -- Allow initial setting when OLD value is NULL
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql;
+    SQL
+  end
+
+  # Removes pending tracking from a table
+  # @param table_name [String] The table to modify
+  def remove_pending_tracking_from_table(table_name)
+    # Remove trigger
+    trigger_name = "trg_#{table_name}_prevent_concurrent_pending"
+    trigger_name = trigger_name[0..62] if trigger_name.length > 63
+    execute "DROP TRIGGER IF EXISTS #{trigger_name} ON #{table_name};"
+    
+    # Remove recovery index
+    recovery_index_name = truncate_index_name("idx_#{table_name}_pending_recovery")
+    remove_index table_name, name: recovery_index_name if index_exists?(table_name, nil, name: recovery_index_name)
+    
+    # Remove column
+    remove_column table_name, :pending_update_since if column_exists?(table_name, :pending_update_since)
+    
+    # Note: We don't remove the trigger function as it might be used by other tables
+    
+    say "Removed pending tracking from #{table_name}", :yellow
+  end
+end

@@ -1,0 +1,15 @@
+test:
+  adapter: postgresql
+  database: yes_test
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5532
+
+development:
+  adapter: postgresql
+  database: yes_development
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5532

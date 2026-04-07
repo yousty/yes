@@ -1,0 +1,37 @@
+default: &default
+  adapter: postgresql
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5532
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+message_bus_default: &message_bus_default
+  <<: *default
+  pool: 2
+  migrations_paths: spec/dummy/db/message_bus
+
+development:
+  primary:
+    <<: *default
+    database: yes_command_api_development
+  message_bus:
+    <<: *message_bus_default
+    database: yes_command_api_message_bus_development
+
+test:
+  primary:
+    <<: *default
+    database: yes_command_api_test
+  message_bus:
+    <<: *message_bus_default
+    database: yes_command_api_message_bus_test
+
+production:
+  primary:
+    <<: *default
+    database: yes_command_api_production
+  message_bus:
+    <<: *message_bus_default
+    database: yes_command_api_message_bus_production
