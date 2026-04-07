@@ -167,6 +167,61 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
       end
     end
 
+    context 'when called from Rails console without origin' do
+      let(:rails_app_class) { double(module_parent: double(name: 'CompanyManager')) }
+
+      before do
+        stub_const('Rails::Console', Class.new)
+        allow(Rails).to receive(:application).and_return(double(class: rails_app_class))
+        allow(Rails).to receive(:env).and_return('production')
+      end
+
+      it 'sets console origin on the event metadata' do
+        result = subject
+
+        aggregate_failures do
+          expect(result).to be_success
+          expect(result.event.metadata).to include('origin' => 'CompanyManager production console')
+        end
+      end
+    end
+
+    context 'when origin is already present in payload' do
+      let(:payload) { { name: 'Jane', user_id:, origin: 'CommandBus > SomeController' } }
+
+      before do
+        stub_const('Rails::Console', Class.new)
+        allow(Rails).to receive(:application).and_return(
+          double(class: double(module_parent: double(name: 'CompanyManager')))
+        )
+        allow(Rails).to receive(:env).and_return('production')
+      end
+
+      it 'does not override existing origin' do
+        result = subject
+
+        aggregate_failures do
+          expect(result).to be_success
+          expect(result.event.metadata).to include('origin' => 'CommandBus > SomeController')
+        end
+      end
+    end
+
+    context 'when not in Rails console and no origin provided' do
+      before do
+        hide_const('Rails::Console')
+      end
+
+      it 'does not set origin in event metadata' do
+        result = subject
+
+        aggregate_failures do
+          expect(result).to be_success
+          expect(result.event.metadata).not_to have_key('origin')
+        end
+      end
+    end
+
     context 'failure cases' do
       context 'when read model update fails' do
         before do
