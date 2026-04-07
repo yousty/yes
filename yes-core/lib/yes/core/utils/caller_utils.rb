@@ -21,6 +21,15 @@ module Yes
               map { |s| s.split('_').map(&:capitalize).join }.
               join(' > ')
           end
+
+          # Returns an origin string identifying the Rails console context, or nil if not in a console
+          # @return [String, nil] origin string like "CompanyManager production console"
+          def console_origin
+            return unless defined?(Rails::Console)
+
+            app_name = Rails.application.class.module_parent.name
+            "#{app_name} #{Rails.env} console"
+          end
         end
       end
     end

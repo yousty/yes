@@ -76,11 +76,23 @@ module Yes
             prepared
           )
 
+          add_console_origin(prepared)
           add_custom_metadata(prepared, custom_metadata) if custom_metadata.present?
           add_draft_metadata(prepared) if aggregate.draft?
           add_otl_metadata(prepared)
 
           prepared
+        end
+
+        # Adds console origin to payload when not already present and running in Rails console
+        #
+        # @param payload [Hash] The payload to modify
+        # @return [void]
+        def add_console_origin(payload)
+          return if payload[:origin].present?
+
+          console_origin = Utils::CallerUtils.console_origin
+          payload[:origin] = console_origin if console_origin
         end
 
         # Adds custom metadata to payload
