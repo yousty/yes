@@ -6,7 +6,7 @@ require 'pg_eventstore'
 
 load 'pg_eventstore/tasks/setup.rake'
 
-GEMS = %w[yes-core yes-command-api yes-read-api].freeze
+GEMS = %w[yes-core yes-command-api yes-read-api yes-auth].freeze
 
 GEMS.each do |gem_name|
   namespace gem_name.tr('-', '_') do

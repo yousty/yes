@@ -41,7 +41,9 @@ yes/                      # Root gem (meta-package)
 │   └── spec/dummy/       # Dummy Rails app for integration tests
 ├── yes-command-api/      # Command API engine
 │   └── spec/dummy/       # Dummy Rails app for integration tests
-└── yes-read-api/         # Read API engine
+├── yes-read-api/         # Read API engine
+│   └── spec/dummy/       # Dummy Rails app for integration tests
+└── yes-auth/             # Authorization principals and Cerbos integration
     └── spec/dummy/       # Dummy Rails app for integration tests
 ```
 
@@ -55,6 +57,7 @@ Run specs for a single gem from the root:
 bundle exec rake yes_core:spec
 bundle exec rake yes_command_api:spec
 bundle exec rake yes_read_api:spec
+bundle exec rake yes_auth:spec
 ```
 
 Run all gem specs:
