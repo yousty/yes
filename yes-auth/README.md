@@ -110,15 +110,47 @@ Yes::Core.configure do |config|
 end
 ```
 
-## Database Schema
+## Database Setup
 
-The gem expects the following tables to exist:
+Generate the required auth principal migrations:
 
-- `auth_principals_users` - stores user principals
+```bash
+rails generate yes:auth:install
+```
+
+This creates migrations for all principal tables. You can also generate them individually:
+
+```bash
+rails generate yes:auth:principals:user
+rails generate yes:auth:principals:role
+rails generate yes:auth:principals:user_role
+rails generate yes:auth:principals:read_resource_access
+rails generate yes:auth:principals:write_resource_access
+```
+
+Then run the migrations:
+
+```bash
+rails db:migrate
+```
+
+This creates the following tables:
+
+- `auth_principals_users` - stores user principals with identity and auth attributes
 - `auth_principals_roles` - stores named roles
 - `auth_principals_read_resource_accesses` - stores read resource access records
 - `auth_principals_write_resource_accesses` - stores write resource access records
-- A join table for the users-roles HABTM association
+- A join table for the users-roles HABTM association with UUID foreign keys
+
+### Subscriptions
+
+The auth principal read models are kept in sync via event subscriptions. Register them in your subscription setup (e.g., in a Rake task or initializer):
+
+```ruby
+Yes::Auth::Subscriptions.call(subscriptions)
+```
+
+This subscribes builders for all four principal models to their respective authorization events (e.g., `Authorization::PrincipalRoleAdded`, `Authorization::WriteResourceAccessAttributeChanged`, etc.).
 
 ## Development
 

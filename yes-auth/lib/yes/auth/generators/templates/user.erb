@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+class Create<%= _table_name.singularize.camelcase %> < ActiveRecord::Migration[7.0]
+  def change
+    create_table <%= _table_name.to_sym.inspect %>, id: :uuid do |t|
+      t.jsonb :auth_attributes, default: {}
+      t.uuid :identity_id
+
+      t.timestamps
+    end
+
+    add_index <%= _table_name.to_sym.inspect %>, :identity_id
+  end
+end

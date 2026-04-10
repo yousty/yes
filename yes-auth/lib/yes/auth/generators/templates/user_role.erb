@@ -1,0 +1,32 @@
+# frozen_string_literal: true
+
+class CreateJoinTable<%= _user_table_name.singularize.camelcase %><%= _role_table_name.singularize.camelcase %> < ActiveRecord::Migration[7.0]
+  def up
+    create_join_table(:<%= _role_table_name %>, :<%= _user_table_name %>, column_options: { type: :uuid, foreign_key: { on_delete: :cascade } }) do |t|
+      t.index %i[<%= _user_primary_key%> <%= _role_primary_key %>], name: :<%= _user_table_name %>_<%= _role_table_name %>, unique: true
+      t.index %i[<%= _role_primary_key %> <%= _user_primary_key%>], name: :<%= _role_table_name %>_<%= _user_table_name %>
+    end
+
+    Yes::Auth::Principals::User.find_each do |user|
+      user.role_ids.each do |role_id|
+        role = Yes::Auth::Principals::Role.find_by(id: role_id)
+        next unless role
+
+        user.roles << role
+      end
+    end
+
+    remove_column :<%= _user_table_name %>, :role_ids, if_exists: true
+  end
+
+  def down
+    add_column :<%= _user_table_name %>, :role_ids, :uuid, array: true, default: [], null: false
+
+    Yes::Auth::Principals::User.find_each do |user|
+      user.role_ids = user.roles.map(&:auth_principals_role_id)
+      user.save!
+    end
+
+    drop_table :<%= _table_name %>
+  end
+end
