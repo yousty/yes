@@ -19,6 +19,7 @@ module Yes
           loader.push_dir(File.expand_path('..', __dir__))
           loader.ignore("#{__dir__}/core/version.rb")
           loader.ignore("#{__dir__}/core/test_support")
+          loader.ignore("#{__dir__}/core/test_support.rb")
           loader.collapse("#{__dir__}/core/models")
           loader.setup
           loader

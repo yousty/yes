@@ -105,6 +105,8 @@ module Yes
   end
 end
 
-RSpec.configure do |config|
-  config.extend Yes::Core::TestSupport::Aggregate::CommandTestDsl, type: :aggregate
+if defined?(RSpec)
+  RSpec.configure do |config|
+    config.extend Yes::Core::TestSupport::Aggregate::CommandTestDsl, type: :aggregate
+  end
 end
