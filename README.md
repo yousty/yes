@@ -40,6 +40,11 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Subscriptions](#subscriptions)
   - [Process Managers](#process-managers)
 - [Configuration Reference](#configuration-reference)
+- [Testing](#testing)
+  - [Aggregate Test DSL](#aggregate-test-dsl)
+  - [DSL Methods](#dsl-methods)
+  - [Event Helpers](#event-helpers)
+  - [Aggregate Matchers](#aggregate-matchers)
 - [Development](#development)
   - [Example Usage](#example-usage)
   - [Testing the APIs](#testing-the-apis)
@@ -1703,6 +1708,112 @@ Yes::Core.configure do |config|
   # Error reporting
   config.error_reporter = nil                    # Callable for error reporting (e.g. Sentry)
 end
+```
+
+## Testing
+
+yes-core ships with a test DSL for writing concise aggregate command specs. Add to your `spec_helper.rb` or `rails_helper.rb`:
+
+```ruby
+require 'yes/core/test_support'
+
+RSpec.configure do |config|
+  config.include Yes::Core::TestSupport::EventHelpers
+end
+```
+
+### Aggregate Test DSL
+
+Specs with `type: :aggregate` automatically get the command test DSL:
+
+```ruby
+RSpec.describe MyContext::Order::Aggregate, type: :aggregate do
+  it { is_expected.to have_cerbos_authorizer.with_read_model_class(Order) }
+  it { is_expected.to have_read_model_class(Order) }
+  it { is_expected.to have_parent('customer').with_context('CustomerManagement') }
+
+  command 'confirm' do
+    let(:command_data) { { confirmed_at: Time.current } }
+    let(:success_attributes) { { confirmed: true } }
+
+    # Tests successful execution, state change, and event publishing
+    success
+
+    # Tests with custom setup
+    success 'when order was previously cancelled' do
+      setup do
+        aggregate.confirm
+        aggregate.cancel
+      end
+    end
+
+    # Tests that guard raises InvalidTransition
+    invalid 'order has been removed' do
+      setup { aggregate.remove }
+    end
+
+    # Executes command twice — second time should raise NoChangeTransition
+    no_change
+  end
+end
+```
+
+The `command` block automatically defines:
+- `aggregate` — a new instance of the described class
+- `subject` — executes the command with `command_data`
+- `expected_event_type` — derived from context, aggregate, and command name
+- `success_attributes` — defaults to `command_data` (override as needed)
+
+### DSL Methods
+
+| Method | Description |
+|--------|-------------|
+| `command 'name'` | Defines a command test block with aggregate, subject, and default lets |
+| `success` | Asserts command changes state and publishes expected event |
+| `invalid 'reason'` | Asserts command raises `InvalidTransition` error |
+| `no_change` | Asserts duplicate command raises `NoChangeTransition` error |
+| `setup { ... }` | Alias for `before` — sets up aggregate state before assertions |
+
+For draft commands, pass `draft: true`:
+
+```ruby
+command 'change_name', draft: true do
+  let(:command_data) { { name: 'New Name' } }
+  success
+end
+```
+
+### Event Helpers
+
+Available via `Yes::Core::TestSupport::EventHelpers`:
+
+```ruby
+# Append events from other contexts for cross-aggregate setup
+given_events do
+  [{ context: 'Shipping', aggregate: 'Shipment', event: 'Dispatched', data: { shipment_id: id } }]
+end
+
+# Low-level event operations
+append_event(stream, event)
+append_and_reload_event(stream, event)
+read_events(stream)  # returns [] if stream not found
+```
+
+### Aggregate Matchers
+
+```ruby
+# Check authorizer configuration
+it { is_expected.to have_authorizer }
+it { is_expected.to have_cerbos_authorizer }
+it { is_expected.to have_cerbos_authorizer.with_read_model_class(Order) }
+it { is_expected.to have_cerbos_authorizer.with_resource_name('order') }
+
+# Check read model
+it { is_expected.to have_read_model_class(Order) }
+
+# Check parent aggregates
+it { is_expected.to have_parent('company') }
+it { is_expected.to have_parent('company').with_context('CompanyManagement') }
 ```
 
 ## Development
