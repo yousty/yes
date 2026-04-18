@@ -1,6 +1,10 @@
 # Aggregate Shortcuts Configuration for Dummy App
 # This file defines custom abbreviations for aggregate contexts and subjects.
-# When not specified, abbreviations are auto-generated from capital letters.
+#
+# Auto-abbreviation rules when no override is given:
+#   - Multi-capital subjects/contexts: capital letters only (ContactInfo -> CI)
+#   - Single-capital subjects: full subject name kept as-is (Board -> Board)
+# Add an override below only when you want a shorter (or different) form than the default.
 #
 # Usage in Rails console:
 #   T::U.new(id)        # instead of Test::User::Aggregate.new(id)
