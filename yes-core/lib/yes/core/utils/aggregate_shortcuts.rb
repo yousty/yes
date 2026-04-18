@@ -3,14 +3,20 @@
 module Yes
   module Core
     module Utils
-      # Provides convenient shortcuts for accessing aggregate classes in Rails console
-      # @example
-      #   # Instead of: ApprenticeshipPresentation::Apprenticeship::Aggregate.new(id)
-      #   # Use: AP::Appr.new(id)
+      # Provides convenient shortcuts for accessing aggregate classes in Rails console.
+      # @example Multi-capital subjects use capitals-only abbreviations
+      #   # Instead of: ApprenticeshipPresentation::ContactInfo::Aggregate.new(id)
+      #   # Use: AP::CI.new(id)
+      # @example Single-capital subjects keep the full name
+      #   # Instead of: TaskFlow::Board::Aggregate.new(id)
+      #   # Use: TF::Board.new(id)
       class AggregateShortcuts
         class << self
-          # Load aggregate shortcuts in Rails console
-          # Creates module aliases and constants for convenient access
+          # Load aggregate shortcuts in Rails console.
+          # Creates fresh shortcut modules (e.g. TF) and assigns aggregate classes
+          # as constants on them. Shortcut modules are NOT aliases of the real
+          # context modules, so shortcut constants cannot collide with the
+          # aggregates' own namespace modules.
           def load!
             return unless Yes::Core.configuration.aggregate_shortcuts
 
@@ -102,19 +108,22 @@ module Yes
               context_abbr = abbreviate_context(agg[:context])
               subject_abbr = abbreviate_subject(agg[:subject])
 
-              # Create context module alias if not exists
+              # Build (or reuse) a fresh container module for the context shortcut.
+              # We deliberately do NOT alias the real context module: doing so would
+              # mean shortcut constants (e.g. TF::Board) collide with the real
+              # namespace modules of the aggregates themselves (TaskFlow::Board).
               unless context_modules[context_abbr]
                 if Object.const_defined?(context_abbr)
                   Rails.logger.warn("Shortcut conflict: #{context_abbr} already defined, skipping #{agg[:context]}")
                   next
                 end
 
-                context_module = agg[:context].constantize
-                Object.const_set(context_abbr, context_module)
-                context_modules[context_abbr] = context_module
+                shortcut_module = Module.new
+                Object.const_set(context_abbr, shortcut_module)
+                context_modules[context_abbr] = shortcut_module
               end
 
-              # Create subject constant within context module
+              # Create subject constant within the shortcut container.
               context_mod = context_modules[context_abbr]
               if context_mod.const_defined?(subject_abbr)
                 Rails.logger.warn("Shortcut conflict: #{context_abbr}::#{subject_abbr} already defined")
@@ -140,12 +149,15 @@ module Yes
           def abbreviate_subject(subject)
             return @subject_overrides[subject] if @subject_overrides[subject]
 
-            # First try capital letters
+            # Multi-capital CamelCase names get a capitals-only abbreviation
+            # (ContactInfo → CI). Single-capital names (Task, Board, Location)
+            # use the full subject name to avoid awkward truncations like
+            # "Boar" or shortcut collisions when the truncation matches the
+            # subject's own namespace module (e.g. TaskFlow::Task).
             capitals = subject.scan(/[A-Z]/).join
             return capitals if capitals.length > 1
 
-            # Otherwise use first 4 characters
-            subject[0..3]
+            subject
           end
 
           def define_helper_method
