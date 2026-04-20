@@ -341,6 +341,31 @@ command :change, :ssn, :string, encrypt: true
 - You can combine inline and separate encryption declarations in the same command
 - The encryption key is automatically derived from the aggregate ID
 
+###### Required Setup: Key Repository
+
+Encryption is performed by a PgEventstore middleware that delegates the actual key management and cryptography to a `key_repository` object you provide. *Yes* does not ship a concrete implementation — you plug in any object that satisfies the interface below.
+
+Register the middleware:
+
+```ruby
+PgEventstore.configure do |config|
+  config.middlewares[:encryptor] = Yes::Core::Middlewares::Encryptor.new(key_repository)
+end
+```
+
+The `key_repository` must respond to the following methods, each returning a [`Dry::Monads::Result`](https://dry-rb.org/gems/dry-monads/) (or any object responding to `success?`, `failure?`, and `value!`):
+
+| Method | Purpose | Returns (on success) |
+| --- | --- | --- |
+| `find(key_id)` | Look up an existing key by its identifier (the aggregate ID). | A key object responding to `attributes[:iv]`. |
+| `create(key_id)` | Create a new key for the given identifier. Called when `find` returns a failure. | A key object responding to `attributes[:iv]`. |
+| `encrypt(key:, message:)` | Encrypt the serialized JSON of the attributes marked for encryption. | An object responding to `attributes[:message]` containing the ciphertext. |
+| `decrypt(key:, message:)` | Decrypt a previously encrypted payload. | An object responding to `attributes[:message]` containing the plaintext JSON. |
+
+This interface intentionally decouples *Yes* from any specific key management or crypto backend. You can back it with AWS KMS, HashiCorp Vault, libsodium, ActiveRecord::Encryption, or any other solution that fits your deployment.
+
+For a minimal reference implementation used in the test suite (Base64 + in-memory store, not production-ready), see [`yes-core/spec/support/dummy_repository.rb`](yes-core/spec/support/dummy_repository.rb).
+
 ##### Custom State Updates
 
 Define exactly how state should change:
