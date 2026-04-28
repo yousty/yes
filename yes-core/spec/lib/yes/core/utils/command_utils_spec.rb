@@ -165,6 +165,50 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
         end
       end
     end
+
+    context 'when the aggregate class is draftable with a custom changes_read_model' do
+      let(:aggregate) { 'Recruiter' }
+      let(:draftable_aggregate_class) do
+        Class.new do
+          def self._changes_read_model_explicit
+            true
+          end
+
+          def self.changes_read_model_name
+            'user_edit_template'
+          end
+        end
+      end
+
+      before do
+        stub_const('Test::Recruiter::Aggregate', draftable_aggregate_class)
+        allow(Yes::Core.configuration).to receive(:event_classes_for_command).
+          with(context, aggregate, command_name).
+          and_return([event_class])
+      end
+
+      context 'with edit_template_command metadata' do
+        let(:metadata) { { user_id:, edit_template_command: true } }
+
+        it 'uses the camelized changes_read_model_name as the type prefix' do
+          expect(subject.type).to eq('Test::UserEditTemplateDocumentsApproved')
+        end
+      end
+
+      context 'with draft metadata' do
+        let(:metadata) { { user_id:, draft: true } }
+
+        it 'still uses the camelized changes_read_model_name (DSL config wins over flag)' do
+          expect(subject.type).to eq('Test::UserEditTemplateDocumentsApproved')
+        end
+      end
+
+      context 'without draft or edit_template_command metadata' do
+        it 'leaves the aggregate name unchanged' do
+          expect(subject.type).to eq('Test::RecruiterDocumentsApproved')
+        end
+      end
+    end
   end
 
   describe '#build_stream' do
@@ -202,6 +246,55 @@ RSpec.describe Yes::Core::Utils::CommandUtils do
           expect(subject.stream_name).to eq(custom_name)
           expect(subject.stream_id).to eq(custom_id)
         end
+      end
+    end
+
+    context 'with draft metadata against a draftable class with a custom changes_read_model' do
+      let(:aggregate) { 'Recruiter' }
+      let(:draftable_aggregate_class) do
+        Class.new do
+          def self._changes_read_model_explicit
+            true
+          end
+
+          def self.changes_read_model_name
+            'user_edit_template'
+          end
+        end
+      end
+
+      before { stub_const('Test::Recruiter::Aggregate', draftable_aggregate_class) }
+
+      context 'with edit_template_command metadata' do
+        let(:params) { { metadata: { edit_template_command: true } } }
+
+        it 'derives the stream name from the camelized changes_read_model_name' do
+          expect(subject.stream_name).to eq('UserEditTemplate')
+        end
+      end
+
+      context 'with draft metadata' do
+        let(:params) { { metadata: { draft: true } } }
+
+        it 'derives the stream name from the camelized changes_read_model_name (DSL config wins over flag)' do
+          expect(subject.stream_name).to eq('UserEditTemplate')
+        end
+      end
+    end
+
+    context 'with draft metadata against a non-draftable class' do
+      let(:params) { { metadata: { draft: true } } }
+
+      it 'falls back to the legacy <Aggregate>Draft suffix' do
+        expect(subject.stream_name).to eq('UserDraft')
+      end
+    end
+
+    context 'with edit_template_command metadata against a non-draftable class' do
+      let(:params) { { metadata: { edit_template_command: true } } }
+
+      it 'falls back to the legacy <Aggregate>EditTemplate suffix' do
+        expect(subject.stream_name).to eq('UserEditTemplate')
       end
     end
   end

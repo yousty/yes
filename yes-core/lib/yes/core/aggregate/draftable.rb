@@ -15,6 +15,7 @@ module Yes
         included do
           class << self
             attr_accessor :_draft_context, :_draft_aggregate, :_changes_read_model_name,
+                          :_changes_read_model_explicit,
                           :_draft_foreign_key, :_is_draftable, :_changes_read_model_public
           end
         end
@@ -52,7 +53,8 @@ module Yes
             self._draft_context = draft_config[:context] || context
             self._draft_aggregate = draft_config[:aggregate] || "#{aggregate}Draft"
 
-            self._changes_read_model_name = if changes_read_model
+            self._changes_read_model_explicit = changes_read_model.present?
+            self._changes_read_model_name = if changes_read_model.present?
                                               changes_read_model.to_s
                                             else
                                               "#{read_model_name}_change"

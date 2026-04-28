@@ -68,7 +68,7 @@ module Yes
         def build_event(command_name:, payload:, metadata: {})
           event_class = Yes::Core.configuration.event_classes_for_command(context, aggregate, command_name).first
           event_class.new(
-            type: "#{context}::#{aggregate_name_with_draft_suffix(aggregate, metadata)}#{event_class.name.demodulize}",
+            type: "#{context}::#{aggregate_name_with_draft_suffix(aggregate, metadata, context:)}#{event_class.name.demodulize}",
             data: payload,
             metadata:
           )
@@ -83,7 +83,7 @@ module Yes
         def build_stream(context: @context, name: @aggregate, id: @aggregate_id, metadata: {})
           PgEventstore::Stream.new(
             context:,
-            stream_name: aggregate_name_with_draft_suffix(name, metadata),
+            stream_name: aggregate_name_with_draft_suffix(name, metadata, context:),
             stream_id: id
           )
         end
@@ -209,16 +209,33 @@ module Yes
           payload.merge(locale: I18n.locale.to_s)
         end
 
-        # Builds the aggregate name with the draft suffix
+        # Builds the aggregate name with the draft suffix.
+        #
+        # When the aggregate class is configured with `draftable changes_read_model:` (explicitly),
+        # the camelized changes_read_model is used as the stream / event-type prefix so the DSL
+        # config decides where draft events land. This lets an aggregate share an edit-template
+        # stream with a sibling (e.g. `Recruiter` writes to `UserEditTemplate` via
+        # `changes_read_model: :user_edit_template`).
+        #
+        # For non-draftable aggregates, and for draftable aggregates that rely on the default
+        # `<read_model>_change` changes_read_model name, the legacy hard-coded `<Aggregate>Draft`
+        # / `<Aggregate>EditTemplate` suffix is used.
         #
         # @param aggregate_name [String] The name of the aggregate
         # @param metadata [Hash] The command metadata
-        # @return [String] The stream name
-        def aggregate_name_with_draft_suffix(aggregate_name, metadata = {})
-          return "#{aggregate_name}Draft" if metadata&.dig(:draft)
-          return "#{aggregate_name}EditTemplate" if metadata&.dig(:edit_template_command)
+        # @param context [String] The aggregate's context (defaults to @context)
+        # @return [String] The stream / event-type name component
+        def aggregate_name_with_draft_suffix(aggregate_name, metadata = {}, context: @context)
+          return aggregate_name unless metadata&.dig(:draft) || metadata&.dig(:edit_template_command)
 
-          aggregate_name
+          klass = "#{context}::#{aggregate_name}::Aggregate".safe_constantize
+          if klass.respond_to?(:_changes_read_model_explicit) && klass._changes_read_model_explicit
+            klass.changes_read_model_name.camelize
+          elsif metadata&.dig(:edit_template_command)
+            "#{aggregate_name}EditTemplate"
+          else
+            "#{aggregate_name}Draft"
+          end
         end
       end
     end
