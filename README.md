@@ -2073,23 +2073,13 @@ You can also run specs directly from within a gem directory:
 cd yes-core && bundle exec rspec spec
 ```
 
-### Gem Installation and Release
+### Gem Installation
 
 Install the gem locally:
 
 ```shell
 bundle exec rake install
 ```
-
-Release a new version:
-
-1. Update the version in `version.rb`
-2. Run:
-```shell
-bundle exec rake release
-```
-
-This creates a git tag, pushes commits and tags, and pushes the gem to [rubygems.org](https://rubygems.org).
 
 ## Contributing
 
