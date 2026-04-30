@@ -85,7 +85,9 @@ module Yes
 
           return unless options.fetch(:command, true)
 
-          command :"assign_#{name}" do
+          skip_default_guards = options[:skip_default_guards] || []
+
+          command :"assign_#{name}", skip_default_guards: do
             payload "#{name}_id": :uuid
 
             guard(:no_change) { public_send(:"#{name}_id") != payload.public_send(:"#{name}_id") }
@@ -124,15 +126,21 @@ module Yes
         #     removable(attr_name: :deleted_at)
         #   end
         #
-        def removable(attr_name: :removed_at, &)
+        def removable(attr_name: :removed_at, not_removed_guards: true, &)
           attribute attr_name, :datetime unless attributes.key?(attr_name)
+          @removable_config = { attr_name:, not_removed_guards: }
 
-          command :remove do
+          command :remove, skip_default_guards: %i[not_removed] do
             guard(:no_change) { !public_send(attr_name) }
             update_state { method(attr_name).call { Time.current } }
             instance_eval(&) if block_given?
           end
         end
+
+        # Returns the removable configuration for the aggregate, or nil if the aggregate is not removable.
+        #
+        # @return [Hash, nil] A hash with `:attr_name` and `:not_removed_guards` keys, or nil.
+        attr_reader :removable_config
 
         # Sets the primary context for the aggregate.
         #
@@ -239,12 +247,14 @@ module Yes
         # @example Define publish command an published attribute
         #   command :publish
         #
-        def command(*args, **, &)
-          return handle_command_shortcut(*args, **, &) unless Dsl::CommandShortcutExpander.base_case?(*args, **, &)
+        def command(*args, **kwargs, &)
+          skip_default_guards = kwargs.delete(:skip_default_guards) || []
+          base_case = Dsl::CommandShortcutExpander.base_case?(*args, **kwargs, &)
+          return handle_command_shortcut(*args, skip_default_guards:, **kwargs, &) unless base_case
 
           name = args.first
           @commands ||= {}
-          command_data = Dsl::CommandData.new(name, self, { context:, aggregate: })
+          command_data = Dsl::CommandData.new(name, self, { context:, aggregate:, skip_default_guards: })
           @commands[name] = command_data
 
           Dsl::CommandDefiner.new(command_data).call(&)
@@ -295,8 +305,8 @@ module Yes
         #
         # @return [void]
         #
-        def handle_command_shortcut(...)
-          expanded = Dsl::CommandShortcutExpander.new(...).call
+        def handle_command_shortcut(*, skip_default_guards: [], **, &)
+          expanded = Dsl::CommandShortcutExpander.new(*, **, &).call
 
           expanded.attributes.each do |specification|
             next if attributes.key?(specification.name)
@@ -305,7 +315,7 @@ module Yes
           end
 
           expanded.commands.each do |specification|
-            command(specification.name, &specification.block)
+            command(specification.name, skip_default_guards:, &specification.block)
           end
         end
       end

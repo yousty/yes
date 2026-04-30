@@ -52,6 +52,7 @@ module Yes
         # @raise [InvalidTransition] When a guard fails with an invalid transition
         # @raise [NoChangeTransition] When a guard fails with a no change transition
         def call
+          check_not_removed!
           self.class.guards.each do |name, guard_data|
             evaluate_guard(name, error_extra: guard_data[:error_extra], block: guard_data[:block])
           end
@@ -63,6 +64,28 @@ module Yes
         private
 
         attr_reader :raw_payload, :raw_metadata, :payload, :aggregate, :aggregate_tracker, :command_name
+
+        # Pre-check that fires before any registered guard. Blocks every command on a removable
+        # aggregate once `removed_at` (or the configured attr) has been set, except where the
+        # command opts out via `skip_default_guards: %i[not_removed]`.
+        #
+        # The check runs ahead of the user-defined guards (including the auto-injected `:no_change`)
+        # so post-remove mutations consistently surface "X has been removed" instead of misleading
+        # downstream errors like "X does not change".
+        #
+        # @return [void]
+        # @raise [InvalidTransition] When the aggregate has been removed and the command is not opted out.
+        def check_not_removed!
+          config = aggregate.class.respond_to?(:removable_config) ? aggregate.class.removable_config : nil
+          return unless config && config[:not_removed_guards]
+
+          command_data = aggregate.class.commands[command_name]
+          return if command_data&.skip_default_guards&.include?(:not_removed)
+
+          return if aggregate.public_send(config[:attr_name]).blank?
+
+          raise InvalidTransition, error_message(:not_removed)
+        end
 
         # Evaluates a single guard and raises appropriate error if it fails
         #

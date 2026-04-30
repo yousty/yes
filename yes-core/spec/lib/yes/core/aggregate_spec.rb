@@ -73,6 +73,21 @@ RSpec.describe Yes::Core::Aggregate do
           to eq(test_parent_3_id: :uuid)
       end
     end
+
+    context 'when skip_default_guards is given' do
+      subject { subject_class.parent(:test_parent_4, skip_default_guards: %i[not_removed]) }
+
+      after do
+        subject_class.instance_variable_set(:@parent_aggregates, {})
+        subject_class.instance_variable_set(:@commands, subject_class.commands.except(:assign_test_parent_4))
+      end
+
+      it 'forwards skip_default_guards to the generated assign command' do
+        subject
+
+        expect(subject_class.commands[:assign_test_parent_4].skip_default_guards).to eq(%i[not_removed])
+      end
+    end
   end
 
   describe '.parent_aggregates' do
@@ -92,6 +107,7 @@ RSpec.describe Yes::Core::Aggregate do
     after do
       subject_class.instance_variable_set(:@attributes, subject_class.attributes.except(attr_name))
       subject_class.instance_variable_set(:@commands, subject_class.commands.except(:remove))
+      subject_class.instance_variable_set(:@removable_config, nil)
     end
 
     context 'when attribute is undefined' do
@@ -143,6 +159,70 @@ RSpec.describe Yes::Core::Aggregate do
 
         expect(subject_class.commands[:remove].guard_names).to include(:exists)
       end
+    end
+
+    describe 'removable_config' do
+      it 'is nil before removable is called' do
+        expect(subject_class.removable_config).to be_nil
+      end
+
+      it 'records attr_name and not_removed_guards: true after removable is called with defaults' do
+        subject
+
+        expect(subject_class.removable_config).to eq(attr_name: :removed_at, not_removed_guards: true)
+      end
+
+      context 'when not_removed_guards: false is given' do
+        subject { subject_class.removable(attr_name:, not_removed_guards: false) }
+
+        it 'records the disabled flag' do
+          subject
+
+          expect(subject_class.removable_config).to eq(attr_name: :removed_at, not_removed_guards: false)
+        end
+      end
+    end
+
+    it 'marks the :remove command itself with skip_default_guards: [:not_removed]' do
+      subject
+
+      expect(subject_class.commands[:remove].skip_default_guards).to include(:not_removed)
+    end
+  end
+
+  describe 'skip_default_guards on .command' do
+    let(:fresh_aggregate_class) do
+      Class.new(Yes::Core::Aggregate) do
+        def self.name = 'SkipGuardCtx::SkipGuardAgg::Aggregate'
+        primary_context 'SkipGuardCtx'
+
+        attribute :foo, :string
+        command :assign_foo, skip_default_guards: %i[not_removed] do
+          payload foo: :string
+          event :foo_assigned
+        end
+
+        attribute :bar, :string
+        command :change, :bar, skip_default_guards: %i[not_removed]
+
+        attribute :baz, :string
+        command :assign_baz do
+          payload baz: :string
+          event :baz_assigned
+        end
+      end
+    end
+
+    it 'forwards the kwarg to CommandData for a base command' do
+      expect(fresh_aggregate_class.commands[:assign_foo].skip_default_guards).to eq(%i[not_removed])
+    end
+
+    it 'forwards the kwarg to CommandData for a change shortcut command' do
+      expect(fresh_aggregate_class.commands[:change_bar].skip_default_guards).to eq(%i[not_removed])
+    end
+
+    it 'defaults to an empty array when the kwarg is omitted' do
+      expect(fresh_aggregate_class.commands[:assign_baz].skip_default_guards).to eq([])
     end
   end
 
