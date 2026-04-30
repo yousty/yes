@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-04-30
+
+### yes-core
+
+#### Added
+- Auto-injected `:not_removed` guard on `removable` aggregates. Calling `removable` now blocks every non-`:remove` command on the aggregate while the removal attribute (default `removed_at`) is set, so consumers no longer need to hand-write `guard(:not_removed) { removed_at.blank? }` on every mutation. The check is implemented as a runtime pre-check in `Yes::Core::CommandHandling::GuardEvaluator#call`, so it is order-independent (works whether `removable` is declared before or after the other commands) and fires before any registered guard — including the auto-injected `:no_change`. Post-remove mutations consistently raise `GuardEvaluator::InvalidTransition` with the i18n message under `aggregates.<context>.<aggregate>.commands.<command>.guards.not_removed.error` (with the existing generic fallback). The `:remove` command itself is exempt and remains gated only by its existing `:no_change`.
+- Aggregate-level opt-out: `removable not_removed_guards: false` disables the auto-block for the whole aggregate.
+- Per-command opt-out: both `command` and `parent` accept a new `skip_default_guards: %i[not_removed]` keyword argument that exempts the affected command from the auto-block. The kwarg is stored on `Yes::Core::Aggregate::Dsl::CommandData#skip_default_guards` and respected by the pre-check.
+- `Yes::Core::Aggregate.removable_config` reader exposing the `{ attr_name:, not_removed_guards: }` hash recorded by `removable`.
+
+#### Fixed
+- `AggregateShortcuts.display` (the `shortcuts` Rails console helper) now writes directly to STDOUT via `puts`. Previously it used `Rails.logger.debug`, which made the helper unusable in production where Rails apps configure structured / JSON loggers (e.g. semantic_logger) — each line came back wrapped in a JSON envelope.
+
 ## [1.1.0] - 2026-04-28
 
 ### yes-core
