@@ -979,6 +979,78 @@ module Users
 end
 ```
 
+#### Auto-injected `:not_removed` guard
+
+Calling `removable` does more than define the `remove` command: by default it also auto-blocks
+every other command on the aggregate while the removal attribute is set. The check fires
+*before* any registered guard (including the auto-injected `:no_change`), so post-remove
+mutations consistently raise `Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition`
+with the i18n message under
+`aggregates.<context>.<aggregate>.commands.<command>.guards.not_removed.error`.
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      removable
+
+      command :change, :name, :string
+    end
+  end
+end
+
+agg = Users::User::Aggregate.new
+agg.change_name(name: 'Alice') # => success
+agg.remove
+agg.change_name(name: 'Bob')   # => blocked: InvalidTransition (:not_removed)
+```
+
+The `:remove` command itself is exempt — it remains gated only by its existing `:no_change`
+guard, so calling `remove` twice still raises `NoChangeTransition` as before.
+
+The check is order-independent: `removable` may be declared before or after the other
+commands on the aggregate.
+
+##### Opting out at the aggregate level
+
+Pass `not_removed_guards: false` to disable the auto-block for the entire aggregate (commands
+will continue to fire normally after `remove`):
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      removable(not_removed_guards: false)
+
+      command :change, :name, :string
+    end
+  end
+end
+```
+
+##### Opting out per command
+
+Pass `skip_default_guards: %i[not_removed]` to a single `command` or `parent` to exempt just
+that command:
+
+```ruby
+module Users
+  module User
+    class Aggregate < Yes::Core::Aggregate
+      removable
+
+      # Bypass the auto-block for this one command.
+      command :restore, skip_default_guards: %i[not_removed] do
+        guard(:no_change) { removed_at.present? }
+        update_state { removed_at { nil } }
+      end
+
+      parent :tenant, skip_default_guards: %i[not_removed]
+    end
+  end
+end
+```
+
 ### Draftable
 
 The `draftable` feature allows aggregates to be created and modified in a draft state before being published. This is useful when you want to prepare changes without immediately making them live.

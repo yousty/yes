@@ -76,8 +76,15 @@ module Yes
         #
         # @param name [Symbol] The name of the parent.
         # @param options [Hash] Options for configuring the parent.
+        # @option options [Boolean] :command (true) When false, skips defining the `assign_<name>` command.
+        # @option options [Array<Symbol>] :skip_default_guards ([]) Default guards (e.g. `:not_removed`)
+        #   that should not be auto-applied to the generated `assign_<name>` command. See
+        #   {.removable} for context on the `:not_removed` auto-block.
         # @yield Block for defining guards and other attribute configurations.
         # @return [void]
+        #
+        # @example Skip the auto-injected :not_removed guard on a parent's assign command
+        #   parent :tenant, skip_default_guards: %i[not_removed]
         def parent(name, **options, &)
           parent_aggregates[name] = options
 
@@ -105,7 +112,26 @@ module Yes
 
         # Defines a default removal behavior for the aggregate.
         #
+        # In addition to defining the `:remove` command, `removable` records aggregate-level
+        # configuration that the {Yes::Core::CommandHandling::GuardEvaluator} reads at runtime
+        # to **auto-block every other command on the aggregate** while the removal attribute is
+        # set. The auto-block fires before any registered guard (including the auto-injected
+        # `:no_change`), so post-remove mutations consistently raise
+        # `GuardEvaluator::InvalidTransition` with the i18n message under
+        # `aggregates.<context>.<aggregate>.commands.<command>.guards.not_removed.error`.
+        # The `:remove` command itself is exempt and remains gated only by `:no_change`.
+        #
+        # The auto-block is order-independent: `removable` may be declared before or after the
+        # other commands on the aggregate.
+        #
+        # `attr_name` must correspond to an attribute readable on the aggregate (the macro
+        # auto-defines it as `:datetime` when missing).
+        #
         # @param attr_name [Symbol] the attribute name to use for marking removal
+        # @param not_removed_guards [Boolean] when true (default), every non-`:remove` command on
+        #   the aggregate auto-blocks while `attr_name` is set. Pass `false` to disable the
+        #   auto-block aggregate-wide; individual commands can still opt in by defining their
+        #   own `guard(:not_removed)`.
         # @yield Block for defining additional guards and other removal configurations
         # @return [void]
         #
@@ -126,6 +152,11 @@ module Yes
         #     removable(attr_name: :deleted_at)
         #   end
         #
+        # @example Disable the :not_removed auto-block aggregate-wide
+        #   class UserAggregate < Yes::Core::Aggregate
+        #     removable(not_removed_guards: false)
+        #   end
+        #
         def removable(attr_name: :removed_at, not_removed_guards: true, &)
           attribute attr_name, :datetime unless attributes.key?(attr_name)
           @removable_config = { attr_name:, not_removed_guards: }
@@ -137,9 +168,12 @@ module Yes
           end
         end
 
-        # Returns the removable configuration for the aggregate, or nil if the aggregate is not removable.
+        # Returns the removable configuration for the aggregate, or nil if {.removable} was
+        # never called.
         #
-        # @return [Hash, nil] A hash with `:attr_name` and `:not_removed_guards` keys, or nil.
+        # @return [Hash{Symbol => Object}, nil] hash with two keys when set:
+        #   * `:attr_name` [Symbol] — the attribute that marks removal (default `:removed_at`).
+        #   * `:not_removed_guards` [Boolean] — whether the auto-block is enabled.
         attr_reader :removable_config
 
         # Sets the primary context for the aggregate.
@@ -246,6 +280,16 @@ module Yes
         #
         # @example Define publish command an published attribute
         #   command :publish
+        #
+        # @example Skip the auto-injected :not_removed guard for a single command
+        #   command :restore, skip_default_guards: %i[not_removed] do
+        #     guard(:no_change) { removed_at.present? }
+        #     update_state { removed_at { nil } }
+        #   end
+        #
+        # All overloads accept a `skip_default_guards:` keyword argument carrying an array of
+        # default-guard symbols (currently only `:not_removed` — see {.removable}) that should
+        # not be auto-applied to the command. Defaults to `[]`.
         #
         def command(*args, **kwargs, &)
           skip_default_guards = kwargs.delete(:skip_default_guards) || []
