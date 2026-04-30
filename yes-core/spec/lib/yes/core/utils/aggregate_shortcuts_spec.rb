@@ -176,6 +176,59 @@ RSpec.describe Yes::Core::Utils::AggregateShortcuts do
     end
   end
 
+  describe '.display' do
+    subject(:display) { described_class.display(filter) }
+
+    let(:filter) { nil }
+
+    context 'with shortcuts present' do
+      before do
+        described_class.instance_variable_set(:@shortcuts, {
+                                                'AP::Appr' => 'ApprenticeshipPresentation::Apprenticeship::Aggregate',
+                                                'CM::U' => 'CompanyManagement::User::Aggregate'
+                                              })
+      end
+
+      it 'writes a human-readable table to stdout, not the Rails logger' do
+        allow(Rails.logger).to receive(:debug)
+        output = capture_stdout { display }
+
+        aggregate_failures do
+          expect(output).to include('Available Aggregate Shortcuts:')
+          expect(output).to include('AP::Appr → ApprenticeshipPresentation::Apprenticeship::Aggregate')
+          expect(output).to include('CM::U    → CompanyManagement::User::Aggregate')
+          expect(output).to include('Usage: AP::Appr.new(id)')
+          expect(Rails.logger).not_to have_received(:debug)
+        end
+      end
+    end
+
+    context 'with no shortcuts' do
+      it 'reports the empty state to stdout' do
+        output = capture_stdout { display }
+        expect(output.strip).to eq('No shortcuts found.')
+      end
+
+      context 'with a filter' do
+        let(:filter) { 'AP' }
+
+        it 'mentions the filter in the empty-state message' do
+          output = capture_stdout { display }
+          expect(output.strip).to eq("No shortcuts found for 'AP'.")
+        end
+      end
+    end
+
+    def capture_stdout
+      original = $stdout
+      $stdout = StringIO.new
+      yield
+      $stdout.string
+    ensure
+      $stdout = original
+    end
+  end
+
   def aggregate_attrs_of(shortcut_module)
     {
       is_module: shortcut_module.is_a?(Module) && !shortcut_module.is_a?(Class),

@@ -38,26 +38,35 @@ module Yes
             results
           end
 
-          # Display shortcuts in a formatted table
+          # Display shortcuts in a formatted table.
+          #
+          # Writes directly to STDOUT (via Kernel#puts) rather than the Rails logger
+          # so the output is readable in any environment — Rails consoles in
+          # production typically configure structured / JSON loggers that would
+          # otherwise wrap each line in a JSON envelope.
+          #
           # @param filter [String, nil] Optional filter
+          # rubocop:disable Rails/Output
           def display(filter = nil)
             shortcuts = list(filter)
 
             if shortcuts.empty?
-              Rails.logger.debug { "No shortcuts found#{" for '#{filter}'" if filter}." }
+              puts "No shortcuts found#{" for '#{filter}'" if filter}."
               return
             end
 
             max_shortcut_length = shortcuts.keys.map(&:length).max
+            separator = '=' * (max_shortcut_length + 70)
 
-            Rails.logger.debug "\nAvailable Aggregate Shortcuts:"
-            Rails.logger.debug '=' * (max_shortcut_length + 70)
+            puts "\nAvailable Aggregate Shortcuts:"
+            puts separator
             shortcuts.sort.each do |shortcut, full_path|
-              Rails.logger.debug "#{shortcut.ljust(max_shortcut_length)} → #{full_path}"
+              puts "#{shortcut.ljust(max_shortcut_length)} → #{full_path}"
             end
-            Rails.logger.debug '=' * (max_shortcut_length + 70)
-            Rails.logger.debug { "\nUsage: #{shortcuts.keys.first}.new(id)" } if shortcuts.any?
+            puts separator
+            puts "\nUsage: #{shortcuts.keys.first}.new(id)"
           end
+          # rubocop:enable Rails/Output
 
           private
 
