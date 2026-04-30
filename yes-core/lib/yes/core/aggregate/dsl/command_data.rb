@@ -12,7 +12,7 @@ module Yes
         class CommandData
           attr_reader :name, :context_name, :aggregate_name, :aggregate_class
           attr_accessor :event_name, :payload_attributes, :update_state_block, :guard_names, :authorizer_block,
-                        :encrypted_attributes
+                        :encrypted_attributes, :skip_default_guards
 
           # @param name [Symbol] The name of the command
           # @param aggregate_class [Class] The aggregate class this command belongs to
@@ -21,6 +21,7 @@ module Yes
           # @option options [String] :aggregate The aggregate name
           # @option options [String] :event_name The event name for the command
           # @option options [Hash] :payload_attributes The payload attributes for the command
+          # @option options [Array<Symbol>] :skip_default_guards Default guards (e.g. :not_removed) that should not be auto-applied
           def initialize(name, aggregate_class, options = {})
             @name = name
             @aggregate_class = aggregate_class
@@ -38,6 +39,9 @@ module Yes
 
             # Track encrypted attributes for event schema generation
             @encrypted_attributes = []
+
+            # Default guards to opt out of (e.g. :not_removed for the :remove command itself)
+            @skip_default_guards = options.delete(:skip_default_guards) || []
           end
 
           # Add a guard name to the list of guards

@@ -76,8 +76,15 @@ module Yes
         #
         # @param name [Symbol] The name of the parent.
         # @param options [Hash] Options for configuring the parent.
+        # @option options [Boolean] :command (true) When false, skips defining the `assign_<name>` command.
+        # @option options [Array<Symbol>] :skip_default_guards ([]) Default guards (e.g. `:not_removed`)
+        #   that should not be auto-applied to the generated `assign_<name>` command. See
+        #   {.removable} for context on the `:not_removed` auto-block.
         # @yield Block for defining guards and other attribute configurations.
         # @return [void]
+        #
+        # @example Skip the auto-injected :not_removed guard on a parent's assign command
+        #   parent :tenant, skip_default_guards: %i[not_removed]
         def parent(name, **options, &)
           parent_aggregates[name] = options
 
@@ -85,7 +92,9 @@ module Yes
 
           return unless options.fetch(:command, true)
 
-          command :"assign_#{name}" do
+          skip_default_guards = options[:skip_default_guards] || []
+
+          command :"assign_#{name}", skip_default_guards: do
             payload "#{name}_id": :uuid
 
             guard(:no_change) { public_send(:"#{name}_id") != payload.public_send(:"#{name}_id") }
@@ -103,7 +112,26 @@ module Yes
 
         # Defines a default removal behavior for the aggregate.
         #
+        # In addition to defining the `:remove` command, `removable` records aggregate-level
+        # configuration that the {Yes::Core::CommandHandling::GuardEvaluator} reads at runtime
+        # to **auto-block every other command on the aggregate** while the removal attribute is
+        # set. The auto-block fires before any registered guard (including the auto-injected
+        # `:no_change`), so post-remove mutations consistently raise
+        # `GuardEvaluator::InvalidTransition` with the i18n message under
+        # `aggregates.<context>.<aggregate>.commands.<command>.guards.not_removed.error`.
+        # The `:remove` command itself is exempt and remains gated only by `:no_change`.
+        #
+        # The auto-block is order-independent: `removable` may be declared before or after the
+        # other commands on the aggregate.
+        #
+        # `attr_name` must correspond to an attribute readable on the aggregate (the macro
+        # auto-defines it as `:datetime` when missing).
+        #
         # @param attr_name [Symbol] the attribute name to use for marking removal
+        # @param not_removed_guards [Boolean] when true (default), every non-`:remove` command on
+        #   the aggregate auto-blocks while `attr_name` is set. Pass `false` to disable the
+        #   auto-block aggregate-wide; individual commands can still opt in by defining their
+        #   own `guard(:not_removed)`.
         # @yield Block for defining additional guards and other removal configurations
         # @return [void]
         #
@@ -124,15 +152,29 @@ module Yes
         #     removable(attr_name: :deleted_at)
         #   end
         #
-        def removable(attr_name: :removed_at, &)
+        # @example Disable the :not_removed auto-block aggregate-wide
+        #   class UserAggregate < Yes::Core::Aggregate
+        #     removable(not_removed_guards: false)
+        #   end
+        #
+        def removable(attr_name: :removed_at, not_removed_guards: true, &)
           attribute attr_name, :datetime unless attributes.key?(attr_name)
+          @removable_config = { attr_name:, not_removed_guards: }
 
-          command :remove do
+          command :remove, skip_default_guards: %i[not_removed] do
             guard(:no_change) { !public_send(attr_name) }
             update_state { method(attr_name).call { Time.current } }
             instance_eval(&) if block_given?
           end
         end
+
+        # Returns the removable configuration for the aggregate, or nil if {.removable} was
+        # never called.
+        #
+        # @return [Hash{Symbol => Object}, nil] hash with two keys when set:
+        #   * `:attr_name` [Symbol] — the attribute that marks removal (default `:removed_at`).
+        #   * `:not_removed_guards` [Boolean] — whether the auto-block is enabled.
+        attr_reader :removable_config
 
         # Sets the primary context for the aggregate.
         #
@@ -239,12 +281,24 @@ module Yes
         # @example Define publish command an published attribute
         #   command :publish
         #
-        def command(*args, **, &)
-          return handle_command_shortcut(*args, **, &) unless Dsl::CommandShortcutExpander.base_case?(*args, **, &)
+        # @example Skip the auto-injected :not_removed guard for a single command
+        #   command :restore, skip_default_guards: %i[not_removed] do
+        #     guard(:no_change) { removed_at.present? }
+        #     update_state { removed_at { nil } }
+        #   end
+        #
+        # All overloads accept a `skip_default_guards:` keyword argument carrying an array of
+        # default-guard symbols (currently only `:not_removed` — see {.removable}) that should
+        # not be auto-applied to the command. Defaults to `[]`.
+        #
+        def command(*args, **kwargs, &)
+          skip_default_guards = kwargs.delete(:skip_default_guards) || []
+          base_case = Dsl::CommandShortcutExpander.base_case?(*args, **kwargs, &)
+          return handle_command_shortcut(*args, skip_default_guards:, **kwargs, &) unless base_case
 
           name = args.first
           @commands ||= {}
-          command_data = Dsl::CommandData.new(name, self, { context:, aggregate: })
+          command_data = Dsl::CommandData.new(name, self, { context:, aggregate:, skip_default_guards: })
           @commands[name] = command_data
 
           Dsl::CommandDefiner.new(command_data).call(&)
@@ -295,8 +349,8 @@ module Yes
         #
         # @return [void]
         #
-        def handle_command_shortcut(...)
-          expanded = Dsl::CommandShortcutExpander.new(...).call
+        def handle_command_shortcut(*, skip_default_guards: [], **, &)
+          expanded = Dsl::CommandShortcutExpander.new(*, **, &).call
 
           expanded.attributes.each do |specification|
             next if attributes.key?(specification.name)
@@ -305,7 +359,7 @@ module Yes
           end
 
           expanded.commands.each do |specification|
-            command(specification.name, &specification.block)
+            command(specification.name, skip_default_guards:, &specification.block)
           end
         end
       end
