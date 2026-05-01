@@ -82,12 +82,14 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
       end
 
       it 'looks up the message under the not_removed guard key' do
-        expect(Yes::Core::ErrorMessages).to receive(:guard_error).
-          with('Test', 'User', command_name.to_s, :not_removed).
-          and_return('blocked')
+        aggregate_failures do
+          expect(Yes::Core::ErrorMessages).to receive(:guard_error).
+            with('Test', 'User', command_name.to_s, :not_removed).
+            and_return('blocked')
 
-        expect { guard_evaluator.send(:check_not_removed!) }.
-          to raise_error(described_class::InvalidTransition, 'blocked')
+          expect { guard_evaluator.send(:check_not_removed!) }.
+            to raise_error(described_class::InvalidTransition, 'blocked')
+        end
       end
 
       context 'and the command opts out via skip_default_guards' do
@@ -240,22 +242,28 @@ RSpec.describe 'removable :not_removed auto-block (integration)' do
 
     it 'blocks a manual command' do
       response = aggregate.assign_owner(owner_id: SecureRandom.uuid)
-      expect(response.success?).to be(false)
-      expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      aggregate_failures do
+        expect(response.success?).to be(false)
+        expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      end
     end
 
     it 'blocks a change shortcut command' do
       response = aggregate.change_title(title: 'New')
-      expect(response.success?).to be(false)
-      expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      aggregate_failures do
+        expect(response.success?).to be(false)
+        expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      end
     end
 
     it 'still allows :remove (gated only by :no_change, not the pre-check)' do
       # Calling :remove on an already-removed aggregate must surface NoChangeTransition,
       # not InvalidTransition — the pre-check is opted out for :remove via skip_default_guards.
       response = aggregate.remove
-      expect(response.success?).to be(false)
-      expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+      aggregate_failures do
+        expect(response.success?).to be(false)
+        expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+      end
     end
   end
 
@@ -290,8 +298,10 @@ RSpec.describe 'removable :not_removed auto-block (integration)' do
 
     it 'still blocks sibling commands that did not opt out' do
       response = aggregate.change_title(title: 'New')
-      expect(response.success?).to be(false)
-      expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      aggregate_failures do
+        expect(response.success?).to be(false)
+        expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      end
     end
   end
 
@@ -303,8 +313,10 @@ RSpec.describe 'removable :not_removed auto-block (integration)' do
 
     it 'still auto-blocks (the pre-check reads class config at runtime)' do
       response = aggregate.change_title(title: 'New')
-      expect(response.success?).to be(false)
-      expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      aggregate_failures do
+        expect(response.success?).to be(false)
+        expect(response.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      end
     end
   end
 end
