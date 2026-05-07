@@ -21,6 +21,28 @@ module Yes
         #     end
         #   end
         module CommandTestDsl
+          # Returns the event-type aggregate prefix that the runtime publishes
+          # for a given aggregate and draft flag. Mirrors
+          # `CommandUtils#aggregate_name_with_draft_suffix` so DSL-generated
+          # `expected_event_type` values match the runtime-published event
+          # types — including the case where `draftable changes_read_model:`
+          # was set explicitly, which makes the camelized read-model name the
+          # event-type prefix instead of the generic `<Aggregate>Draft`.
+          #
+          # @param aggregate_class [Class] The aggregate class under test
+          # @param draft [Boolean] Whether the test exercises a draft command
+          # @return [String] The event-type aggregate prefix
+          def self.expected_event_prefix(aggregate_class, draft:)
+            return aggregate_class.aggregate unless draft
+
+            if aggregate_class.respond_to?(:_changes_read_model_explicit) &&
+               aggregate_class._changes_read_model_explicit
+              aggregate_class.changes_read_model_name.camelize
+            else
+              "#{aggregate_class.aggregate}Draft"
+            end
+          end
+
           # Defines a test block for a command
           #
           # @param command_name [String, Symbol] the name of the command to test
@@ -41,8 +63,8 @@ module Yes
               end
               let(:command_data) { {} }
               let(:expected_event_type) do
-                "#{aggregate_class.context}::#{aggregate_class.aggregate}" \
-                  "#{'Draft' if draft}#{aggregate_class.commands[command].event_name.to_s.classify}"
+                prefix = CommandTestDsl.expected_event_prefix(aggregate_class, draft:)
+                "#{aggregate_class.context}::#{prefix}#{aggregate_class.commands[command].event_name.to_s.classify}"
               end
               let(:expected_event_data) { command_data_with_id }
               let(:expected_event_metadata) { nil }
