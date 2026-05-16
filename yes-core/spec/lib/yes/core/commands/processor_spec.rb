@@ -228,6 +228,53 @@ RSpec.describe Yes::Core::Commands::Processor do
       end
     end
 
+    context 'with an aggregate-DSL CommandGroup' do
+      let(:personal_info_id) { SecureRandom.uuid }
+      let(:flat_payload) do
+        {
+          personal_info_id: personal_info_id,
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+          email: 'ada@example.com',
+          birth_date: '1815-12-10'
+        }
+      end
+      let(:do_something) do
+        Test::PersonalInfo::CommandGroups::UpdatePersonalInfoGroup::Command.new(flat_payload)
+      end
+
+      let(:group_response) do
+        Yes::Core::Commands::CommandGroupResponse.new(cmd: do_something, events: [])
+      end
+
+      before do
+        # Real aggregate stub returns a CommandGroupResponse from the group method.
+        allow(aggregate_instance).to receive(:update_personal_info_group).and_return(group_response)
+      end
+
+      it 'dispatches the group method on the aggregate with the FLAT payload (cmd.payload, not cmd.to_h)' do
+        subject
+
+        expect(aggregate_instance).to have_received(:update_personal_info_group).with(
+          hash_including(:first_name, :last_name, :email, :birth_date),
+          guards: true
+        )
+      end
+
+      it 'does NOT pass the nested per-context/per-subject form to the aggregate' do
+        subject
+
+        # `cmd.to_h` would carry top-level `:test` key — assert that's absent.
+        expect(aggregate_instance).to have_received(:update_personal_info_group) do |payload, **|
+          expect(payload).not_to have_key(:test)
+        end
+      end
+
+      it 'returns the CommandGroupResponse' do
+        expect(subject).to all(be_a(Yes::Core::Commands::CommandGroupResponse))
+      end
+    end
+
     context 'with origin handling' do
       it 'passes origin to the command' do
         subject
