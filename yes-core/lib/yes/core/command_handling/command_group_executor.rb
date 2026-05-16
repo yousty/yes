@@ -15,7 +15,7 @@ module Yes
       #    read model ahead of the stream.
       #
       # Only the group's own guards run here — sub-command guards are
-      # bypassed by design (see plan: "Decisions made up front").
+      # bypassed by design.
       class CommandGroupExecutor
         MAX_RETRIES = 10
         INLINE_RECOVERY_RETRY_THRESHOLD = 5
@@ -193,8 +193,9 @@ module Yes
         # eventstore stream is fully committed. This matches today's behaviour
         # for single commands (where any read-model failure after the event
         # publishes leaves the read model behind the stream) and is healed by
-        # the standard event-replay/recovery path. An outer AR transaction is
-        # tracked as a follow-up — see plan "Decision 2".
+        # the standard event-replay/recovery path. An outer AR transaction
+        # could be added as a follow-up if partial application becomes a
+        # concrete problem in practice.
         #
         # @param cmd [Yes::Core::Commands::CommandGroup]
         # @param events [Array<PgEventstore::Event>]
