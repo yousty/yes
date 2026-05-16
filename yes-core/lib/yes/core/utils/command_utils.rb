@@ -51,6 +51,27 @@ module Yes
           fetch_class(name, :guard_evaluator)
         end
 
+        # Builds a command_group instance for a given group name and flat payload.
+        # The aggregate_id is injected automatically.
+        #
+        # @param group_name [Symbol] The command group name
+        # @param payload [Hash] The flat / partially-nested input payload
+        # @return [Yes::Core::Commands::CommandGroup] The instantiated group command
+        # @raise [RuntimeError] If the command_group class cannot be found
+        def build_group_command(group_name, payload)
+          group_class = fetch_class(group_name, :command_group)
+          group_class.new("#{aggregate.underscore}_id": aggregate_id, **payload)
+        end
+
+        # Fetches the guard evaluator class for a given command group name.
+        #
+        # @param group_name [Symbol] The command group name
+        # @return [Class] The guard evaluator class
+        # @raise [RuntimeError] If the guard evaluator class cannot be found
+        def fetch_guard_evaluator_class_for_group(group_name)
+          fetch_class(group_name, :command_group_guard_evaluator)
+        end
+
         # Fetches the state updater class for a given command name
         #
         # @param name [Symbol] The command name

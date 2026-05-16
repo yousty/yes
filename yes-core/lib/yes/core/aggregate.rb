@@ -66,6 +66,7 @@ module Yes
             if tp.self == subclass
               subclass.setup_read_model_classes if subclass.read_model_enabled?
               subclass.setup_authorizer_classes
+              subclass.validate_command_groups!
               tp.disable
             end
           end.enable
@@ -335,6 +336,55 @@ module Yes
         # @return [Hash] The commands defined on this aggregate
         def commands
           @commands ||= {}
+        end
+
+        # Defines a command_group on the aggregate.
+        #
+        # A command_group declares a compound action that runs multiple
+        # existing aggregate commands in declaration order, atomically, with
+        # the sub-commands' guards bypassed. The group itself has its own,
+        # leaner guard set declared inside the block via `guard :name`.
+        #
+        # @param name [Symbol] the group name (also the aggregate method name)
+        # @yield Block accepting `command :sub_name` and `guard :name`
+        # @return [void]
+        #
+        # @example
+        #   command_group :create_apprenticeship do
+        #     command :assign_company
+        #     command :assign_user
+        #     command :change_name
+        #     command :publish
+        #
+        #     guard(:company_assigned) { payload.company_id.present? }
+        #   end
+        def command_group(name, &)
+          @command_groups ||= {}
+          group_data = Dsl::CommandGroupData.new(name, self, context:, aggregate:)
+          @command_groups[name] = group_data
+          Dsl::CommandGroupDefiner.new(group_data).call(&)
+        end
+
+        # @return [Hash] The command groups defined on this aggregate
+        def command_groups
+          @command_groups ||= {}
+        end
+
+        # Validates that each command_group references commands actually
+        # defined on this aggregate. Called from the end-of-class
+        # {TracePoint} hook set up in {.inherited}.
+        #
+        # @raise [Dsl::CommandGroupDefiner::UnknownSubCommandError]
+        # @return [void]
+        def validate_command_groups!
+          command_groups.each do |group_name, data|
+            unknown = data.sub_command_names - commands.keys
+            next if unknown.empty?
+
+            raise Dsl::CommandGroupDefiner::UnknownSubCommandError,
+                  "command_group :#{group_name} on #{name} references unknown commands: " \
+                  "#{unknown.join(', ')}. Define them with `command :<name>` before using them."
+          end
         end
 
         private

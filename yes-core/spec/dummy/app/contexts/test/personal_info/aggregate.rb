@@ -33,6 +33,16 @@ module Test
       command :change_birth_date do
         payload birth_date: :string
       end
+
+      # A simple group that fans the three change_* commands out as one
+      # atomic transition with its own guard set.
+      command_group :update_personal_info_group do
+        command :change_name
+        command :change_email
+        command :change_birth_date
+
+        guard(:email_present) { payload.email.present? }
+      end
     end
   end
 end

@@ -75,3 +75,48 @@ RSpec.shared_examples 'no change transition' do
     )
   end
 end
+
+RSpec.shared_examples 'successful command group' do
+  it 'returns a successful CommandGroupResponse' do
+    expect(subject).to be_a(Yes::Core::Commands::CommandGroupResponse)
+    expect(subject).to be_success
+  end
+
+  it 'publishes one event per sub-command in declaration order' do
+    expect(subject.events.map(&:type)).to eq(expected_event_types)
+  end
+
+  it 'reflects the cumulative state on the read model' do
+    if success_attributes.any?
+      expect { subject }.to change {
+        aggregate.read_model.reload.attributes.to_h.symbolize_keys.slice(*success_attributes.keys)
+      }.to(success_attributes)
+    end
+  end
+end
+
+RSpec.shared_examples 'invalid command group transition' do
+  it 'returns an InvalidTransition error and no events' do
+    aggregate_failures do
+      expect(subject).not_to be_success
+      expect(subject.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition)
+      expect(subject.events).to be_empty
+    end
+  end
+
+  it 'does not change the aggregate state' do
+    success_attributes.each_key do |attribute|
+      expect { subject }.not_to(change { aggregate.public_send(attribute) })
+    end
+  end
+end
+
+RSpec.shared_examples 'no change command group transition' do
+  it 'returns a NoChangeTransition error and no events' do
+    aggregate_failures do
+      expect(subject).not_to be_success
+      expect(subject.error).to be_a(Yes::Core::CommandHandling::GuardEvaluator::NoChangeTransition)
+      expect(subject.events).to be_empty
+    end
+  end
+end
