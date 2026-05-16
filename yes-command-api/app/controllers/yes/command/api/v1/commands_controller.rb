@@ -100,10 +100,21 @@ module Yes
             render json: { error: }, status: :unprocessable_content
           end
 
+          # Unwraps both legacy stateless `Yes::Core::Commands::Group` and
+          # the new aggregate-DSL `Yes::Core::Commands::CommandGroup` into
+          # their sub-commands for batch authorization + validation. This
+          # is used ONLY by `BatchAuthorizer`/`BatchValidator`; the wrapped
+          # originals are still passed to `command_bus.call` so the
+          # Processor dispatches groups as single atomic units.
           def expand_commands(deserialize_commands)
-            deserialize_commands.map do |command|
-              command.is_a?(Yes::Core::Commands::Group) ? command.commands : command
-            end.flatten
+            deserialize_commands.flat_map do |command|
+              case command
+              when Yes::Core::Commands::Group, Yes::Core::Commands::CommandGroup
+                command.commands
+              else
+                command
+              end
+            end
           end
 
           def add_metadata(commands)
