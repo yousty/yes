@@ -108,7 +108,46 @@ RSpec.describe Yes::Command::Api::Commands::Deserializer do
         end
       end
 
-      context 'when params include a command group' do
+      context 'when params include an aggregate-DSL command group' do
+        let(:command2) { 'DoTwoThings' }
+        let(:subject2) { 'Activity' }
+
+        let(:activity_id) { SecureRandom.uuid }
+        let(:data2) do
+          {
+            id: activity_id,
+            what: 'something something'
+          }
+        end
+
+        let(:params) do
+          [
+            {
+              context: 'Dummy',
+              subject: subject1,
+              command: command1,
+              data: data1
+            },
+            {
+              context: 'Dummy',
+              subject: subject2,
+              command: command2,
+              data: data2
+            }
+          ]
+        end
+
+        it 'resolves the class via the aggregate-DSL CommandGroups namespace' do
+          aggregate_failures do
+            expect(subject[0]).to be_a(Dummy::Activity::Commands::DoSomething::Command)
+            expect(subject[1]).to be_a(Dummy::Activity::CommandGroups::DoTwoThings::Command)
+            # The new CommandGroup exposes a FLAT payload (input minus reserved keys).
+            expect(subject[1].payload).to include(id: activity_id, what: 'something something')
+          end
+        end
+      end
+
+      context 'when params include a legacy command group' do
         let(:command2) { 'DoSomethingCompounded' }
         let(:subject2) { 'Company' }
 

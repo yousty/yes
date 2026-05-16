@@ -822,6 +822,28 @@ A `command_group :foo` macro on `Context::Aggregate` generates:
 
 The legacy stateless `Yes::Core::Commands::Group` / `Yes::Core::Commands::Stateless::GroupHandler` are untouched and continue to serve cross-aggregate use cases declared outside the aggregate DSL.
 
+**Invoking via the Command API:** command groups are dispatchable over HTTP exactly like regular commands. POST to `/v1/commands` with the standard request shape — `command` is the group name (camelized), `data` is the flat payload (same as the Ruby invocation form):
+
+```json
+{
+  "commands": [
+    {
+      "context": "Companies",
+      "subject": "Apprenticeship",
+      "command": "CreateApprenticeship",
+      "data": {
+        "company_id": "...",
+        "user_id": "...",
+        "name": "Acme Apprenticeship",
+        "description": "Software dev role"
+      }
+    }
+  ]
+}
+```
+
+The Deserializer resolves the group's `Command` class via the registered `Context::Aggregate::CommandGroups::<Name>::Command` namespace. Authorization and validation run per-sub-command (each sub-command's existing `Authorizer` and `Validator` are invoked, exactly like the legacy stateless `Group` flow), and the group dispatches as a single atomic unit through the bus.
+
 ### Read Models
 
 Each aggregate automatically gets a corresponding read model (ActiveRecord model) that persists its current state. This is how you access attribute values from an aggregate.

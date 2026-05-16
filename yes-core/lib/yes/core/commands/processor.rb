@@ -32,7 +32,7 @@ module Yes
           ensure_guard_evaluators_exist?(commands)
           singleton_class.current_span&.add_event('Ensured Guard Evaluators Exist')
 
-          commands.map! { |cmd| cmd.class.new(cmd.to_h.merge(origin:, batch_id:)) }
+          commands.map! { |cmd| reinstantiate_with_reserved_keys(cmd, origin:, batch_id:) }
           singleton_class.current_span&.add_event('Commands Mapped')
 
           if command_notifiers.any?
@@ -79,20 +79,50 @@ module Yes
         end
 
         # Executes a single command on its aggregate
-        # @param cmd [Command] the command to execute
-        # @return [Response] response from executing the command
+        # @param cmd [Command, Yes::Core::Commands::CommandGroup] the command to execute
+        # @return [Response, Yes::Core::Commands::CommandGroupResponse] response from executing the command
         def run_command(cmd)
           command_helper = Yes::Core::Commands::Helper.new(cmd)
           draft = draft?(cmd)
           aggregate = aggregate_class(cmd).new(cmd.aggregate_id, draft:)
           I18n.with_locale(command_helper.command_locale) do
-            # Pass payload as first argument, guards as option
-            aggregate.public_send(command_helper.command_name, cmd.to_h, guards: !draft)
+            # CommandGroup exposes a flat `payload` (input minus reserved keys) which is
+            # what the aggregate's group method expects; a regular Command's `to_h` is
+            # already the flat attribute hash.
+            payload = cmd.is_a?(Yes::Core::Commands::CommandGroup) ? cmd.payload : cmd.to_h
+            aggregate.public_send(command_helper.command_name, payload, guards: !draft)
           end
         end
 
         def draft?(cmd)
           cmd.metadata&.dig(:draft) || cmd.metadata&.dig(:edit_template_command)
+        end
+
+        # Re-instantiates `cmd` with the given reserved keys merged in.
+        # For regular {Yes::Core::Command} instances `cmd.to_h` is already the
+        # flat attribute hash, so the round-trip is lossless. For
+        # {Yes::Core::Commands::CommandGroup} instances `cmd.to_h` returns the
+        # NESTED per-context/per-subject form, but `cmd.payload` is the FLAT
+        # input form expected by the aggregate's group method; we round-trip
+        # through `payload` to keep `payload` flat after re-instantiation.
+        #
+        # @param cmd [Yes::Core::Command, Yes::Core::Commands::CommandGroup]
+        # @param origin [String, nil]
+        # @param batch_id [String, nil]
+        # @return [Yes::Core::Command, Yes::Core::Commands::CommandGroup]
+        def reinstantiate_with_reserved_keys(cmd, origin:, batch_id:)
+          if cmd.is_a?(Yes::Core::Commands::CommandGroup)
+            cmd.class.new(
+              cmd.payload.merge(
+                origin:, batch_id:,
+                command_id: cmd.command_id,
+                metadata: cmd.metadata,
+                transaction: cmd.transaction
+              ).compact
+            )
+          else
+            cmd.class.new(cmd.to_h.merge(origin:, batch_id:))
+          end
         end
 
         # Determines the aggregate class for a given command
