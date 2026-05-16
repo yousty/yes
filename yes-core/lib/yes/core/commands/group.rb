@@ -116,18 +116,13 @@ module Yes
         # @param params [Hash] the input parameters
         # @return [Hash] the normalized payloads
         def normalized_payloads(params)
-          params.without(RESERVED_KEYS).each_with_object({}) do |(key, value), norm_payloads|
-            if key.in?(self.class.command_contexts)
-              norm_payloads[key] = value
-            elsif key.in?(self.class.own_context_subjects)
-              norm_payloads[self.class.own_context] ||= {}
-              norm_payloads[self.class.own_context][key] = value
-            else
-              norm_payloads[self.class.own_context] ||= {}
-              norm_payloads[self.class.own_context][self.class.own_subject] ||= {}
-              norm_payloads[self.class.own_context][self.class.own_subject][key] = value
-            end
-          end
+          GroupPayloadNormalizer.call(
+            params,
+            command_contexts: self.class.command_contexts,
+            own_context_subjects: self.class.own_context_subjects,
+            own_context: self.class.own_context,
+            own_subject: self.class.own_subject
+          )
         end
       end
     end

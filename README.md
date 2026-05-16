@@ -12,6 +12,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
   - [Attribute Details](#attribute-details)
   - [Command Details](#command-details)
   - [Guards](#guards)
+  - [Command Groups](#command-groups)
   - [Read Models](#read-models)
   - [Parent Aggregates](#parent-aggregates)
   - [Primary Context](#primary-context)
@@ -43,6 +44,7 @@ Yes is a framework for building event-sourced systems, originally developed to p
 - [Testing](#testing)
   - [Aggregate Test DSL](#aggregate-test-dsl)
   - [DSL Methods](#dsl-methods)
+  - [Command Group Test DSL](#command-group-test-dsl)
   - [Event Helpers](#event-helpers)
   - [Aggregate Matchers](#aggregate-matchers)
 - [Development](#development)
@@ -728,6 +730,97 @@ en:
 ```
 
 This allows you to define human-readable error messages that can be easily translated to different languages. These messages will be used instead of the default error messages when a guard fails.
+
+### Command Groups
+
+A `command_group` is a compound action that runs several existing aggregate commands as a single atomic unit. It's useful when multiple commands are always executed together and the per-command guards would be redundant or too restrictive for the compound flow.
+
+```ruby
+module Companies
+  module Apprenticeship
+    class Aggregate < Yes::Core::Aggregate
+      attribute :name, :string, command: true
+      attribute :description, :string, command: true
+      parent :company
+      parent :user
+      draftable
+      command :publish
+
+      command_group :create_apprenticeship do
+        command :assign_company
+        command :assign_user
+        command :change_name
+        command :change_description
+        command :publish
+
+        guard(:company_assigned) { payload.company_id.present? }
+        guard(:user_assigned)    { payload.user_id.present? }
+      end
+    end
+  end
+end
+
+aggregate.create_apprenticeship(
+  company_id:, user_id:, name:, description:
+)
+# => Yes::Core::Commands::CommandGroupResponse(cmd:, events: [...], error: nil)
+```
+
+**How it works:**
+
+- `command :sub_name` inside the block lists existing aggregate commands by symbol. Order is preserved as execution order.
+- `guard(:name) { … }` declares group-level guards using the same DSL as per-command guards. They run against the aggregate's current state at invocation time.
+- Sub-command symbols are resolved lazily — declare the group before or after the individual commands, the framework checks consistency at the end of the class body.
+- When invoked, the group:
+  1. Evaluates only the group's guards (sub-command guards are fully skipped).
+  2. Publishes one event per sub-command, in declaration order, inside a single `PgEventstore.client.multiple` transaction at serializable isolation — either all events commit or none do.
+  3. Updates the read model after the eventstore commit, in declaration order, so each sub-command's state-updater sees the cumulative state from the previous ones.
+- The first sub-event uses `expected_revision` + external-aggregate revision verification (same optimistic-concurrency machinery as the per-command flow), so a concurrent writer that committed between guard evaluation and publish raises `WrongExpectedRevisionError` and the executor retries with fresh guard evaluation.
+- Subsequent sub-events within the transaction use `expected_revision: :any` — atomicity and sequencing are guaranteed by the surrounding `multiple` block.
+
+**Payload model:**
+
+`command_group` accepts a flat hash (most common, single-aggregate case), subject-nested form, or context-nested form — same three-form normalization as the legacy `Yes::Core::Commands::Group`. The flat form distributes attributes to each sub-command by name match:
+
+```ruby
+# Flat — recommended for single-aggregate groups
+aggregate.create_apprenticeship(
+  company_id: '...', user_id: '...', name: 'Acme', description: 'Best'
+)
+```
+
+Each sub-command receives the subset of keys it declares as payload attributes. The aggregate's `<aggregate>_id` is injected automatically.
+
+**`can_<group_name>?`:**
+
+For every `command_group`, the aggregate also gets a predicate that runs the group's guards without publishing events:
+
+```ruby
+aggregate.can_create_apprenticeship?(company_id:, user_id:, name:, description:)
+# => true / false
+```
+
+**Response shape:**
+
+```ruby
+response = aggregate.create_apprenticeship(payload)
+response.success?  # => true / false
+response.events    # => Array<PgEventstore::Event> in declaration order
+response.error     # => the GuardEvaluator::TransitionError if any (nil on success)
+response.cmd       # => the CommandGroup instance
+```
+
+**Generated artifacts:**
+
+A `command_group :foo` macro on `Context::Aggregate` generates:
+
+- `Context::Aggregate::CommandGroups::Foo::Command` — a `Yes::Core::Commands::CommandGroup` subclass
+- `Context::Aggregate::CommandGroups::Foo::GuardEvaluator` — a `Yes::Core::CommandHandling::GuardEvaluator` subclass holding the group's guards
+- `Aggregate#foo(payload, guards:, metadata:)` — the invocation method
+- `Aggregate#can_foo?(payload)` — the predicate
+- `Aggregate#foo_error` accessor — mirrors the per-command error accessor pattern
+
+The legacy stateless `Yes::Core::Commands::Group` / `Yes::Core::Commands::Stateless::GroupHandler` are untouched and continue to serve cross-aggregate use cases declared outside the aggregate DSL.
 
 ### Read Models
 
@@ -1925,6 +2018,64 @@ For draft commands, pass `draft: true`:
 command 'change_name', draft: true do
   let(:command_data) { { name: 'New Name' } }
   success
+end
+```
+
+### Command Group Test DSL
+
+Command groups have a parallel set of helpers — `command_group`, `success_group`, `invalid_group`, `no_change_group` — that mirror the per-command DSL but produce assertions about the `CommandGroupResponse` (multiple events, cumulative read-model state).
+
+```ruby
+RSpec.describe Companies::Apprenticeship::Aggregate, type: :aggregate do
+  command_group 'create_apprenticeship' do
+    let(:command_data) do
+      {
+        company_id: SecureRandom.uuid,
+        user_id:    SecureRandom.uuid,
+        name:       'Acme Apprenticeship',
+        description: 'Software dev role'
+      }
+    end
+
+    let(:success_attributes) do
+      { name: 'Acme Apprenticeship', description: 'Software dev role' }
+    end
+
+    # Asserts: response is success, all sub-events publish in declaration order,
+    # read model reflects the cumulative state.
+    success_group
+
+    # Asserts: response is failure, error is InvalidTransition, events array is empty.
+    invalid_group 'company_id is missing' do
+      let(:command_data) { super().merge(company_id: nil) }
+    end
+
+    # Asserts: NoChangeTransition when running the group twice.
+    no_change_group
+  end
+end
+```
+
+The `command_group` block automatically defines:
+- `aggregate` — a new instance of the described class
+- `subject` — executes the group with `command_data`
+- `expected_event_types` — array of expected event types in declaration order, derived from each sub-command's `event_name` and the aggregate's context/name (with draft prefix handling)
+- `success_attributes` — defaults to `command_data` (override as needed)
+
+| Method | Description |
+|--------|-------------|
+| `command_group 'name'` | Defines a command_group test block with aggregate, subject, and default lets |
+| `success_group` | Asserts the group publishes all expected events and read model reflects cumulative state |
+| `invalid_group 'reason'` | Asserts the group's guard fails with `InvalidTransition` and no events publish |
+| `no_change_group` | Asserts a duplicate group invocation raises `NoChangeTransition` |
+| `setup { ... }` | Alias for `before` — works inside `command_group` too |
+
+For draftable aggregates, pass `draft: true` exactly like the per-command form:
+
+```ruby
+command_group 'create_apprenticeship', draft: true do
+  let(:command_data) { { ... } }
+  success_group
 end
 ```
 
