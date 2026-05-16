@@ -163,19 +163,33 @@ RSpec.describe Yes::Core::Commands::CommandGroup do
   describe '#to_h' do
     let(:batch_id) { SecureRandom.uuid }
 
-    subject do
+    subject(:hashed) do
       test_group_class.new(
         batch_id:, origin: 'cli',
         personal_info_id:, first_name:, last_name:, email:
       ).to_h
     end
 
-    it 'merges normalized payload and group attributes' do
-      expect(subject).to include(
-        test: { personal_info: { personal_info_id:, first_name:, last_name:, email: } },
+    it 'merges the flat payload and group attributes' do
+      expect(hashed).to include(
+        personal_info_id:, first_name:, last_name:, email:,
         batch_id: batch_id,
         origin: 'cli'
       )
+    end
+
+    it 'round-trips: re-instantiating from to_h produces an equivalent group' do
+      original = test_group_class.new(
+        batch_id:, origin: 'cli',
+        personal_info_id:, first_name:, last_name:, email:
+      )
+      rebuilt = test_group_class.new(original.to_h)
+
+      aggregate_failures do
+        expect(rebuilt.payload).to eq(original.payload)
+        expect(rebuilt.batch_id).to eq(original.batch_id)
+        expect(rebuilt.origin).to eq(original.origin)
+      end
     end
   end
 end
