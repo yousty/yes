@@ -689,5 +689,89 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         end
       end
     end
+
+    context 'when including an aggregate-DSL command group' do
+      let(:activity_id) { SecureRandom.uuid }
+      let(:group_data) { { id: activity_id, what: 'something something' } }
+      let(:commands) do
+        [
+          {
+            subject: 'Activity',
+            context: 'Dummy',
+            command: 'DoSomethingElse',
+            data: { id: SecureRandom.uuid, what: 'something' }
+          },
+          {
+            subject: 'Activity',
+            context: 'Dummy',
+            command: 'DoTwoThings',
+            data: group_data
+          }
+        ]
+      end
+
+      before do
+        Yes::Core.configure do |config|
+          config.command_notifier_classes = []
+          config.process_commands_inline = true
+        end
+
+        allow(Yes::Core.configuration).to receive(:guard_evaluator_class).and_return(double('GuardEvaluator'))
+      end
+
+      it_behaves_like 'successful inline write response'
+
+      context 'executing commands' do
+        let(:activity_aggregate) { spy('Dummy::Activity::Aggregate') }
+
+        before do
+          allow(Dummy::Activity::Aggregate).to receive(:new).and_return(activity_aggregate)
+          allow(activity_aggregate).to receive(:do_something_else).and_return(
+            Yes::Core::Commands::Response.new(
+              cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+            )
+          )
+          allow(activity_aggregate).to receive(:do_two_things).and_return(
+            Yes::Core::Commands::CommandGroupResponse.new(
+              cmd: Dummy::Activity::CommandGroups::DoTwoThings::Command.new(id: activity_id, what: 'x'),
+              events: []
+            )
+          )
+        end
+
+        it 'dispatches the group method on the aggregate exactly once (atomic unit)' do
+          subject
+
+          aggregate_failures do
+            expect(activity_aggregate).to have_received(:do_two_things).once
+            expect(activity_aggregate).to have_received(:do_something_else).once
+          end
+        end
+
+        it 'passes the FLAT payload (cmd.payload) to the group method, not the nested form' do
+          subject
+
+          expect(activity_aggregate).to have_received(:do_two_things) do |payload, **|
+            expect(payload).not_to have_key(:dummy) # the nested form's top-level key
+            expect(payload).to include(:id, :what)
+          end
+        end
+
+        context 'when calling authorizers' do
+          before do
+            allow(Dummy::Activity::Commands::DoSomething::Authorizer).to receive(:call) if defined?(Dummy::Activity::Commands::DoSomething::Authorizer)
+            allow(Dummy::Activity::Commands::DoSomethingElse::Authorizer).to receive(:call)
+          end
+
+          it 'invokes the unwrapped sub-commands per-command authorizers' do
+            subject
+
+            # Both DoSomething and DoSomethingElse are sub-commands of the group.
+            # They should each be authorized individually.
+            expect(Dummy::Activity::Commands::DoSomethingElse::Authorizer).to have_received(:call).at_least(:once)
+          end
+        end
+      end
+    end
   end
 end
