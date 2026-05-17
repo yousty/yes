@@ -252,7 +252,7 @@ RSpec.describe Yes::Core::Commands::Processor do
         allow(aggregate_instance).to receive(:update_personal_info_group).and_return(group_response)
       end
 
-      it 'dispatches the group method on the aggregate with the FLAT payload (cmd.payload, not cmd.to_h)' do
+      it 'dispatches the group method on the aggregate with the flat payload' do
         subject
 
         expect(aggregate_instance).to have_received(:update_personal_info_group).with(
@@ -264,7 +264,9 @@ RSpec.describe Yes::Core::Commands::Processor do
       it 'does NOT pass the nested per-context/per-subject form to the aggregate' do
         subject
 
-        # `cmd.to_h` would carry top-level `:test` key — assert that's absent.
+        # CommandGroup#to_h returns a flat hash (payload + reserved keys);
+        # the nested per-context/per-subject form lives on #normalized_payload
+        # and must NOT leak into the aggregate method's payload arg.
         expect(aggregate_instance).to have_received(:update_personal_info_group) do |payload, **|
           expect(payload).not_to have_key(:test)
         end
