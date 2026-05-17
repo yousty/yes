@@ -748,7 +748,7 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           end
         end
 
-        it 'passes the FLAT payload (cmd.payload) to the group method, not the nested form' do
+        it 'passes the flat payload to the group method, not the nested form' do
           subject
 
           expect(activity_aggregate).to have_received(:do_two_things) do |payload, **|
