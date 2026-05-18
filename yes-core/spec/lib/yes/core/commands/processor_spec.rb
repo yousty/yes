@@ -228,6 +228,112 @@ RSpec.describe Yes::Core::Commands::Processor do
       end
     end
 
+    context 'with an aggregate-DSL CommandGroup' do
+      let(:personal_info_id) { SecureRandom.uuid }
+      let(:flat_payload) do
+        {
+          personal_info_id: personal_info_id,
+          first_name: 'Ada',
+          last_name: 'Lovelace',
+          email: 'ada@example.com',
+          birth_date: '1815-12-10'
+        }
+      end
+      let(:do_something) do
+        Test::PersonalInfo::CommandGroups::UpdatePersonalInfoGroup::Command.new(flat_payload)
+      end
+
+      let(:group_response) do
+        Yes::Core::Commands::CommandGroupResponse.new(cmd: do_something, events: [])
+      end
+
+      before do
+        # Real aggregate stub returns a CommandGroupResponse from the group method.
+        allow(aggregate_instance).to receive(:update_personal_info_group).and_return(group_response)
+      end
+
+      it 'dispatches the group method on the aggregate with the flat payload' do
+        subject
+
+        expect(aggregate_instance).to have_received(:update_personal_info_group).with(
+          hash_including(:first_name, :last_name, :email, :birth_date),
+          guards: true
+        )
+      end
+
+      it 'does NOT pass the nested per-context/per-subject form to the aggregate' do
+        subject
+
+        # CommandGroup#to_h returns a flat hash (payload + reserved keys);
+        # the nested per-context/per-subject form lives on #normalized_payload
+        # and must NOT leak into the aggregate method's payload arg.
+        expect(aggregate_instance).to have_received(:update_personal_info_group) do |payload, **|
+          expect(payload).not_to have_key(:test)
+        end
+      end
+
+      it 'returns the CommandGroupResponse' do
+        expect(subject).to all(be_a(Yes::Core::Commands::CommandGroupResponse))
+      end
+
+      context 'reserved-key propagation' do
+        # Processor#perform does `cmd.class.new(cmd.to_h.merge(origin:, batch_id:))`
+        # for every command, including CommandGroups. CommandGroup#to_h
+        # is the flat payload merged with the reserved keys, so the
+        # re-instantiated group carries origin/batch_id/command_id/
+        # metadata/transaction through to the aggregate's group method.
+        let(:original_command_id) { do_something.command_id }
+
+        it 'propagates origin to the aggregate group method via the to_h round-trip' do
+          subject
+
+          expect(aggregate_instance).to have_received(:update_personal_info_group).with(
+            hash_including(origin:),
+            guards: true
+          )
+        end
+
+        context 'with a custom batch_id' do
+          let(:batch_id) { SecureRandom.uuid }
+
+          it 'propagates batch_id to the aggregate group method' do
+            subject
+
+            expect(aggregate_instance).to have_received(:update_personal_info_group).with(
+              hash_including(batch_id: batch_id),
+              guards: true
+            )
+          end
+        end
+
+        it 'preserves the command_id from the original CommandGroup (no fresh ID on re-instantiation)' do
+          subject
+
+          expect(aggregate_instance).to have_received(:update_personal_info_group).with(
+            hash_including(command_id: original_command_id),
+            guards: true
+          )
+        end
+
+        context 'with metadata on the original CommandGroup' do
+          let(:do_something) do
+            Test::PersonalInfo::CommandGroups::UpdatePersonalInfoGroup::Command.new(
+              flat_payload.merge(metadata: { 'identity_id' => 'user-1' })
+            )
+          end
+
+          it 'preserves metadata through the re-instantiation' do
+            subject
+
+            expect(aggregate_instance).to have_received(:update_personal_info_group).with(
+              hash_including(metadata: { 'identity_id' => 'user-1' }),
+              guards: true
+            )
+          end
+        end
+      end
+    end
+
     context 'with origin handling' do
       it 'passes origin to the command' do
         subject

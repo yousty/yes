@@ -79,14 +79,13 @@ module Yes
         end
 
         # Executes a single command on its aggregate
-        # @param cmd [Command] the command to execute
-        # @return [Response] response from executing the command
+        # @param cmd [Command, Yes::Core::Commands::CommandGroup] the command to execute
+        # @return [Response, Yes::Core::Commands::CommandGroupResponse] response from executing the command
         def run_command(cmd)
           command_helper = Yes::Core::Commands::Helper.new(cmd)
           draft = draft?(cmd)
           aggregate = aggregate_class(cmd).new(cmd.aggregate_id, draft:)
           I18n.with_locale(command_helper.command_locale) do
-            # Pass payload as first argument, guards as option
             aggregate.public_send(command_helper.command_name, cmd.to_h, guards: !draft)
           end
         end
