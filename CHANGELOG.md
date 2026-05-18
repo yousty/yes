@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-05-18
+
+### yes-core
+
+#### Added
+- `command_group :name do … end` DSL macro on `Yes::Core::Aggregate` for declaring aggregate-scoped command groups that execute several existing aggregate commands as one atomic, transactionally-published unit. Inside the block: `command :sub_name` lists existing commands by symbol (declaration order = execution order; sub-command guards are bypassed), and `guard(:name) { … }` declares group-level guards using the same DSL as per-command guards. All sub-events publish inside a single `PgEventstore.client.multiple` block at serializable isolation; the first event uses optimistic locking against the read model revision + external-aggregate revision tracking, and subsequent events use `expected_revision: :any`. Read-model updates run after the eventstore commit, in declaration order, so each sub-command's state-updater sees the cumulative state of the previous ones. Per `command_group :foo` the DSL generates `Context::Aggregate::CommandGroups::Foo::Command`, `Context::Aggregate::CommandGroups::Foo::GuardEvaluator`, plus `Aggregate#foo(payload, guards:, metadata:)`, `Aggregate#can_foo?(payload)`, and `Aggregate#foo_error`. Initial scope is single-aggregate groups; the legacy stateless `Yes::Core::Commands::Group` / `GroupHandler` are unchanged and continue to serve cross-aggregate use cases.
+- Test DSL extension: `command_group 'name' do … end` block in `Yes::Core::TestSupport::Aggregate::CommandTestDsl` with `success_group`, `invalid_group`, `no_change_group` helpers and three matching shared examples that mirror the per-command DSL.
+- `Yes::Core::Commands::GroupPayloadNormalizer` — standalone module extracted from `Yes::Core::Commands::Group#normalized_payloads` that normalizes the three legacy payload shapes (flat / subject-nested / context-nested). `Group` now delegates to it; the new `CommandGroup` reuses it. Existing `Group`/`GroupHandler` behavior is preserved.
+
+#### Fixed
+- `Yes::Core::TestSupport::Aggregate::CommandTestDsl` now resolves the draft `expected_event_type` the same way the runtime does, so specs against a `draftable` aggregate that configures `changes_read_model:` no longer fail with `expected "Foo::AggregateDraftEvent" / got "Foo::CustomChangesReadModelEvent"`. The 1.1.0 fix to `CommandUtils#aggregate_name_with_draft_suffix` was not mirrored in the test DSL; this aligns the two and adds focused unit coverage via the new `CommandTestDsl.expected_event_prefix` helper.
+
 ## [1.2.0] - 2026-04-30
 
 ### yes-core
