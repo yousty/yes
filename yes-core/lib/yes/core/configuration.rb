@@ -200,6 +200,28 @@ module Yes
         register_aggregate_class(context_name, aggregate_name, command_name, :guard_evaluator, klass)
       end
 
+      # Register a command_group command class for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param group_name [Symbol, String] The name of the command group
+      # @param klass [Class] The generated CommandGroup subclass
+      # @example
+      #   register_command_group_class(:companies, :apprenticeship, :create_apprenticeship, klass)
+      def register_command_group_class(context_name, aggregate_name, group_name, klass)
+        register_aggregate_class(context_name, aggregate_name, group_name, :command_group, klass)
+      end
+
+      # Register a command_group guard evaluator class for a specific aggregate
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param group_name [Symbol, String] The name of the command group
+      # @param klass [Class] The generated GuardEvaluator subclass
+      # @example
+      #   register_command_group_guard_evaluator_class(:companies, :apprenticeship, :create_apprenticeship, klass)
+      def register_command_group_guard_evaluator_class(context_name, aggregate_name, group_name, klass)
+        register_aggregate_class(context_name, aggregate_name, group_name, :command_group_guard_evaluator, klass)
+      end
+
       # Register an aggregate authorizer class for a specific aggregate
       # @param context_name [Symbol, String] The context for the aggregate
       # @param aggregate_name [Symbol, String] The name of the aggregate

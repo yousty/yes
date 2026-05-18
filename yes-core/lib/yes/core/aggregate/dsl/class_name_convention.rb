@@ -43,6 +43,14 @@ module Yes
             "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::GuardEvaluator"
           end
 
+          def command_group_class_name(name)
+            "#{context}::#{aggregate}::CommandGroups::#{name.to_s.camelize}::Command"
+          end
+
+          def command_group_guard_evaluator_class_name(name)
+            "#{context}::#{aggregate}::CommandGroups::#{name.to_s.camelize}::GuardEvaluator"
+          end
+
           def state_updater_class_name(name)
             "#{context}::#{aggregate}::Commands::#{name.to_s.camelize}::StateUpdater"
           end

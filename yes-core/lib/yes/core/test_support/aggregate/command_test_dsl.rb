@@ -121,6 +121,59 @@ module Yes
           def setup(&)
             before(&)
           end
+
+          # Defines a test block for a command group, mirroring {.command}.
+          #
+          # @param group_name [String, Symbol] the command_group name
+          # @param options [Array<Hash>] additional options (e.g., `draft: true`)
+          # @yield block for configuring test cases (success, invalid, no_change)
+          def command_group(group_name, *options, &block)
+            describe group_name.to_s, *options do
+              let(:draft) { options.first&.dig(:draft) }
+              let(:aggregate) { described_class.new(draft:) } unless method_defined?(:aggregate)
+
+              subject { aggregate.public_send(group, command_data) }
+
+              let(:group) { group_name.to_sym }
+              let(:aggregate_class) { aggregate.class }
+              let(:command_data) { {} }
+              let(:expected_event_types) do
+                prefix = CommandTestDsl.expected_event_prefix(aggregate_class, draft:)
+                aggregate_class.command_groups[group].sub_command_names.map do |sub_name|
+                  sub_event_name = aggregate_class.commands[sub_name].event_name.to_s.classify
+                  "#{aggregate_class.context}::#{prefix}#{sub_event_name}"
+                end
+              end
+              let(:success_attributes) { command_data.without(:locale) } unless method_defined?(:success_attributes)
+
+              class_eval(&block) if block_given?
+            end
+          end
+
+          # Defines a successful test for a command group.
+          def success_group(description = 'when successfully executing command group', options = {}, &block)
+            context description, options do
+              instance_eval(&block) if block_given?
+              it_behaves_like 'successful command group'
+            end
+          end
+
+          # Defines an invalid-transition test for a command group.
+          def invalid_group(description, options = {}, &block)
+            context "when #{description}", options do
+              instance_eval(&block) if block_given?
+              it_behaves_like 'invalid command group transition'
+            end
+          end
+
+          # Defines a no-change test for a command group.
+          def no_change_group(description = 'when command group causes no change', options = {}, &block)
+            context description.to_s, options do
+              instance_eval(&block) if block_given?
+              before { aggregate.public_send(group, command_data) }
+              it_behaves_like 'no change command group transition'
+            end
+          end
         end
       end
     end
