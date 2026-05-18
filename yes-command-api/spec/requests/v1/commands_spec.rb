@@ -772,6 +772,65 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
           end
         end
       end
+
+      context 'running async (ActiveJob round-trip)' do
+        # Switching to async forces the CommandGroup through
+        # ActiveJob serialization (CommandGroupSerializer.serialize) and
+        # deserialization when the queued Processor job runs. Uses the
+        # :test queue adapter so the job stays inspectable / runnable
+        # from the spec.
+        include ActiveJob::TestHelper
+
+        before do
+          @prev_adapter = ActiveJob::Base.queue_adapter
+          ActiveJob::Base.queue_adapter = :test
+          Yes::Core.configure do |config|
+            config.command_notifier_classes = []
+            config.process_commands_inline = false
+          end
+        end
+
+        after { ActiveJob::Base.queue_adapter = @prev_adapter }
+
+        it_behaves_like 'successful write response'
+
+        it 'enqueues a Processor job that ActiveJob will round-trip the CommandGroup through' do
+          subject
+
+          # Job arguments contain nested arrays of serialized commands;
+          # find the CommandGroupSerializer-tagged hash anywhere in there.
+          group_arg = enqueued_jobs.flat_map { |j| j['arguments'].flatten }.find do |arg|
+            arg.is_a?(Hash) &&
+              arg['_aj_serialized'] == 'Yes::Core::ActiveJobSerializers::CommandGroupSerializer'
+          end
+          aggregate_failures do
+            expect(group_arg).not_to be_nil
+            expect(group_arg[:_type] || group_arg['_type']).to eq(
+              'Dummy::Activity::CommandGroups::DoTwoThings::Command'
+            )
+          end
+        end
+
+        it 'dispatches the group method when the queued job runs' do
+          activity_aggregate = spy('Dummy::Activity::Aggregate')
+          allow(Dummy::Activity::Aggregate).to receive(:new).and_return(activity_aggregate)
+          allow(activity_aggregate).to receive(:do_something_else).and_return(
+            Yes::Core::Commands::Response.new(
+              cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+            )
+          )
+          allow(activity_aggregate).to receive(:do_two_things).and_return(
+            Yes::Core::Commands::CommandGroupResponse.new(
+              cmd: Dummy::Activity::CommandGroups::DoTwoThings::Command.new(id: activity_id, what: 'x'),
+              events: []
+            )
+          )
+
+          perform_enqueued_jobs { subject }
+
+          expect(activity_aggregate).to have_received(:do_two_things).once
+        end
+      end
     end
   end
 end
