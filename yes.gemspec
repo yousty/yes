@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir['{lib}/**/*', 'LICENSE.txt', 'README.md', 'CHANGELOG.md']
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'yes-auth', Yes::VERSION
   spec.add_dependency 'yes-command-api', Yes::VERSION
   spec.add_dependency 'yes-core', Yes::VERSION
   spec.add_dependency 'yes-read-api', Yes::VERSION

@@ -58,16 +58,27 @@ Yes is a framework for building event-sourced systems, originally developed to p
 
 ### Installation
 
-Add this line to your application's Gemfile:
+Add this line to your application's Gemfile to pull in the whole framework (`yes-core`, `yes-auth`, `yes-command-api`, `yes-read-api`):
 
 ```ruby
-gem 'yes-core'
+gem 'yes'
+```
+
+Or depend on individual sub-gems if you only need parts of the framework:
+
+```ruby
+gem 'yes-core'        # aggregate DSL, events, read models
+gem 'yes-auth'        # authorization principals + Cerbos integration
+gem 'yes-command-api' # HTTP command endpoint
+gem 'yes-read-api'    # HTTP read endpoints
 ```
 
 Then execute:
 ```bash
 bundle install
 ```
+
+> **Note on the gem name:** versions `0.0.x` of `yes` on RubyGems were an unrelated project (a small CLI). Starting with `1.x` the gem name belongs to this framework. If you previously had `gem 'yes'` in a Gemfile and want the old project, pin to `'< 1.0'`.
 
 ### Basic Usage
 

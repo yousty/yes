@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'yes/core'
+require 'yes/auth'
 require 'yes/command/api'
 require 'yes/read/api'
 
