@@ -35,6 +35,7 @@ module Yes
             'Authorization::WriteResourceAccessRemoved',
             'Authorization::WriteResourceAccessResourceAssigned',
             'Authorization::WriteResourceAccessResourceTypeChanged',
+            'Authorization::WriteResourceAccessRestored',
             'Authorization::WriteResourceAccessRoleChanged'
           ] }
         )
@@ -46,6 +47,7 @@ module Yes
             'Authorization::ReadResourceAccessResourceTypeChanged',
             'Authorization::ReadResourceAccessRemoved',
             'Authorization::ReadResourceAccessResourceAssigned',
+            'Authorization::ReadResourceAccessRestored',
             'Authorization::ReadResourceAccessRoleChanged',
             'Authorization::ReadResourceAccessScopeChanged',
             'Authorization::ReadResourceAccessServiceChanged'
