@@ -74,6 +74,7 @@ RSpec.describe Yes::Auth::Subscriptions do
           'Authorization::WriteResourceAccessRemoved',
           'Authorization::WriteResourceAccessResourceAssigned',
           'Authorization::WriteResourceAccessResourceTypeChanged',
+          'Authorization::WriteResourceAccessRestored',
           'Authorization::WriteResourceAccessRoleChanged'
         ] }
       )
@@ -89,6 +90,7 @@ RSpec.describe Yes::Auth::Subscriptions do
           'Authorization::ReadResourceAccessResourceTypeChanged',
           'Authorization::ReadResourceAccessRemoved',
           'Authorization::ReadResourceAccessResourceAssigned',
+          'Authorization::ReadResourceAccessRestored',
           'Authorization::ReadResourceAccessRoleChanged',
           'Authorization::ReadResourceAccessScopeChanged',
           'Authorization::ReadResourceAccessServiceChanged'

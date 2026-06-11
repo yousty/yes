@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'active_record'
+require 'active_job'
+require 'active_job/railtie'
 require 'active_support/core_ext/hash/indifferent_access'
 require 'factory_bot'
 
@@ -47,15 +49,7 @@ ActiveRecord::Schema.define do
   create_table :locations, id: :string
 end
 
-require 'yes/auth/principals/user'
-require 'yes/auth/principals/role'
-require 'yes/auth/principals/read_resource_access'
-require 'yes/auth/principals/write_resource_access'
-require 'yes/auth/cerbos/read_resource_access/principal_attributes'
-require 'yes/auth/cerbos/read_resource_access/principal_data'
-require 'yes/auth/cerbos/write_resource_access/principal_attributes'
-require 'yes/auth/cerbos/write_resource_access/principal_data'
-require 'yes/auth/subscriptions'
+require 'yes/auth'
 
 Dir[File.join(__dir__, 'support', '**', '*.rb')].each { |f| require f }
 
