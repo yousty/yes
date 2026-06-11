@@ -1,18 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'active_job'
-require 'active_job/railtie'
-require 'yes/core'
-require 'yes/auth/read_models/principals/restore_replay'
-require 'yes/auth/read_models/principals/write_resource_access/builder'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_resource_assigned'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_principal_assigned'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_context_changed'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_resource_type_changed'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_role_changed'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_removed'
-require 'yes/auth/read_models/principals/write_resource_access/on_write_resource_access_restored'
 
 RSpec.describe Yes::Auth::ReadModels::Principals::RestoreReplay do
   subject(:replay) do
