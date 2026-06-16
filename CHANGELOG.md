@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### yes-core
+
+#### Fixed
+- `Yes::Core::Utils::HashUtils.deep_flatten_hash` now applies the `prefix` to array-valued keys, consistently with scalar and nested-hash keys. Previously an array value was keyed by its bare name (e.g. `deep_flatten_hash({ tags: [...] }, 'span')` produced `"tags"` instead of `"span.tags"`), so callers passing a prefix got a mix of namespaced and un-namespaced keys. Callers that pass no prefix are unaffected.
+
 ## [1.3.0] - 2026-05-18
 
 ### yes-core
