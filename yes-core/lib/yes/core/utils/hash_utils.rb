@@ -22,7 +22,8 @@ module Yes
             dupl
           end
 
-          # Returns a hash with the keys flattened
+          # Returns a hash with the keys flattened. Scalar, nested-hash and
+          # array values all honour the `prefix` consistently.
           #
           # @param obj [Hash, Array] the object to flatten
           # @param prefix [String] the key to use as a prefix for the keys in the hash
@@ -32,6 +33,10 @@ module Yes
           # @example
           #   HashUtils.deep_flatten_hash({ name: 'A', otl_contexts: { root: { attr: 10, available: true } } })
           #    => {"name"=>"A", "otl_contexts.root.attr"=>10, "otl_contexts.root.available"=>true}
+          #
+          # @example with a prefix (arrays included)
+          #   HashUtils.deep_flatten_hash({ id: 1, tags: [{ k: 'v' }] }, 'span')
+          #    => {"span.id"=>1, "span.tags"=>[{"k"=>"v"}]}
           def deep_flatten_hash(obj, prefix = nil, memo = {})
             case obj
             when Hash
@@ -42,7 +47,7 @@ module Yes
                 in String | Symbol, Hash
                   deep_flatten_hash(value, prefix ? "#{prefix}.#{key}" : key.to_s, memo)
                 in String | Symbol, Array
-                  memo[key.to_s] = deep_flatten_hash(value)
+                  memo[prefix ? "#{prefix}.#{key}" : key.to_s] = deep_flatten_hash(value)
                 in Array, _
                   memo[deep_flatten_hash(key)] = deep_flatten_hash(value)
                 else
