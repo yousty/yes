@@ -4,11 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [1.3.1] - 2026-06-16
 
-### yes
-
-#### Added
-- Umbrella `yes` gem bundling all four sub-gems (`yes-core`, `yes-auth`, `yes-command-api`, `yes-read-api`) so consumers can depend on a single gem.
-
 ### yes-auth
 
 #### Added
