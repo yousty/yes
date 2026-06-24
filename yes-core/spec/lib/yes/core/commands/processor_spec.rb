@@ -332,6 +332,29 @@ RSpec.describe Yes::Core::Commands::Processor do
           end
         end
       end
+
+      context 'guard-evaluator existence check against the real registry' do
+        # The outer `before` stubs `guard_evaluator_class` to a truthy double,
+        # which short-circuits the existence check for every command. Here we
+        # let the REAL configuration registry answer, to prove the Processor
+        # resolves an aggregate-DSL group's guard evaluator. The group registers
+        # its evaluator under `:command_group_guard_evaluator`, NOT
+        # `:guard_evaluator`, so without group-aware resolution the existence
+        # check raises `UnregisteredCommand` even though the group is valid.
+        before do
+          allow(Yes::Core.configuration).to receive(:guard_evaluator_class).and_call_original
+        end
+
+        it 'does not raise UnregisteredCommand for the command group' do
+          expect { subject }.not_to raise_error
+        end
+
+        it 'dispatches the group method on the aggregate' do
+          subject
+
+          expect(aggregate_instance).to have_received(:update_personal_info_group)
+        end
+      end
     end
 
     context 'with origin handling' do

@@ -331,6 +331,23 @@ module Yes
         aggregate_class(context_name, aggregate_name, command_name.to_s.underscore.to_sym, :guard_evaluator)
       end
 
+      # Retrieve a guard evaluator class for a specific command group.
+      #
+      # Aggregate-DSL command groups register their guard evaluator under the
+      # dedicated `:command_group_guard_evaluator` type (see
+      # {#register_command_group_guard_evaluator_class}), not `:guard_evaluator`,
+      # so a group cannot be resolved through {#guard_evaluator_class}.
+      #
+      # @param context_name [Symbol, String] The context for the aggregate
+      # @param aggregate_name [Symbol, String] The name of the aggregate
+      # @param group_name [Symbol, String] The name of the command group
+      # @return [Class, nil] The registered guard evaluator class or nil if not found
+      # @example
+      #   evaluator = command_group_guard_evaluator_class(:companies, :apprenticeship, :create_apprenticeship)
+      def command_group_guard_evaluator_class(context_name, aggregate_name, group_name)
+        aggregate_class(context_name, aggregate_name, group_name.to_s.underscore.to_sym, :command_group_guard_evaluator)
+      end
+
       # List all registered classes across all aggregates and contexts
       # @return [Hash] A complete hash of all registered classes
       # @example
