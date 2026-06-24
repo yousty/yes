@@ -717,6 +717,11 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         end
 
         allow(Yes::Core.configuration).to receive(:guard_evaluator_class).and_return(double('GuardEvaluator'))
+        # Aggregate-DSL command groups resolve their guard evaluator through a
+        # dedicated registry lookup; the hand-rolled dummy group registers
+        # nothing, so stub it the same way as the single-command lookup above.
+        allow(Yes::Core.configuration).
+          to receive(:command_group_guard_evaluator_class).and_return(double('CommandGroupGuardEvaluator'))
       end
 
       it_behaves_like 'successful inline write response'
