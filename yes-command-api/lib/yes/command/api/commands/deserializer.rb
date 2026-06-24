@@ -47,12 +47,21 @@ module Yes
 
             private
 
-            # Resolves the command class name, trying command group, V2, then V1 conventions.
+            # Resolves the command class name, trying (in order):
+            #   1. legacy top-level command group: `CommandGroups::<Name>::Command`
+            #   2. aggregate-DSL command group: `<Ctx>::<Subj>::CommandGroups::<Name>::Command`
+            #   3. V2 command:                   `<Ctx>::<Subj>::Commands::<Name>::Command`
+            #   4. V1 command:                   `<Ctx>::Commands::<Subj>::<Name>`
             #
             # @param command [Hash] command data
             # @return [String] command class name
             def command_class_name(command)
-              [command_group_class(command), command_v2_class(command), command_class(command)].each do |name|
+              [
+                command_group_class(command),
+                command_group_v2_class(command),
+                command_v2_class(command),
+                command_class(command)
+              ].each do |name|
                 Kernel.const_get(name)
                 return name
               rescue NameError
@@ -78,12 +87,22 @@ module Yes
               "#{command[:context]}::#{command[:subject]}::Commands::#{command[:command]}::Command"
             end
 
-            # Returns the command group class name.
+            # Returns the legacy top-level command group class name (used by
+            # stateless cross-aggregate groups).
             #
             # @param command [Hash] command data
             # @return [String] command group class name
             def command_group_class(command)
               "CommandGroups::#{command[:command]}::Command"
+            end
+
+            # Returns the aggregate-DSL command group class name (generated
+            # by the `command_group` macro inside an aggregate body).
+            #
+            # @param command [Hash] command data
+            # @return [String] command group class name
+            def command_group_v2_class(command)
+              "#{command[:context]}::#{command[:subject]}::CommandGroups::#{command[:command]}::Command"
             end
           end
         end

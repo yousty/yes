@@ -109,10 +109,15 @@ module Yes
           @commands = build_commands
         end
 
-        # @return [Hash] hash form for serialization, merging normalized payload
-        #   and reserved keys (matches legacy {Yes::Core::Commands::Group#to_h})
+        # @return [Hash] hash form for serialization — the FLAT input payload
+        #   merged with reserved keys (transaction/origin/batch_id/metadata/
+        #   command_id). This shape round-trips cleanly: calling
+        #   `self.class.new(cmd.to_h)` produces an equivalent group with the
+        #   same `payload`. Used by
+        #   {Yes::Core::ActiveJobSerializers::CommandGroupSerializer} and by
+        #   the Command API controller's `add_metadata`.
         def to_h
-          merged = normalized_payload.merge(group_attributes.to_h)
+          merged = payload.merge(group_attributes.to_h)
           transaction ? merged.merge(transaction:) : merged
         end
 

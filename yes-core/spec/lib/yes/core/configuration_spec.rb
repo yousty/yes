@@ -46,6 +46,25 @@ RSpec.describe Yes::Core::Configuration do
     end
   end
 
+  describe '#command_group_guard_evaluator_class' do
+    subject { configuration.command_group_guard_evaluator_class(context_name, aggregate_name, action_name) }
+
+    before do
+      configuration.register_command_group_guard_evaluator_class(context_name, aggregate_name, action_name, test_class)
+    end
+
+    it 'resolves a guard evaluator registered under the command_group type' do
+      expect(subject).to eq(test_class)
+    end
+
+    it 'does not resolve through the single-command guard_evaluator lookup' do
+      # A command group registers under :command_group_guard_evaluator, so the
+      # single-command guard_evaluator lookup must NOT find it (this is the gap
+      # that made aggregate-DSL groups raise UnregisteredCommand in the Processor).
+      expect(configuration.guard_evaluator_class(context_name, aggregate_name, action_name)).to be_nil
+    end
+  end
+
   describe '#register_read_model_class' do
     subject { configuration.register_read_model_class(context_name, aggregate_name, test_class, draft:) }
 

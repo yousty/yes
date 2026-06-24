@@ -689,5 +689,153 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
         end
       end
     end
+
+    context 'when including an aggregate-DSL command group' do
+      let(:activity_id) { SecureRandom.uuid }
+      let(:group_data) { { id: activity_id, what: 'something something' } }
+      let(:commands) do
+        [
+          {
+            subject: 'Activity',
+            context: 'Dummy',
+            command: 'DoSomethingElse',
+            data: { id: SecureRandom.uuid, what: 'something' }
+          },
+          {
+            subject: 'Activity',
+            context: 'Dummy',
+            command: 'DoTwoThings',
+            data: group_data
+          }
+        ]
+      end
+
+      before do
+        Yes::Core.configure do |config|
+          config.command_notifier_classes = []
+          config.process_commands_inline = true
+        end
+
+        allow(Yes::Core.configuration).to receive(:guard_evaluator_class).and_return(double('GuardEvaluator'))
+        # Aggregate-DSL command groups resolve their guard evaluator through a
+        # dedicated registry lookup; the hand-rolled dummy group registers
+        # nothing, so stub it the same way as the single-command lookup above.
+        allow(Yes::Core.configuration).
+          to receive(:command_group_guard_evaluator_class).and_return(double('CommandGroupGuardEvaluator'))
+      end
+
+      it_behaves_like 'successful inline write response'
+
+      context 'executing commands' do
+        let(:activity_aggregate) { spy('Dummy::Activity::Aggregate') }
+
+        before do
+          allow(Dummy::Activity::Aggregate).to receive(:new).and_return(activity_aggregate)
+          allow(activity_aggregate).to receive(:do_something_else).and_return(
+            Yes::Core::Commands::Response.new(
+              cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+            )
+          )
+          allow(activity_aggregate).to receive(:do_two_things).and_return(
+            Yes::Core::Commands::CommandGroupResponse.new(
+              cmd: Dummy::Activity::CommandGroups::DoTwoThings::Command.new(id: activity_id, what: 'x'),
+              events: []
+            )
+          )
+        end
+
+        it 'dispatches the group method on the aggregate exactly once (atomic unit)' do
+          subject
+
+          aggregate_failures do
+            expect(activity_aggregate).to have_received(:do_two_things).once
+            expect(activity_aggregate).to have_received(:do_something_else).once
+          end
+        end
+
+        it 'passes the flat payload to the group method, not the nested form' do
+          subject
+
+          expect(activity_aggregate).to have_received(:do_two_things) do |payload, **|
+            expect(payload).not_to have_key(:dummy) # the nested form's top-level key
+            expect(payload).to include(:id, :what)
+          end
+        end
+
+        context 'when calling authorizers' do
+          before do
+            allow(Dummy::Activity::Commands::DoSomething::Authorizer).to receive(:call) if defined?(Dummy::Activity::Commands::DoSomething::Authorizer)
+            allow(Dummy::Activity::Commands::DoSomethingElse::Authorizer).to receive(:call)
+          end
+
+          it 'invokes the unwrapped sub-commands per-command authorizers' do
+            subject
+
+            # Both DoSomething and DoSomethingElse are sub-commands of the group.
+            # They should each be authorized individually.
+            expect(Dummy::Activity::Commands::DoSomethingElse::Authorizer).to have_received(:call).at_least(:once)
+          end
+        end
+      end
+
+      context 'running async (ActiveJob round-trip)' do
+        # Switching to async forces the CommandGroup through
+        # ActiveJob serialization (CommandGroupSerializer.serialize) and
+        # deserialization when the queued Processor job runs. Uses the
+        # :test queue adapter so the job stays inspectable / runnable
+        # from the spec.
+        include ActiveJob::TestHelper
+
+        before do
+          @prev_adapter = ActiveJob::Base.queue_adapter
+          ActiveJob::Base.queue_adapter = :test
+          Yes::Core.configure do |config|
+            config.command_notifier_classes = []
+            config.process_commands_inline = false
+          end
+        end
+
+        after { ActiveJob::Base.queue_adapter = @prev_adapter }
+
+        it_behaves_like 'successful write response'
+
+        it 'enqueues a Processor job that ActiveJob will round-trip the CommandGroup through' do
+          subject
+
+          # Job arguments contain nested arrays of serialized commands;
+          # find the CommandGroupSerializer-tagged hash anywhere in there.
+          group_arg = enqueued_jobs.flat_map { |j| j['arguments'].flatten }.find do |arg|
+            arg.is_a?(Hash) &&
+              arg['_aj_serialized'] == 'Yes::Core::ActiveJobSerializers::CommandGroupSerializer'
+          end
+          aggregate_failures do
+            expect(group_arg).not_to be_nil
+            expect(group_arg[:_type] || group_arg['_type']).to eq(
+              'Dummy::Activity::CommandGroups::DoTwoThings::Command'
+            )
+          end
+        end
+
+        it 'dispatches the group method when the queued job runs' do
+          activity_aggregate = spy('Dummy::Activity::Aggregate')
+          allow(Dummy::Activity::Aggregate).to receive(:new).and_return(activity_aggregate)
+          allow(activity_aggregate).to receive(:do_something_else).and_return(
+            Yes::Core::Commands::Response.new(
+              cmd: Dummy::Activity::Commands::DoSomethingElse::Command.new(id: SecureRandom.uuid, what: 'x')
+            )
+          )
+          allow(activity_aggregate).to receive(:do_two_things).and_return(
+            Yes::Core::Commands::CommandGroupResponse.new(
+              cmd: Dummy::Activity::CommandGroups::DoTwoThings::Command.new(id: activity_id, what: 'x'),
+              events: []
+            )
+          )
+
+          perform_enqueued_jobs { subject }
+
+          expect(activity_aggregate).to have_received(:do_two_things).once
+        end
+      end
+    end
   end
 end

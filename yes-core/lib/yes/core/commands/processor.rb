@@ -79,14 +79,13 @@ module Yes
         end
 
         # Executes a single command on its aggregate
-        # @param cmd [Command] the command to execute
-        # @return [Response] response from executing the command
+        # @param cmd [Command, Yes::Core::Commands::CommandGroup] the command to execute
+        # @return [Response, Yes::Core::Commands::CommandGroupResponse] response from executing the command
         def run_command(cmd)
           command_helper = Yes::Core::Commands::Helper.new(cmd)
           draft = draft?(cmd)
           aggregate = aggregate_class(cmd).new(cmd.aggregate_id, draft:)
           I18n.with_locale(command_helper.command_locale) do
-            # Pass payload as first argument, guards as option
             aggregate.public_send(command_helper.command_name, cmd.to_h, guards: !draft)
           end
         end
@@ -103,19 +102,41 @@ module Yes
         end
 
         # Checks if a guard evaluator exists for the given command
-        # @param cmd [Command] The command to check
+        #
+        # Aggregate-DSL command groups register their guard evaluator under a
+        # dedicated registry type, so they are resolved through a different
+        # configuration lookup than single commands.
+        #
+        # @param cmd [Command, Yes::Core::Commands::CommandGroup] The command to check
         # @return [Boolean] true if a guard evaluator exists
         # @raise [UnregisteredCommand] if no guard evaluator is found for the command
         def guard_evaluator_exists?(cmd)
           command_helper = Yes::Core::Commands::Helper.new(cmd)
 
-          klass = Yes::Core.configuration.guard_evaluator_class(command_helper.command_context,
-                                                                command_helper.subject,
-                                                                command_helper.command_name)
+          klass = guard_evaluator_class_for(cmd, command_helper)
 
           raise UnregisteredCommand, "Unregistered command: #{cmd.class}" unless klass
 
           true
+        end
+
+        # Resolves the guard evaluator class for a command, dispatching to the
+        # command-group registry for {Yes::Core::Commands::CommandGroup} and to
+        # the single-command registry otherwise.
+        #
+        # @param cmd [Command, Yes::Core::Commands::CommandGroup] The command
+        # @param command_helper [Yes::Core::Commands::Helper] helper for the command
+        # @return [Class, nil] the registered guard evaluator class or nil
+        def guard_evaluator_class_for(cmd, command_helper)
+          if cmd.is_a?(Yes::Core::Commands::CommandGroup)
+            Yes::Core.configuration.command_group_guard_evaluator_class(command_helper.command_context,
+                                                                        command_helper.subject,
+                                                                        command_helper.command_name)
+          else
+            Yes::Core.configuration.guard_evaluator_class(command_helper.command_context,
+                                                          command_helper.subject,
+                                                          command_helper.command_name)
+          end
         end
 
         # Ensures handlers exist for all commands
