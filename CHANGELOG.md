@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-07-28
+
+Major bump because `yes-core` now requires `pg_eventstore` v3, whose schema is
+incompatible with v1. Released as 2.0.0 rather than 1.5.0 deliberately: consumers
+constrain these gems at `~> 1.3`, which 1.5.0 would satisfy, so a minor bump could
+be pulled in by an unrelated `bundle update` and put v3 code against a v1 store.
+2.0.0 makes that impossible.
+
+⚠️ **Do not adopt until your event store has been migrated to v3.** Migrating is a
+one-way, downtime-requiring operation — see the `pg_eventstore` upgrade notes.
+
+### yes-core
+
+#### Changed
+- **Breaking change**: `pg_eventstore` dependency `~> 1.0` → `~> 3.0`.
+- **Breaking change**: OpenTelemetry span attribute `event.link_id` is now
+  `event.link_global_position`, in `Commands::Stateless::Handler` and
+  `CommandHandling::EventPublisher`. `pg_eventstore` v3 drops `events.link_id`
+  (migration 13) in favour of the bigint `link_global_position`, so `Event#link_id`
+  raises `NoMethodError`. Mirrors the same change in `yousty-eventsourcing` 16.0.0.
+  **Update any dashboards or trace queries keyed on `event.link_id`.**
+
+### yes-auth
+
+#### Changed
+- **Breaking change**: `yes-core` dependency `~> 1.0` → `~> 2.0`, required to stay
+  resolvable alongside yes-core 2.0.0.
+
 ## [1.4.0] - 2026-06-24
 
 ### yes-command-api

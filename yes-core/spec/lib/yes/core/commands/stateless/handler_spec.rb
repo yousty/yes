@@ -214,7 +214,7 @@ RSpec.describe Yes::Core::Commands::Stateless::Handler do
 
         expect(published_event.attributes).to eq(
           'event.type' => event.type,
-          'event.link_id' => '',
+          'event.link_global_position' => '',
           'global_position' => event.global_position,
           'stream' => event.stream.to_json,
           'stream.revision' => event.stream_revision,
