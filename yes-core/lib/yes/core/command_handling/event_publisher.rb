@@ -111,10 +111,14 @@ module Yes
 
             next if normalized_revision == expected_revision
 
+            # pg_eventstore 3.0 requires `verdict:`, which selects the error's
+            # message. This branch is only reached when the revision we hold
+            # differs from the store's, which is exactly :unmatched_stream_revision.
             raise PgEventstore::WrongExpectedRevisionError.new(
               revision: aggregate_revision,
               expected_revision:,
-              stream:
+              stream:,
+              verdict: :unmatched_stream_revision
             )
           end
         end

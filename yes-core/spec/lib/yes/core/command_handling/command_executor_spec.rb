@@ -88,7 +88,11 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
       end
 
       context 'when event store has revision conflict' do
-        let(:revision_error) { PgEventstore::WrongExpectedRevisionError.new(revision: 1, expected_revision: 2, stream: {}) }
+        let(:revision_error) do
+          PgEventstore::WrongExpectedRevisionError.new(
+            revision: 1, expected_revision: 2, stream: {}, verdict: :unmatched_stream_revision
+          )
+        end
 
         before do
           call_count = 0
@@ -117,7 +121,11 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
       end
 
       context 'when event store fails persistently' do
-        let(:revision_error) { PgEventstore::WrongExpectedRevisionError.new(revision: 1, expected_revision: 2, stream: {}) }
+        let(:revision_error) do
+          PgEventstore::WrongExpectedRevisionError.new(
+            revision: 1, expected_revision: 2, stream: {}, verdict: :unmatched_stream_revision
+          )
+        end
 
         it 'raises error after MAX_RETRIES' do
           call_count = 0

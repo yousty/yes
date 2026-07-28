@@ -66,7 +66,8 @@ RSpec.describe Yes::Core::CommandHandling::CommandGroupExecutor, integration: tr
                 expected_revision: :no_stream,
                 stream: PgEventstore::Stream.new(
                   context: 'Test', stream_name: 'PersonalInfo', stream_id: aggregate_id
-                )
+                ),
+                verdict: :expected_not_to_have_stream
               )
             )
           end
@@ -93,7 +94,8 @@ RSpec.describe Yes::Core::CommandHandling::CommandGroupExecutor, integration: tr
             expected_revision: :no_stream,
             stream: PgEventstore::Stream.new(
               context: 'Test', stream_name: 'PersonalInfo', stream_id: aggregate_id
-            )
+            ),
+            verdict: :expected_not_to_have_stream
           )
         )
 
@@ -131,7 +133,8 @@ RSpec.describe Yes::Core::CommandHandling::CommandGroupExecutor, integration: tr
                 expected_revision: :no_stream,
                 stream: PgEventstore::Stream.new(
                   context: 'Test', stream_name: 'PersonalInfo', stream_id: aggregate_id
-                )
+                ),
+                verdict: :expected_not_to_have_stream
               )
             )
           end
