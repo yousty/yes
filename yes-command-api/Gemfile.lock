@@ -8,7 +8,7 @@ GIT
 PATH
   remote: ../yes-core
   specs:
-    yes-core (1.4.0)
+    yes-core (2.0.0)
       cerbos (~> 0.8)
       dry-inflector (~> 1.2)
       dry-schema (~> 1.13)
@@ -17,14 +17,14 @@ PATH
       has_scope (~> 0.8)
       jsonapi-serializer (~> 2.2)
       opentelemetry-sdk (~> 1.0)
-      pg_eventstore (~> 1.0)
+      pg_eventstore (~> 3.0)
       rails (>= 7.1)
       zeitwerk (~> 2.6)
 
 PATH
   remote: .
   specs:
-    yes-command-api (1.4.0)
+    yes-command-api (2.0.0)
       message_bus (~> 4.0)
       rails (>= 7.1)
       yes-core
@@ -297,9 +297,9 @@ GEM
     pg (1.6.3-x86_64-darwin)
     pg (1.6.3-x86_64-linux)
     pg (1.6.3-x86_64-linux-musl)
-    pg_eventstore (1.13.4)
-      connection_pool (~> 2.4)
-      pg (~> 1.5)
+    pg_eventstore (3.0.0)
+      connection_pool (>= 2.5.4, < 4)
+      pg (~> 1)
       sinatra (>= 3, < 5)
     pp (0.6.3)
       prettyprint
@@ -548,7 +548,7 @@ CHECKSUMS
   pg (1.6.3-x86_64-darwin) sha256=ee2e04a17c0627225054ffeb43e31a95be9d7e93abda2737ea3ce4a62f2729d6
   pg (1.6.3-x86_64-linux) sha256=5d9e188c8f7a0295d162b7b88a768d8452a899977d44f3274d1946d67920ae8d
   pg (1.6.3-x86_64-linux-musl) sha256=9c9c90d98c72f78eb04c0f55e9618fe55d1512128e411035fe229ff427864009
-  pg_eventstore (1.13.4) sha256=45ff50db33fc86b1dc72e515e30c33bda0334fc255362a81600c93a6799ee413
+  pg_eventstore (3.0.0) sha256=7cbed46560952efd36b8f02510d99a55604a3771a4698a697dcdab9930bc08ea
   pp (0.6.3) sha256=2951d514450b93ccfeb1df7d021cae0da16e0a7f95ee1e2273719669d0ab9df6
   prettyprint (0.2.0) sha256=2bc9e15581a94742064a3cc8b0fb9d45aae3d03a1baa6ef80922627a0766f193
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
@@ -588,8 +588,8 @@ CHECKSUMS
   useragent (0.16.11) sha256=700e6413ad4bb954bb63547fa098dddf7b0ebe75b40cc6f93b8d54255b173844
   websocket-driver (0.8.0) sha256=ed0dba4b943c22f17f9a734817e808bc84cdce6a7e22045f5315aa57676d4962
   websocket-extensions (0.1.5) sha256=1c6ba63092cda343eb53fc657110c71c754c56484aad42578495227d717a8241
-  yes-command-api (1.4.0)
-  yes-core (1.4.0)
+  yes-command-api (2.0.0)
+  yes-core (2.0.0)
   zeitwerk (2.7.5) sha256=d8da92128c09ea6ec62c949011b00ed4a20242b255293dd66bf41545398f73dd
 
 BUNDLED WITH
