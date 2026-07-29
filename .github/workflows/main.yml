@@ -54,12 +54,18 @@ jobs:
           RAILS_ENV: test
           PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
+      # PG_EVENTSTORE_URI is required on every rake invocation, not just the
+      # eventstore ones: pg_eventstore 3.0's setup.rake resolves the URI via
+      # ENV.fetch at LOAD time (inside a top-level `configure` block), and the
+      # Rakefile loads that file unconditionally. Without it, unrelated tasks such
+      # as db:create abort with `KeyError: key not found: "PG_EVENTSTORE_URI"`.
       - name: Set up test database
         if: matrix.gem != 'yes-auth'
         run: bundle exec rake db:create db:migrate
         working-directory: ${{ matrix.gem }}
         env:
           RAILS_ENV: test
+          PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
       - name: Set up message bus database
         if: matrix.gem == 'yes-command-api'
@@ -67,6 +73,7 @@ jobs:
         working-directory: ${{ matrix.gem }}
         env:
           RAILS_ENV: test
+          PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
       - name: Run specs
         run: bundle exec rspec

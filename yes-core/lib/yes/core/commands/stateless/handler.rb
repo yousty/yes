@@ -198,7 +198,12 @@ module Yes
           # @param expected_revision [Integer]
           # @param stream [PgEventstore::Stream]
           def revision_error!(revision, expected_revision, stream)
-            PgEventstore::WrongExpectedRevisionError.new(revision:, expected_revision:, stream:).tap do |error|
+            # pg_eventstore 3.0 requires `verdict:`, which selects the error's
+            # message. verify_revisions! only calls this when the two revisions
+            # differ, which is exactly :unmatched_stream_revision.
+            PgEventstore::WrongExpectedRevisionError.new(
+              revision:, expected_revision:, stream:, verdict: :unmatched_stream_revision
+            ).tap do |error|
               self.class.current_span&.status = ::OpenTelemetry::Trace::Status.error('Wrong expected revision')
               self.class.current_span&.add_attributes(
                 {
@@ -277,7 +282,7 @@ module Yes
               timestamp: result.created_at,
               attributes: {
                 'event.type' => result.type,
-                'event.link_id' => result.link_id || '',
+                'event.link_global_position' => result.link_global_position || '',
                 'global_position' => result.global_position,
                 'stream' => result.stream.to_json,
                 'stream.revision' => result.stream_revision,

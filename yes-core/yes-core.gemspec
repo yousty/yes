@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'has_scope', '~> 0.8'
   spec.add_dependency 'jsonapi-serializer', '~> 2.2'
   spec.add_dependency 'opentelemetry-sdk', '~> 1.0'
-  spec.add_dependency 'pg_eventstore', '~> 1.0'
+  spec.add_dependency 'pg_eventstore', '~> 3.0'
   spec.add_dependency 'rails', '>= 7.1'
   spec.add_dependency 'zeitwerk', '~> 2.6'
 end
