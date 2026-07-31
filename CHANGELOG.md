@@ -2,6 +2,51 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2026-07-31
+
+### yes-core
+
+#### Added
+- `Middlewares::WriteEncryptor` — encrypts on `#serialize` exactly like `Middlewares::Encryptor`
+  (it subclasses it), but its `#deserialize` is a no-op.
+- `Middlewares.register_encryptor(key_repository, config:)` — registers `:encryptor` and
+  `:write_encryptor` together. Host applications should call this instead of assigning
+  `config.middlewares[:encryptor]` by hand; registering the decrypting encryptor on its own doubles
+  the encryptor round trips of every encrypted append.
+- `Middlewares.for_write` — the middleware keys to pass to `#append_to_stream`: every configured
+  middleware, with `:encryptor` swapped for `:write_encryptor`. Derived from the live config rather
+  than hard-coded, because `PgEventstore::Client` resolves a passed list with
+  `config.middlewares.slice(*list)`, which silently drops unregistered names — a literal list could
+  therefore resolve to one with no encryptor at all and write plaintext at rest. Falls back to the
+  full list when `:write_encryptor` is missing, and the railtie warns about that at boot.
+- `Middlewares::ENCRYPTOR` / `Middlewares::WRITE_ENCRYPTOR` config-key constants, and
+  `DataEncryptor::CIPHERTEXT_KEY` for the `es_encrypted` data key.
+
+#### Changed
+- Every write site now appends with `middlewares: Middlewares.for_write`, so an append no longer
+  decrypts the event it returns: `CommandHandling::EventPublisher`,
+  `CommandHandling::CommandGroupExecutor`, `Commands::Stateless::Handler` and
+  `TestSupport::EventHelpers#append_event`. This covers both `PgEventstore#multiple` paths, whose
+  sub-events publish through those same call sites.
+
+  pg_eventstore 3.0 runs every registered middleware's `#deserialize` on the events returned by
+  `#append_to_stream`, not only on reads. Nothing in yes-core reads `data` off that returned event —
+  `otl_record_response` records only type, revision, stream and positions, and `ReadModelUpdater`
+  always receives the command payload on the write path — so each encrypted append was paying an
+  uncached key lookup plus a decrypt against the encryptor service for a payload it discarded. Those
+  calls also ran inside the SERIALIZABLE transaction opened by `#multiple`, widening the window for
+  `PG::TRSerializationFailure` and its retries.
+
+  ⚠️ Consumers that relied on the appended event coming back decrypted must read the event instead.
+
+#### Fixed
+- `Middlewares::Encryptor#serialize` is now idempotent: it returns the event untouched when the data
+  is already encrypted. Required because the default middleware list holds two serialize-capable
+  encryptors once `:write_encryptor` is registered, so an append that omits `middlewares:` would
+  otherwise encrypt twice — the second pass encrypting the first pass's sentinels and overwriting the
+  real ciphertext irrecoverably. It also makes re-appending an event that was read at rest
+  (`middlewares: Middlewares.without(:encryptor)`) safe, which it was not before.
+
 ## [2.0.0] - 2026-07-28
 
 Major bump because `yes-core` now requires `pg_eventstore` v3, whose schema is

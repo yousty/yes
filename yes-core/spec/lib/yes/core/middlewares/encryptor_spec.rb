@@ -45,6 +45,17 @@ RSpec.describe Yes::Core::Middlewares::Encryptor do
         end
       end
     end
+
+    # With WriteEncryptor registered the DEFAULT middleware list holds two serialize-capable encryptors, so an
+    # append that omits `middlewares:` calls #serialize twice. Without the guard the second pass would encrypt
+    # the sentinels written by the first and overwrite the real ciphertext, which cannot be recovered.
+    context 'when the data is already encrypted' do
+      let(:event) { instance.serialize(EncryptedEvent.new(data: data.dup)) }
+
+      it 'keeps the ciphertext untouched' do
+        expect { instance.serialize(event) }.not_to(change { event.data.to_h })
+      end
+    end
   end
 
   describe '#deserialize' do

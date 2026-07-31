@@ -70,9 +70,16 @@ class DummyRepository
   class << self
     attr_accessor :repository
 
+    # Counts calls per operation, so specs can assert how much encryptor work a code path performs without
+    # stubbing the repository.
+    #
+    # @return [Hash{Symbol => Integer}]
+    attr_accessor :calls
+
     # @return [void]
     def reset
       self.repository = {}
+      self.calls = { find: 0, encrypt: 0, decrypt: 0 }
     end
 
     # @param str [String]
@@ -92,6 +99,7 @@ class DummyRepository
   # @param user_id [String]
   # @return [DummyRepository::Success]
   def find(user_id)
+    self.class.calls[:find] += 1
     Success.new(Key.new(id: user_id))
   end
 
@@ -99,6 +107,7 @@ class DummyRepository
   # @param message [String]
   # @return [DummyRepository::Success]
   def encrypt(key:, message:)
+    self.class.calls[:encrypt] += 1
     self.class.repository[key.id] = self.class.encrypt(message)
     message = Message.new({ message: self.class.repository[key.id] })
     Success.new(message)
@@ -108,6 +117,7 @@ class DummyRepository
   # @param message [String]
   # @return [DummyRepository::Success]
   def decrypt(key:, message:)
+    self.class.calls[:decrypt] += 1
     decrypted =
       if self.class.repository[key.id]
         self.class.decrypt(self.class.repository[key.id])

@@ -118,7 +118,8 @@ module Yes
             PgEventstore.client.append_to_stream(
               stream,
               event,
-              options: { expected_revision: subject_stream_revision }
+              options: { expected_revision: subject_stream_revision },
+              middlewares: Middlewares.for_write
             ).tap { otl_record_response(_1) }
           end
           otl_trackable :publish_event, OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer)

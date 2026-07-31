@@ -16,7 +16,7 @@ module Yes
         # @param event [Yes::Core::Event]
         # @return [void]
         def append_event(stream, event)
-          PgEventstore.client.append_to_stream(stream, event)
+          PgEventstore.client.append_to_stream(stream, event, middlewares: Yes::Core::Middlewares.for_write)
         end
 
         # Appends an event to a stream and reloads it

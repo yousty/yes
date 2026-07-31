@@ -287,7 +287,7 @@ module Yes
           # @return [Enumerator]
           def load_events(stream, options: {}, skip_decryption: true)
             options = { direction: 'Backwards' }.merge(options)
-            middlewares = Middlewares.without(:encryptor) if skip_decryption
+            middlewares = Middlewares.without(Middlewares::ENCRYPTOR) if skip_decryption
             PgEventstore.client.read_paginated(stream, options:, middlewares:)
           end
 

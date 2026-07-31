@@ -40,13 +40,13 @@ module Yes
       def decrypt_attributes(key:, data:, attributes: {}) # rubocop:disable Lint/UnusedMethodArgument
         return data unless key
 
-        res = key_repository.decrypt(key:, message: data['es_encrypted'])
+        res = key_repository.decrypt(key:, message: data[DataEncryptor::CIPHERTEXT_KEY])
         return data if res.failure?
 
         decrypted_text = res.value!
         decrypted = JSON.parse(decrypted_text.attributes[:message]).transform_keys(&:to_s)
         decrypted.each { |k, value| data[k] = value if data.key?(k) }
-        data.delete('es_encrypted')
+        data.delete(DataEncryptor::CIPHERTEXT_KEY)
         data
       end
 

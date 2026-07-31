@@ -5,9 +5,12 @@ module Yes
     module Middlewares
       # PgEventstore middleware for encrypting/decrypting event data.
       #
+      # Register it through {Middlewares.register_encryptor} rather than by hand, so its write-only
+      # counterpart ({WriteEncryptor}) is always registered alongside it.
+      #
       # @example
       #   PgEventstore.configure do |config|
-      #     config.middlewares[:encryptor] = Yes::Core::Middlewares::Encryptor.new(key_repository)
+      #     Yes::Core::Middlewares.register_encryptor(key_repository, config:)
       #   end
       class Encryptor
         include PgEventstore::Middleware
@@ -24,6 +27,11 @@ module Yes
         # @return [PgEventstore::Event]
         def serialize(event)
           return event unless event.class.respond_to?(:encryption_schema)
+          # Idempotence guard. With {WriteEncryptor} registered, the DEFAULT middleware list holds two
+          # serialize-capable encryptors, so an append that omits `middlewares:` would encrypt twice. The
+          # second pass would encrypt the sentinels written by the first and overwrite the real ciphertext,
+          # which cannot be recovered. It also guards re-appending an event that was read at rest.
+          return event if event.data[DataEncryptor::CIPHERTEXT_KEY].present?
 
           encryptor = DataEncryptor.new(
             data: event.data, schema: event.class.encryption_schema, repository: key_repository

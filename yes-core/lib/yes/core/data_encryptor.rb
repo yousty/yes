@@ -10,6 +10,10 @@ module Yes
     #   encryptor.encrypted_data
     #   encryptor.encryption_metadata
     class DataEncryptor
+      # Data key holding the ciphertext of all encrypted attributes. Its presence means the data is
+      # currently encrypted: it is written here and removed by {DataDecryptor}.
+      CIPHERTEXT_KEY = 'es_encrypted'
+
       # @return [Hash] the encrypted data
       attr_reader :encrypted_data
 
@@ -51,8 +55,8 @@ module Yes
       def encrypt_attributes(key:, data:, attributes:)
         text = JSON.generate(data.select { |hash_key, _value| attributes.include?(hash_key.to_s) })
         encrypted = key_repository.encrypt(key:, message: text).value!
-        attributes.each { |att| data[att.to_s] = 'es_encrypted' if data.key?(att.to_s) }
-        data['es_encrypted'] = encrypted.attributes[:message]
+        attributes.each { |att| data[att.to_s] = CIPHERTEXT_KEY if data.key?(att.to_s) }
+        data[CIPHERTEXT_KEY] = encrypted.attributes[:message]
         data
       end
     end
