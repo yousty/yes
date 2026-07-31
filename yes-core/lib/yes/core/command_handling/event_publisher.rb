@@ -90,7 +90,8 @@ module Yes
           PgEventstore.client.append_to_stream(
             command_utilities.build_stream(metadata:),
             event,
-            options: { expected_revision: }
+            options: { expected_revision: },
+            middlewares: Middlewares.for_write
           ).tap { otl_record_response(_1) }
         end
 

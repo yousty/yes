@@ -365,13 +365,17 @@ command :change, :ssn, :string, encrypt: true
 
 Encryption is performed by a PgEventstore middleware that delegates the actual key management and cryptography to a `key_repository` object you provide. *Yes* does not ship a concrete implementation — you plug in any object that satisfies the interface below.
 
-Register the middleware:
+Register the middlewares:
 
 ```ruby
 PgEventstore.configure do |config|
-  config.middlewares[:encryptor] = Yes::Core::Middlewares::Encryptor.new(key_repository)
+  Yes::Core::Middlewares.register_encryptor(key_repository, config:)
 end
 ```
+
+This registers two middlewares against your repository: `:encryptor`, which decrypts events as they are read, and `:write_encryptor`, which encrypts identically but does not decrypt. pg_eventstore runs `#deserialize` on the event returned by `#append_to_stream` too, and nothing on the write path reads that event's data — so *Yes* appends with `middlewares: Yes::Core::Middlewares.for_write`, and your `key_repository` is never asked to decrypt a payload that is about to be discarded. Always register through `register_encryptor`: registering `:encryptor` alone silently costs a key lookup and a decrypt on every encrypted write.
+
+One consequence worth knowing: **the event returned by a command is encrypted**. Read the event back when you need its plaintext.
 
 The `key_repository` must respond to the following methods, each returning a [`Dry::Monads::Result`](https://dry-rb.org/gems/dry-monads/) (or any object responding to `success?`, `failure?`, and `value!`):
 

@@ -169,7 +169,8 @@ module Yes
           PgEventstore.client.append_to_stream(
             utils.build_stream(metadata: sub_cmd.metadata || {}),
             event,
-            options: { expected_revision: :any }
+            options: { expected_revision: :any },
+            middlewares: Middlewares.for_write
           )
         end
 
