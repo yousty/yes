@@ -6,7 +6,7 @@ RSpec.describe Yes::Core::FailedSubscriptionNotifier do
   let(:subscription) { PgEventstore::Subscription.new(id: 42, set: 'Yes', name: 'SomeProcessManager') }
   let(:error) { StandardError.new('handler exploded') }
   let(:sentry) { class_double('Sentry') }
-  let(:scope) { double('Sentry::Scope', set_tags: nil) } # rubocop:disable RSpec/VerifiedDoubles
+  let(:scope) { double('Sentry::Scope', set_tags: nil) }
 
   before do
     # Sentry is not a dependency of this gem — the railtie only registers the
