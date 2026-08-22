@@ -16,6 +16,11 @@ module Yes
             with_indifferent_access: Yes::Core::Middlewares::WithIndifferentAccess.new,
             timestamp: Yes::Core::Middlewares::Timestamp.new
           }
+
+          # pg_eventstore's only death signal — without it a subscription that
+          # exhausts its restarts dies silently (B2BY-5189). Present in
+          # yousty-eventsourcing's Railtie; dropped when it was ported here.
+          config.failed_subscription_notifier = FailedSubscriptionNotifier.new if defined?(Sentry)
         end
       end
 
