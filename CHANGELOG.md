@@ -23,6 +23,18 @@ All notable changes to this project will be documented in this file.
 
   **Required for anything running pg_eventstore 3.x.**
 
+- Restored the failed-subscription Sentry notifier (B2BY-5189).
+
+  `config.failed_subscription_notifier` is pg_eventstore's only death signal — it is
+  called once, when a subscription exhausts its restarts and stays dead. Without it that
+  death is silent: per-failure errors are only recorded on the subscription row, never
+  raised into Sentry. The notifier existed in yousty-eventsourcing's Railtie and was
+  dropped when the code was ported here, so every yes-core service had been losing
+  subscriptions without an alert.
+
+  Shipped together with the UUID fix deliberately: that fix addresses a bug which *kills*
+  subscriptions, and this one is what tells you when a subscription has died.
+
 ## [2.1.0] - 2026-07-31
 
 ### yes-core
