@@ -6,7 +6,7 @@ module Yes
     #
     # pg_eventstore calls its +failed_subscription_notifier+ exactly once, when a
     # subscription exhausts its restarts and stays dead — it is the gem's only
-    # death signal, and without it that death is silent (B2BY-5189). Per-failure
+    # death signal, and without it that death is silent. Per-failure
     # errors are only recorded on the subscription row, never raised into Sentry.
     class FailedSubscriptionNotifier
       # @param subscription [PgEventstore::Subscription]

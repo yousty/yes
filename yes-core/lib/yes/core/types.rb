@@ -20,7 +20,14 @@ module Yes
 
       EMPTY_STRING = /\A\s*\z/
 
-      UUID_REGEXP_BASE = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}/
+      # Version nibble is [1-8], not a hard-coded 4. pg_eventstore 3.0.0 moved event-id
+      # generation off the database's gen_random_uuid() (always v4) to
+      # SecureRandom.uuid_v7, and those ids reach us as causation_id / correlation_id.
+      # A v4-only pattern makes TransactionDetails raise Dry::Struct::Error, which fails
+      # the event handler and kills the subscription once its restarts run out.
+      #
+      # Still a real constraint, per RFC 9562: version 1-8 and variant nibble 8/9/a/b.
+      UUID_REGEXP_BASE = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}/
       UUID_REGEXP = /\A#{UUID_REGEXP_BASE}\z/i
 
       DATE_TIME_REGEXP = /\A\d{4}-\d{1,2}-\d{1,2} ([0-1][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?\z/i

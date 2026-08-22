@@ -2,6 +2,19 @@
 
 Core event sourcing framework providing the aggregate DSL, commands, events, read models, and supporting infrastructure for the [Yes](https://github.com/yousty/yes) framework.
 
+## Compatibility with pg_eventstore
+
+⚠️ **pg_eventstore 3.x requires yes-core >= 2.1.1.** pg_eventstore 3.0.0 generates event
+ids with `SecureRandom.uuid_v7` (it moved the default off the database's
+`gen_random_uuid()`, which always produced v4). Those ids arrive as `causation_id` /
+`correlation_id`, and `Types::UUID` accepted only v4 before 2.1.1 — so
+`TransactionDetails.new` raised `Dry::Struct::Error`, the event handler failed, and the
+subscription died once its restarts ran out.
+
+`Types::UUID` now accepts any RFC 9562 version (1-8) while still requiring a valid
+version and variant nibble.
+
+
 ## Installation
 
 Add this line to your application's Gemfile:

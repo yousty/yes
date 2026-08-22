@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-08-22
+
+### yes-core
+
+- `Types::UUID` now accepts any RFC 9562 UUID version (1-8), not only v4.
+
+  pg_eventstore 3.0.0 moved event-id generation off the database's `gen_random_uuid()`
+  (always v4) to `SecureRandom.uuid_v7`. Those ids reach the gem as `causation_id` /
+  `correlation_id`, and a v4-only pattern makes `TransactionDetails.new` raise
+  `Dry::Struct::Error` — which fails the event handler and kills the subscription once
+  its restarts are exhausted.
+
+  Still a real constraint: version must be 1-8 and the variant nibble 8/9/a/b, so
+  arbitrary hex in UUID shape is rejected as before.
+
+  **Required for anything running pg_eventstore 3.x.**
+
+- Register a `failed_subscription_notifier` so a dead subscription reports to Sentry.
+
+  `config.failed_subscription_notifier` is pg_eventstore's only death signal — it is
+  called once, when a subscription exhausts its restarts and stays dead. Without it that
+  death is silent: per-failure errors are only recorded on the subscription row and are
+  never raised, so a subscription can stop processing indefinitely with no alert.
+
+  Registered only when the host application has loaded Sentry.
+
+  Shipped alongside the UUID fix deliberately: that fix addresses a bug which *kills*
+  subscriptions, and this is what tells you when one has died.
+
 ## [2.1.0] - 2026-07-31
 
 ### yes-core
