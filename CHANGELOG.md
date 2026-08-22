@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.1] - 2026-08-22
+
+### yes-core
+
+- `Types::UUID` now accepts any RFC 9562 UUID version (1-8), not only v4.
+
+  pg_eventstore 3.0.0 moved event-id generation off the database's `gen_random_uuid()`
+  (always v4) to `SecureRandom.uuid_v7`. Those ids reach the gem as `causation_id` /
+  `correlation_id`, and a v4-only pattern makes `TransactionDetails.new` raise
+  `Dry::Struct::Error` — which fails the event handler and kills the subscription once
+  its restarts are exhausted.
+
+  The same bug bit `apprenticeship_presentation` in production on 2026-08-22 through
+  yousty-eventsourcing (fixed there in 17.0.2); `company_manager` and
+  `application_management_system` are exposed to it via this gem.
+
+  Still a real constraint: version must be 1-8 and the variant nibble 8/9/a/b, so
+  arbitrary hex in UUID shape is rejected as before.
+
+  **Required for anything running pg_eventstore 3.x.**
+
 ## [2.1.0] - 2026-07-31
 
 ### yes-core
