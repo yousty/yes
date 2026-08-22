@@ -14,26 +14,22 @@ All notable changes to this project will be documented in this file.
   `Dry::Struct::Error` — which fails the event handler and kills the subscription once
   its restarts are exhausted.
 
-  The same bug bit `apprenticeship_presentation` in production on 2026-08-22 through
-  yousty-eventsourcing (fixed there in 17.0.2); `company_manager` and
-  `application_management_system` are exposed to it via this gem.
-
   Still a real constraint: version must be 1-8 and the variant nibble 8/9/a/b, so
   arbitrary hex in UUID shape is rejected as before.
 
   **Required for anything running pg_eventstore 3.x.**
 
-- Restored the failed-subscription Sentry notifier (B2BY-5189).
+- Register a `failed_subscription_notifier` so a dead subscription reports to Sentry.
 
   `config.failed_subscription_notifier` is pg_eventstore's only death signal — it is
   called once, when a subscription exhausts its restarts and stays dead. Without it that
-  death is silent: per-failure errors are only recorded on the subscription row, never
-  raised into Sentry. The notifier existed in yousty-eventsourcing's Railtie and was
-  dropped when the code was ported here, so every yes-core service had been losing
-  subscriptions without an alert.
+  death is silent: per-failure errors are only recorded on the subscription row and are
+  never raised, so a subscription can stop processing indefinitely with no alert.
 
-  Shipped together with the UUID fix deliberately: that fix addresses a bug which *kills*
-  subscriptions, and this one is what tells you when a subscription has died.
+  Registered only when the host application has loaded Sentry.
+
+  Shipped alongside the UUID fix deliberately: that fix addresses a bug which *kills*
+  subscriptions, and this is what tells you when one has died.
 
 ## [2.1.0] - 2026-07-31
 
