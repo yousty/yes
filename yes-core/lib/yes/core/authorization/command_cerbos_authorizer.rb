@@ -36,7 +36,8 @@ module Yes
 
             raise_command_unauthorized_error!(decision)
           end
-          otl_trackable :call, OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Cerbos Authorize Command')
+          otl_trackable :call,
+                        OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Cerbos Authorize Command', track_sql: true)
 
           private
 
@@ -60,6 +61,10 @@ module Yes
             raise self::CommandNotAuthorized, msg
           end
 
+          # Loads the resource the command acts on. Commands batched into one request
+          # commonly target the same resource, so the lookup is cached for the duration
+          # of the authorization pass (see {LookupCache}).
+          #
           # @param command [Yes::Core::Command] command to authorize
           # @return [ActiveRecord::Base] resource to authorize
           # @raise [StandardError] if RESOURCE[:name] or RESOURCE[:read_model] is not defined
@@ -70,7 +75,10 @@ module Yes
               raise StandardError, message
             end
 
-            read_model(command).find_by(id: command.send("#{self::RESOURCE[:name]}_id"))
+            model = read_model(command)
+            id = command.send("#{self::RESOURCE[:name]}_id")
+
+            LookupCache.fetch([:resource, model, id]) { model.find_by(id:) }
           end
 
           # Returns the appropriate read model class for the command.
@@ -145,12 +153,19 @@ module Yes
             resource&.try(:auth_attributes)&.as_json || {}
           end
 
+          # Builds the principal data for the request. It is derived purely from the
+          # auth data, which is the same for every command of a batch, so it is built
+          # once per authorization pass (see {LookupCache}). The result is shared
+          # between commands and must not be mutated.
+          #
           # @param auth_data [Hash] authorization data
           # @return [Hash] principal data for Cerbos check_resource
           def principal_data(auth_data)
-            Yes::Core.configuration.cerbos_principal_data_builder.call(
-              auth_data.with_indifferent_access
-            )
+            data = auth_data.with_indifferent_access
+
+            LookupCache.fetch([:principal_data, data]) do
+              Yes::Core.configuration.cerbos_principal_data_builder.call(data)
+            end
           end
 
           # @param auth_data [Hash]

@@ -20,19 +20,8 @@ module Yes
             # @raise [CommandsNotAuthorized] if any command is not authorized
             # @return [void]
             def call(commands, auth_data)
-              unauthorized = []
-
-              commands.each do |command|
-                authorizer = authorizer_for(command)
-                authorizer.call(command, auth_data)
-              rescue CommandAuthorizerNotFound
-                unauthorized << unauthorized_data(command, 'Not allowed').tap do
-                  trace_error('Command authorizer not found', { command: command.to_json })
-                end
-              rescue Yes::Core::Authorization::CommandAuthorizer::CommandNotAuthorized => e
-                unauthorized << unauthorized_data(command, e.message).tap do
-                  trace_error('Command not authorized', { command: })
-                end
+              unauthorized = Yes::Core::Authorization::LookupCache.with_scope do
+                authorize_each(commands, auth_data)
               end
 
               return unless unauthorized.any?
@@ -43,6 +32,26 @@ module Yes
             otl_trackable :call, Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Authorize Commands')
 
             private
+
+            # Authorizes every command, collecting the ones that were rejected instead
+            # of failing on the first rejection, so the caller can report all of them.
+            #
+            # @param commands [Array<Yes::Core::Command>] commands to authorize
+            # @param auth_data [Hash] authorization data
+            # @return [Array<Hash>] unauthorized command data
+            def authorize_each(commands, auth_data)
+              commands.each_with_object([]) do |command, unauthorized|
+                authorizer_for(command).call(command, auth_data)
+              rescue CommandAuthorizerNotFound
+                unauthorized << unauthorized_data(command, 'Not allowed').tap do
+                  trace_error('Command authorizer not found', { command: command.to_json })
+                end
+              rescue Yes::Core::Authorization::CommandAuthorizer::CommandNotAuthorized => e
+                unauthorized << unauthorized_data(command, e.message).tap do
+                  trace_error('Command not authorized', { command: })
+                end
+              end
+            end
 
             # Returns the command authorizer for the given command.
             #
