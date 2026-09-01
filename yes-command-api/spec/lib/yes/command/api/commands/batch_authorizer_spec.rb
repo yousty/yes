@@ -148,5 +148,34 @@ RSpec.describe Yes::Command::Api::Commands::BatchAuthorizer do
         )
       end
     end
+
+    context 'when the authorizers of a batch resolve the same lookup' do
+      let(:authorizer) { Dummy::Activity::Commands::DoSomethingCached::Authorizer }
+      let(:commands) do
+        Array.new(3) do
+          Dummy::Activity::Commands::DoSomethingCached::Command.new(what: SecureRandom.hex(4), id: SecureRandom.uuid)
+        end
+      end
+
+      before { authorizer.reset_lookups! }
+
+      it 'resolves it once for the whole batch' do
+        subject
+
+        expect(authorizer.lookups).to eq(1)
+      end
+
+      it 'does not keep the cache open past the batch' do
+        subject
+
+        expect(Yes::Core::Authorization::LookupCache).not_to be_active
+      end
+
+      it 'resolves it again for the next batch' do
+        2.times { described_class.call(commands, auth_data) }
+
+        expect(authorizer.lookups).to eq(2)
+      end
+    end
   end
 end

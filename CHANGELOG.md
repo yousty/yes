@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### yes-core
+
+#### Added
+- `Authorization::LookupCache` — scoped memoization for the read-only lookups an
+  authorization pass repeats.
+
+  Caching is opt-in per scope: outside `LookupCache.with_scope` its `fetch` just yields,
+  so nothing changes for callers that do not open a scope. The store lives in
+  `ActiveSupport::IsolatedExecutionState`, so it is per thread/fiber, and `with_scope`
+  clears it on the way out — including when the block raises — so nothing leaks into the
+  next request. Nested scopes reuse the outermost cache.
+
+#### Changed
+- `Authorization::CommandCerbosAuthorizer` resolves the principal data and the
+  authorized resource through `LookupCache`.
+
+  Authorizing a batch of commands used to repeat both lookups once per command. The
+  principal data is derived purely from the request's auth data, and the commands of a
+  batch commonly act on the same resource, so both were re-read from the database for
+  every command — for an N-command batch, N times the queries for N identical results.
+  In production traces the two lookups accounted for the large majority of the authorize
+  span, dwarfing the Cerbos call itself.
+
+  This is safe because a batch is authorized in full before any of its commands is
+  executed, so no write can invalidate either lookup while the pass is running. Cached
+  values are shared between the commands of a pass and must be treated as read-only;
+  the per-command Cerbos payload is still built, and checked, per command.
+
+- The `Cerbos Authorize Command` span now tracks SQL, so the time it spends in-process
+  can be attributed to queries rather than guessed at.
+
+### yes-command-api
+
+#### Changed
+- `Commands::BatchAuthorizer` authorizes a batch inside a single
+  `Yes::Core::Authorization::LookupCache` scope, which is what lets the authorizers of
+  one batch share their principal and resource lookups.
+
 ## [2.1.1] - 2026-08-22
 
 ### yes-core

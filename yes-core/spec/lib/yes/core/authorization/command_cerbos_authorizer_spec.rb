@@ -158,4 +158,104 @@ RSpec.describe Yes::Core::Authorization::CommandCerbosAuthorizer do
       end
     end
   end
+
+  describe '.call inside a LookupCache scope' do
+    subject do
+      Yes::Core::Authorization::LookupCache.with_scope do
+        commands.each { described_class.call(_1, auth_data) }
+      end
+    end
+
+    let(:auth_data) { { identity_id: } }
+    let(:identity_id) { SecureRandom.uuid }
+
+    let(:company_id) { SecureRandom.uuid }
+    let(:commands) do
+      Array.new(3) do
+        Dummy::User::Commands::ChangeFirstName::Command.new(
+          name: SecureRandom.hex(4), id: SecureRandom.uuid, company_id:
+        )
+      end
+    end
+
+    let(:resource_const) { { name: 'company', read_model: resource_read_model } }
+    let(:resource_read_model) { double('CompanyModel') }
+    let(:resource) { double('Company', id: SecureRandom.uuid) }
+
+    let(:cerbos_client) { instance_double(Cerbos::Client) }
+    let(:cerbos_decision) { instance_double('CerbosDecision', allow_all?: true) }
+
+    let(:principal_data_builder_calls) { [] }
+    let(:cerbos_payloads) { [] }
+
+    around do |example|
+      original_builder = Yes::Core.configuration.cerbos_principal_data_builder
+      Yes::Core.configuration.cerbos_principal_data_builder = lambda { |data|
+        principal_data_builder_calls << data[:identity_id]
+        { id: data[:identity_id], roles: [], attributes: { write_resource_access: {} } }
+      }
+      example.run
+      Yes::Core.configuration.cerbos_principal_data_builder = original_builder
+    end
+
+    before do
+      stub_const('Yes::Core::Authorization::CommandCerbosAuthorizer::RESOURCE', resource_const)
+      allow(Cerbos::Client).to receive(:new).and_return(cerbos_client)
+      allow(cerbos_client).to receive(:check_resource) do |**kwargs|
+        cerbos_payloads << kwargs
+        cerbos_decision
+      end
+      allow(resource_read_model).to receive(:find_by).and_return(resource)
+    end
+
+    it 'builds the principal data once and loads the shared resource once' do
+      subject
+
+      aggregate_failures do
+        expect(principal_data_builder_calls).to eq([identity_id])
+        expect(resource_read_model).to have_received(:find_by).once
+        expect(cerbos_payloads.size).to eq(commands.size)
+      end
+    end
+
+    it 'still authorizes every command against Cerbos with its own payload' do
+      subject
+
+      sent_payloads = cerbos_payloads.map { _1[:principal][:attributes][:command_payload] }
+
+      expect(sent_payloads).to eq(commands.map { _1.payload.deep_symbolize_keys })
+    end
+
+    context 'when the commands target different resources' do
+      let(:commands) do
+        Array.new(2) do
+          Dummy::User::Commands::ChangeFirstName::Command.new(
+            name: SecureRandom.hex(4), id: SecureRandom.uuid, company_id: SecureRandom.uuid
+          )
+        end
+      end
+
+      it 'loads each resource separately' do
+        subject
+
+        aggregate_failures do
+          expect(resource_read_model).to have_received(:find_by).twice
+          expect(principal_data_builder_calls).to eq([identity_id])
+        end
+      end
+    end
+
+    context 'when no scope is open' do
+      subject { commands.each { described_class.call(_1, auth_data) } }
+
+      it 'resolves the principal and the resource per command' do
+        subject
+
+        aggregate_failures do
+          expect(principal_data_builder_calls).to eq([identity_id] * commands.size)
+          expect(resource_read_model).to have_received(:find_by).exactly(commands.size).times
+        end
+      end
+    end
+  end
 end
