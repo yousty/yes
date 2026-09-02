@@ -178,6 +178,22 @@ RSpec.describe Yes::Core::Configuration do
     end
   end
 
+  describe '#cerbos_grpc_channel_args' do
+    subject { configuration.cerbos_grpc_channel_args }
+
+    it 'defaults to the retry policy channel args' do
+      expect(subject).to eq(Yes::Core::Authorization::CerbosGrpcRetryPolicy.channel_args)
+    end
+
+    context 'when overridden' do
+      let(:channel_args) { { 'grpc.enable_retries' => 0 } }
+
+      before { configuration.cerbos_grpc_channel_args = channel_args }
+
+      it { is_expected.to eq(channel_args) }
+    end
+  end
+
   describe 'plural model name handling' do
     describe '#all_read_model_class_names' do
       context 'with plural model names' do

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### yes-core
+
+#### Added
+- `Authorization::CerbosGrpcRetryPolicy` and the `cerbos_grpc_channel_args` configuration option.
+  The Cerbos client now carries a gRPC retry policy that retries `UNAVAILABLE` calls (up to 4
+  attempts, exponential backoff from 100ms) so a PDP pod that is killed or restarting mid-check
+  no longer surfaces as `Cerbos::Error::Unavailable`.
+
+#### Changed
+- `Authorization::CerbosClientProvider` keeps one `Cerbos::Client` (one gRPC channel) per
+  process instead of building a new client, and opening new connections, on every check. The
+  client is rebuilt after a fork; `CerbosClientProvider.reset!` drops it explicitly (tests).
+
 ## [2.2.0] - 2026-09-01
 
 ### yes-core
