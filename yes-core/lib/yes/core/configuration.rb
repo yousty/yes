@@ -45,6 +45,10 @@ module Yes
       # @return [Boolean] Whether to use TLS for Cerbos connections (default: true)
       attr_accessor :cerbos_tls
 
+      # @return [Hash{String => String, Integer}] low-level gRPC channel arguments for the Cerbos client
+      #   (default: {Authorization::CerbosGrpcRetryPolicy.channel_args}, which retries UNAVAILABLE calls)
+      attr_accessor :cerbos_grpc_channel_args
+
       # @return [Boolean] Whether to include metadata in Cerbos command authorizer responses
       attr_accessor :cerbos_commands_authorizer_include_metadata
 
@@ -112,6 +116,7 @@ module Yes
         }
         @cerbos_url = ENV.fetch('CERBOS_URL', 'cerbos-cluster-ip-service:3593')
         @cerbos_tls = true
+        @cerbos_grpc_channel_args = Authorization::CerbosGrpcRetryPolicy.channel_args
         @cerbos_commands_authorizer_include_metadata = false
         @cerbos_read_authorizer_include_metadata = false
         @cerbos_read_authorizer_actions = %w[read]
