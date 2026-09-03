@@ -8,6 +8,22 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
   let!(:read_model) { TestUser.create!(id: aggregate_id, name: 'John') }
   let(:aggregate) { Test::User::Aggregate.new(aggregate_id) }
 
+  # Makes every EventPublisher raise `error` for the first `failing_attempts` calls and
+  # return a published event afterwards, without touching the eventstore.
+  def stub_event_publisher(failing_attempts:, error:)
+    attempts = 0
+    allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_wrap_original do |original, **kwargs|
+      original.call(**kwargs).tap do |publisher|
+        allow(publisher).to receive(:call) do
+          attempts += 1
+          raise error if attempts <= failing_attempts
+
+          Yes::Core::Event.new(id: SecureRandom.uuid, type: 'Test::User::NameChanged', data: { 'name' => 'Jane' })
+        end
+      end
+    end
+  end
+
   describe '#call' do
     subject { executor.call(command, command_name, guard_evaluator_class, skip_guards:) }
 
@@ -120,12 +136,63 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
         end
       end
 
+      context 'when another service advanced the stream and the read model still lags behind' do
+        let(:revision_error) do
+          PgEventstore::WrongExpectedRevisionError.new(
+            revision: 6, expected_revision: 5, stream: {}, verdict: :unmatched_stream_revision
+          )
+        end
+
+        before do
+          read_model.update_column(:revision, 5)
+          allow(executor).to receive(:sleep)
+          allow(Yes::Core::CommandHandling::RevisionConflictBackoff).to receive(:rand).and_return(0.5)
+          stub_event_publisher(failing_attempts: 2, error: revision_error)
+        end
+
+        it 'backs off between the retries until the read model has a chance to catch up' do
+          result = subject
+
+          aggregate_failures do
+            expect(result.error).to be_nil
+            expect(executor).to have_received(:sleep).with(0.01).ordered
+            expect(executor).to have_received(:sleep).with(0.02).ordered
+            expect(executor).to have_received(:sleep).twice
+          end
+        end
+      end
+
+      context 'when the read model already reflects the revision the stream reports' do
+        let(:revision_error) do
+          PgEventstore::WrongExpectedRevisionError.new(
+            revision: 5, expected_revision: 4, stream: {}, verdict: :unmatched_stream_revision
+          )
+        end
+
+        before do
+          read_model.update_column(:revision, 5)
+          allow(executor).to receive(:sleep)
+          stub_event_publisher(failing_attempts: 2, error: revision_error)
+        end
+
+        it 'retries without waiting' do
+          result = subject
+
+          aggregate_failures do
+            expect(result.error).to be_nil
+            expect(executor).not_to have_received(:sleep)
+          end
+        end
+      end
+
       context 'when event store fails persistently' do
         let(:revision_error) do
           PgEventstore::WrongExpectedRevisionError.new(
             revision: 1, expected_revision: 2, stream: {}, verdict: :unmatched_stream_revision
           )
         end
+
+        before { allow(executor).to receive(:sleep) } # the read model never catches up here, so every retry would wait for real
 
         it 'raises error after MAX_RETRIES' do
           call_count = 0

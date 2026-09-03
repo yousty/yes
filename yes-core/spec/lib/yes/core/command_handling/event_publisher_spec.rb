@@ -139,8 +139,14 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
         }]
       end
 
-      it 'raises a WrongExpectedRevisionError' do
-        expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError)
+      it 'raises a WrongExpectedRevisionError carrying the store revision and the held revision' do
+        expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError) do |error|
+          aggregate_failures do
+            expect(error.expected_revision).to eq(0)
+            expect(error.revision).to eq(:no_stream)
+            expect(error.stream.stream_id).to eq(location_id)
+          end
+        end
       end
     end
 
@@ -158,8 +164,13 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
         )
       end
 
-      it 'raises a WrongExpectedRevisionError' do
-        expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError)
+      it 'raises a WrongExpectedRevisionError carrying the store revision and the held revision' do
+        expect { event_publisher.call }.to raise_error(PgEventstore::WrongExpectedRevisionError) do |error|
+          aggregate_failures do
+            expect(error.revision).to eq(0)
+            expect(error.expected_revision).to eq(:no_stream)
+          end
+        end
       end
     end
   end
