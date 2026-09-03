@@ -22,6 +22,20 @@ RSpec.describe Yes::Core::CommandHandling::CommandGroupExecutor, integration: tr
     }
   end
 
+  shared_context 'with executors whose sleep is stubbed' do
+    let(:executors) { [] }
+
+    before do
+      allow(Yes::Core::CommandHandling::RevisionConflictBackoff).to receive(:rand).and_return(0.5)
+      allow(described_class).to receive(:new).and_wrap_original do |original, *args|
+        original.call(*args).tap do |executor|
+          allow(executor).to receive(:sleep)
+          executors << executor
+        end
+      end
+    end
+  end
+
   describe 'concurrency semantics' do
     context 'first sub-event uses EventPublisher' do
       it 'routes the first sub-event through EventPublisher with accessed_external_aggregates' do
@@ -84,7 +98,43 @@ RSpec.describe Yes::Core::CommandHandling::CommandGroupExecutor, integration: tr
       end
     end
 
+    context 'when another service advanced the stream and the read model still lags behind' do
+      include_context 'with executors whose sleep is stubbed'
+
+      let(:revision_error) do
+        PgEventstore::WrongExpectedRevisionError.new(
+          revision: 4,
+          expected_revision: 3,
+          stream: PgEventstore::Stream.new(context: 'Test', stream_name: 'PersonalInfo', stream_id: aggregate_id),
+          verdict: :unmatched_stream_revision
+        )
+      end
+      let(:always_failing) { instance_double(Yes::Core::CommandHandling::EventPublisher) }
+
+      before do
+        SharedProfileReadModel.create!(id: aggregate_id, first_name: 'Grace', test_personal_info_revision: 3)
+        allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(always_failing)
+        allow(always_failing).to receive(:call).and_raise(revision_error)
+      end
+
+      it 'backs off between the retries instead of spinning on the stale revision' do
+        expect { aggregate.update_personal_info_group(**valid_payload) }.
+          to raise_error(PgEventstore::WrongExpectedRevisionError)
+
+        aggregate_failures do
+          expect(executors.size).to eq(1)
+          expect(executors.first).to have_received(:sleep).with(0.01).ordered
+          expect(executors.first).to have_received(:sleep).with(0.02).ordered
+          expect(executors.first).to have_received(:sleep).with(0.04).ordered
+          # 8 waits exhaust the 2 s budget (1.27 s + 0.73 s); the last two retries do not sleep
+          expect(executors.first).to have_received(:sleep).exactly(8).times
+        end
+      end
+    end
+
     context 'when retries exceed MAX_RETRIES' do
+      include_context 'with executors whose sleep is stubbed'
+
       it 'eventually re-raises the WrongExpectedRevisionError' do
         always_failing = instance_double(Yes::Core::CommandHandling::EventPublisher)
         allow(Yes::Core::CommandHandling::EventPublisher).to receive(:new).and_return(always_failing)

@@ -17,6 +17,8 @@ module Yes
       # Only the group's own guards run here — sub-command guards are
       # bypassed by design.
       class CommandGroupExecutor
+        include RevisionConflictWaiting
+
         MAX_RETRIES = 10
         INLINE_RECOVERY_RETRY_THRESHOLD = 5
 
@@ -47,10 +49,13 @@ module Yes
           rescue PgEventstore::WrongExpectedRevisionError => e
             retries += 1
             clear_pending_update_state if aggregate.class.read_model_enabled?
-            retries <= MAX_RETRIES ? retry : raise(e)
+            raise e if retries > MAX_RETRIES
+
+            wait_for_read_model(e, retries)
+            retry
           rescue ConcurrentUpdateError => e
             retries += 1
-            sleep([0.01 * (2**(retries - 1)), 1.0].min) if retries <= MAX_RETRIES
+            sleep(RevisionConflictBackoff.schedule(retries)) if retries <= MAX_RETRIES
 
             if aggregate.class.read_model_enabled? && retries >= INLINE_RECOVERY_RETRY_THRESHOLD
               ReadModelRecoveryService.attempt_inline_recovery(read_model, aggregate: aggregate)

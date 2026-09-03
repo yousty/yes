@@ -55,6 +55,8 @@ module Yes
       #   response = executor.call(command, guard_evaluator_class)
       #
       class CommandExecutor
+        include RevisionConflictWaiting
+
         MAX_RETRIES = 10
         INLINE_RECOVERY_RETRY_THRESHOLD = 5
 
@@ -96,13 +98,15 @@ module Yes
           rescue PgEventstore::WrongExpectedRevisionError => e
             retries += 1
             clear_pending_update_state if aggregate.class.read_model_enabled?
+            raise e if retries > MAX_RETRIES
 
-            retries <= MAX_RETRIES ? retry : raise(e)
+            wait_for_read_model(e, retries)
+            retry
           rescue ConcurrentUpdateError => e
             retries += 1
             # Don't clear pending state - another process owns it
             # Sleep with exponential backoff to give the other process time to finish
-            sleep([0.01 * (2**(retries - 1)), 1.0].min) if retries <= MAX_RETRIES
+            sleep(RevisionConflictBackoff.schedule(retries)) if retries <= MAX_RETRIES
 
             # After several retries, check if pending state is stuck and attempt recovery
             # This prevents infinite retry loops when a process crashes leaving the flag set

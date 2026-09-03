@@ -191,12 +191,15 @@ module Yes
               expected = expected_revision(stream)
               next if revision == expected
 
-              revision_error!(revision || -1, expected || -1, stream)
+              revision_error!(expected || -1, revision || -1, stream)
             end
           end
 
-          # @param revision [Integer]
-          # @param expected_revision [Integer]
+          # Same argument convention as pg_eventstore itself: `revision` is what the store
+          # holds, `expected_revision` what this handler held.
+          #
+          # @param revision [Integer] the stream's current revision
+          # @param expected_revision [Integer] the revision the handler expected
           # @param stream [PgEventstore::Stream]
           def revision_error!(revision, expected_revision, stream)
             # pg_eventstore 3.0 requires `verdict:`, which selects the error's
@@ -209,7 +212,7 @@ module Yes
               self.class.current_span&.add_attributes(
                 {
                   current_revision: revision,
-                  expected_revision: expected_revision,
+                  expected_revision:,
                   stream: stream.to_json
                 }.stringify_keys
               )

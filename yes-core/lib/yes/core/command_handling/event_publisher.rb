@@ -106,17 +106,17 @@ module Yes
               name: aggregate_data[:name],
               id: aggregate_data[:id]
             )
-            expected_revision = command_utilities.stream_revision(stream)
+            stream_revision = command_utilities.stream_revision(stream)
             aggregate_revision = aggregate_data[:revision].call
-            normalized_revision = aggregate_revision == -1 ? :no_stream : aggregate_revision
+            expected_revision = aggregate_revision == -1 ? :no_stream : aggregate_revision
+            next if expected_revision == stream_revision
 
-            next if normalized_revision == expected_revision
-
-            # pg_eventstore 3.0 requires `verdict:`, which selects the error's
-            # message. This branch is only reached when the revision we hold
-            # differs from the store's, which is exactly :unmatched_stream_revision.
+            # Same argument convention as pg_eventstore itself: `revision` is what the
+            # store holds, `expected_revision` what we held. pg_eventstore 3.0 requires
+            # `verdict:`, which selects the error's message; this branch is only reached
+            # when the two differ, which is exactly :unmatched_stream_revision.
             raise PgEventstore::WrongExpectedRevisionError.new(
-              revision: aggregate_revision,
+              revision: stream_revision,
               expected_revision:,
               stream:,
               verdict: :unmatched_stream_revision
