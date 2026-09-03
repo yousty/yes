@@ -102,7 +102,7 @@ RSpec.describe Yes::Auth::Cerbos::WriteResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: apprenticeship1.id,
       role_id: company_recruiter.id,
-      context: 'apprenticeship_presentation',
+      context: 'catalog',
       resource_type: 'apprenticeship',
       auth_attributes: { apprenticeship_id: '111' }
     )
@@ -114,7 +114,7 @@ RSpec.describe Yes::Auth::Cerbos::WriteResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: apprenticeship2.id,
       role_id: company_recruiter.id,
-      context: 'apprenticeship_presentation',
+      context: 'catalog',
       resource_type: 'apprenticeship',
       auth_attributes: { apprenticeship_id: '222' }
     )
@@ -151,7 +151,7 @@ RSpec.describe Yes::Auth::Cerbos::WriteResourceAccess::PrincipalAttributes do
                 }
               }
             },
-            apprenticeship_presentation: {
+            catalog: {
               apprenticeship: {
                 company_recruiter: {
                   apprenticeship1.id => {

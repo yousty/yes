@@ -135,7 +135,7 @@ one-way, downtime-requiring operation — see the `pg_eventstore` upgrade notes.
   `event.link_global_position`, in `Commands::Stateless::Handler` and
   `CommandHandling::EventPublisher`. `pg_eventstore` v3 drops `events.link_id`
   (migration 13) in favour of the bigint `link_global_position`, so `Event#link_id`
-  raises `NoMethodError`. Mirrors the same change in `yousty-eventsourcing` 16.0.0.
+  raises `NoMethodError`.
   **Update any dashboards or trace queries keyed on `event.link_id`.**
 
 ### yes-auth

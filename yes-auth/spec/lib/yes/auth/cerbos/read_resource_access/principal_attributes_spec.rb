@@ -55,7 +55,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: company1.id,
       role_id: company_admin.id,
-      service: 'company_manager',
+      service: 'shop_manager',
       resource_type: 'company',
       auth_attributes: { read_attr1a: 'read_attr1a', read_attr2a: 'read_attr2a' }
     )
@@ -67,7 +67,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: company1.id,
       role_id: company_recruiter.id,
-      service: 'company_manager',
+      service: 'shop_manager',
       resource_type: 'company',
       auth_attributes: { read_attr: 'read_attrxyz' }
     )
@@ -79,7 +79,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: company2.id,
       role_id: company_admin.id,
-      service: 'company_manager',
+      service: 'shop_manager',
       resource_type: 'company'
     )
   end
@@ -90,7 +90,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: location1.id,
       role_id: company_admin.id,
-      service: 'company_manager',
+      service: 'shop_manager',
       resource_type: 'location',
       auth_attributes: { address: 'address1' }
     )
@@ -102,7 +102,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: apprenticeship1.id,
       role_id: company_recruiter.id,
-      service: 'apprenticeship_presentation',
+      service: 'catalog',
       scope: 'statistics',
       resource_type: 'apprenticeship',
       auth_attributes: { apprenticeship_id: '111' }
@@ -115,7 +115,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
       principal_id: user1.id,
       resource_id: apprenticeship2.id,
       role_id: company_recruiter.id,
-      service: 'apprenticeship_presentation',
+      service: 'catalog',
       scope: 'statistics',
       resource_type: 'apprenticeship',
       auth_attributes: { apprenticeship_id: '222' }
@@ -130,7 +130,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
           user_auth_attr2: 'auth_attr2',
           user_auth_some_ids: [1, 2, 3],
           read_resource_access: {
-            company_manager: {
+            shop_manager: {
               root: {
                 company: {
                   company_admin: {
@@ -155,7 +155,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
                 }
               }
             },
-            apprenticeship_presentation: {
+            catalog: {
               statistics: {
                 apprenticeship: {
                   company_recruiter: {
@@ -216,7 +216,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
           {
             **user1_auth_attributes,
             read_resource_access: {
-              company_manager: {
+              shop_manager: {
                 root: {
                   company: {
                     company_admin: {
@@ -265,7 +265,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
           FactoryBot.create(
             :auth_principals_read_resource_access,
             principal_id: user1.id,
-            service: 'company_manager',
+            service: 'shop_manager',
             role_id: company_admin.id,
             resource_type: nil,
             resource_id: company.id,
@@ -281,7 +281,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
           FactoryBot.create(
             :auth_principals_read_resource_access,
             principal_id: user1.id,
-            service: 'company_manager',
+            service: 'shop_manager',
             role_id: nil,
             resource_type: 'company',
             resource_id: company.id,
@@ -297,7 +297,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
           FactoryBot.create(
             :auth_principals_read_resource_access,
             principal_id: user1.id,
-            service: 'company_manager',
+            service: 'shop_manager',
             role_id: company_admin.id,
             resource_type: 'company',
             resource_id: nil,
@@ -313,7 +313,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
           FactoryBot.create(
             :auth_principals_read_resource_access,
             principal_id: user1.id,
-            service: 'company_manager',
+            service: 'shop_manager',
             role_id: company_admin.id,
             resource_type: 'company',
             resource_id: company.id
@@ -325,7 +325,7 @@ RSpec.describe Yes::Auth::Cerbos::ReadResourceAccess::PrincipalAttributes do
             {
               **user1_auth_attributes,
               read_resource_access: {
-                company_manager: {
+                shop_manager: {
                   root: {
                     company: {
                       company_admin: {

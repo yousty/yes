@@ -50,9 +50,9 @@ RSpec.describe Yes::Auth::Principals::Role do
     subject(:resource_authorization_name) { role.resource_authorization_name }
 
     context 'when name contains colons' do
-      let(:role) { described_class.create!(id: 'role-uuid', name: 'company:manager') }
+      let(:role) { described_class.create!(id: 'role-uuid', name: 'shop:manager') }
 
-      it { is_expected.to eq('company_manager') }
+      it { is_expected.to eq('shop_manager') }
     end
 
     context 'when name has no colons' do
