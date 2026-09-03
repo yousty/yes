@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-09-03
+
+### yes-core
+
+#### Added
+- `CommandHandling::RevisionConflictBackoff` and `RevisionConflictWaiting`: an
+  exponential, jittered backoff (10 ms → 1 s per attempt, 2 s in total) applied
+  between revision-conflict retries while the read model still lags the stream.
+
+#### Changed
+- `CommandExecutor` and `CommandGroupExecutor` wait for the read model to catch up
+  before retrying a `PgEventstore::WrongExpectedRevisionError` instead of retrying
+  immediately; conflicts the same process caused still retry at once.
+- The `ConcurrentUpdateError` retries take their delay from
+  `RevisionConflictBackoff.schedule`; timing unchanged.
+
+#### Fixed
+- `EventPublisher#verify_external_revisions!` and `Stateless::Handler#revision_error!`
+  raise `WrongExpectedRevisionError` with pg_eventstore's field order: `revision` is the
+  store's value, `expected_revision` the caller's. Both were inverted.
+
 ## [2.2.0] - 2026-09-01
 
 ### yes-core
