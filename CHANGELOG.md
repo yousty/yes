@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.1] - 2026-09-07
+
+### yes-auth
+
+#### Fixed
+- The `auth_principals_*` FactoryBot factories are now included in the released gem.
+  They live in `spec/factories`, which no gemspec packaged, so an application that
+  installed yes-auth from a gem server got a gem without them while one that resolved
+  the same version from git got them on disk. Applications load these factories by
+  path to build principals for their own authorization specs, and the usual loader
+  guards on the directory existing — so the gem install failed silently at load and
+  only surfaced later as `Factory not registered: "auth_principals_user"`.
+
+  `spec/factories/dummy_resources.rb` stays unpackaged on purpose: it defines generic
+  `:company` / `:apprenticeship` / `:location` factories for this gem's own dummy app,
+  which would collide with an application's factories of the same name.
+
 ## [2.4.0] - 2026-09-07
 
 ### yes-core
