@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.2] - 2026-09-14
+
+### yes-core
+
+#### Changed
+- A `PgEventstore::WrongExpectedRevisionError` raised while publishing no longer marks the
+  `Publish Event` span as failed. The command executor retries the command, so the conflict is a
+  contention signal, not an error: the span keeps a non-error status, records the exception as an
+  event and gets `outcome = "revision_conflict"` as an attribute. Any other exception still fails
+  the span. Applies to both `CommandHandling::EventPublisher` and the stateless handler's publish.
+
+#### Added
+- `OpenTelemetry::OtlSpan::OtlData#tolerated_errors`: a hash of exception class to outcome label.
+  A tolerated error is re-raised exactly as before, but the span is not marked as failed and
+  carries the label as its `outcome` attribute. `OtlSpan::REVISION_CONFLICT` is the mapping used
+  by the publish spans.
+- `CommandExecutor` and `CommandGroupExecutor` stamp the number of retries a command needed on
+  the span they run in (`retries` attribute, only when at least one retry happened), so
+  per-command contention can be charted from span metrics.
+
 ## [2.4.1] - 2026-09-07
 
 ### yes-auth
