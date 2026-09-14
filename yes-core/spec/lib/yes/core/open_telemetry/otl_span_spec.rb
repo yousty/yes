@@ -252,6 +252,63 @@ RSpec.describe Yes::Core::OpenTelemetry::OtlSpan do
       end
     end
 
+    describe 'tolerated errors' do
+      let(:tolerated_error) { Class.new(StandardError) }
+      let(:otl_data) do
+        Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(
+          span_name: 'Publish', tolerated_errors: { tolerated_error => 'conflict' }
+        )
+      end
+      let(:span) { finished_spans.first }
+
+      context 'when the raised error is tolerated' do
+        let(:given_block) { -> { raise tolerated_error, 'stream moved on' } }
+
+        before do
+          suppress(tolerated_error) { subject }
+        end
+
+        it 're-raises the error' do
+          expect { subject }.to raise_error(tolerated_error, 'stream moved on')
+        end
+
+        it 'records the error without failing the span and labels the outcome' do
+          aggregate_failures do
+            expect(span.status.code).not_to eq(OpenTelemetry::Trace::Status::ERROR)
+            expect(span.attributes['outcome']).to eq('conflict')
+            expect(span.events.map(&:name)).to eq(['exception'])
+          end
+        end
+
+        context 'when the raised error is a subclass of the tolerated one' do
+          let(:given_block) { -> { raise Class.new(tolerated_error), 'stream moved on' } }
+
+          it 'is tolerated as well' do
+            expect(span.attributes['outcome']).to eq('conflict')
+          end
+        end
+      end
+
+      context 'when the raised error is not tolerated' do
+        let(:given_block) { -> { raise ArgumentError, 'boom' } }
+
+        before do
+          suppress(ArgumentError) { subject }
+        end
+
+        it 're-raises the error' do
+          expect { subject }.to raise_error(ArgumentError, 'boom')
+        end
+
+        it 'fails the span and leaves no outcome' do
+          aggregate_failures do
+            expect(span.status.code).to eq(OpenTelemetry::Trace::Status::ERROR)
+            expect(span.attributes).not_to have_key('outcome')
+          end
+        end
+      end
+    end
+
     describe 'links' do
       shared_examples 'no links' do
         it 'does not create links' do
@@ -296,6 +353,39 @@ RSpec.describe Yes::Core::OpenTelemetry::OtlSpan do
             end
           end
         end
+      end
+    end
+  end
+
+  describe '.record_retries' do
+    subject { otl_tracer.in_span('Execute command') { described_class.record_retries(retries) } }
+
+    let(:otl_tracer) { OpenTelemetry.tracer_provider.tracer('SpecTracer') }
+    let(:configured_tracer) { otl_tracer }
+    let(:retries) { 3 }
+
+    before do
+      allow(Yes::Core.configuration).to receive(:otl_tracer).and_return(configured_tracer)
+      subject
+    end
+
+    it 'stamps the retries on the current span' do
+      expect(finished_spans.first.attributes['retries']).to eq(3)
+    end
+
+    context 'when the command needed no retry' do
+      let(:retries) { 0 }
+
+      it 'leaves the span untouched' do
+        expect(finished_spans.first.attributes).not_to have_key('retries')
+      end
+    end
+
+    context 'when no tracer is configured' do
+      let(:configured_tracer) { nil }
+
+      it 'leaves the span untouched' do
+        expect(finished_spans.first.attributes).not_to have_key('retries')
       end
     end
   end

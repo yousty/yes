@@ -69,6 +69,8 @@ module Yes
             clear_pending_update_state if aggregate.class.read_model_enabled?
             Yes::Core::Commands::CommandGroupResponse.new(cmd:, error: e)
           end
+        ensure
+          Yes::Core::OpenTelemetry::OtlSpan.record_retries(retries)
         end
 
         private

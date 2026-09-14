@@ -112,7 +112,9 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
 
         before do
           call_count = 0
-          allow(PgEventstore.client).to receive(:append_to_stream) do
+          client = PgEventstore.client
+          allow(PgEventstore).to receive(:client).and_return(client)
+          allow(client).to receive(:append_to_stream) do
             call_count += 1
             raise revision_error if call_count <= 2
 
@@ -132,6 +134,37 @@ RSpec.describe Yes::Core::CommandHandling::CommandExecutor do
             expect(result).to be_a(Yes::Core::Commands::Response)
             expect(result.error).to be_nil
             expect(result.event).to be_present
+          end
+        end
+
+        context 'when tracing is enabled' do
+          include_context :opentelemetry
+
+          let(:otl_tracer) { OpenTelemetry.tracer_provider.tracer('SpecTracer') }
+
+          before do
+            Yes::Core.configuration.otl_tracer = otl_tracer
+            otl_tracer.in_span('Execute command') { subject }
+          end
+
+          after do
+            Yes::Core.configuration.otl_tracer = nil
+          end
+
+          it 'stamps the number of retries on the enclosing span' do
+            span = finished_spans.find { _1.name == 'Execute command' }
+
+            expect(span.attributes['retries']).to eq(2)
+          end
+
+          it 'does not fail the publish spans that hit the conflict' do
+            publish_spans = finished_spans.select { _1.name == 'Publish Event' }
+
+            aggregate_failures do
+              expect(publish_spans.count).to eq(3)
+              expect(publish_spans.map { _1.status.code }).not_to include(OpenTelemetry::Trace::Status::ERROR)
+              expect(publish_spans.map { _1.attributes['outcome'] }).to eq(['revision_conflict', 'revision_conflict', nil])
+            end
           end
         end
       end

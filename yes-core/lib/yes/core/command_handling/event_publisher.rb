@@ -59,7 +59,10 @@ module Yes
 
         otl_trackable(
           :call,
-          Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer, track_sql: true)
+          Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(
+            span_name: 'Publish Event', span_kind: :producer, track_sql: true,
+            tolerated_errors: Yes::Core::OpenTelemetry::OtlSpan::REVISION_CONFLICT
+          )
         )
 
         private

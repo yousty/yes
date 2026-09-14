@@ -122,7 +122,10 @@ module Yes
               middlewares: Middlewares.for_write
             ).tap { otl_record_response(_1) }
           end
-          otl_trackable :publish_event, OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Publish Event', span_kind: :producer)
+          otl_trackable :publish_event, OpenTelemetry::OtlSpan::OtlData.new(
+            span_name: 'Publish Event', span_kind: :producer,
+            tolerated_errors: OpenTelemetry::OtlSpan::REVISION_CONFLICT
+          )
 
           private
 
@@ -208,7 +211,6 @@ module Yes
             PgEventstore::WrongExpectedRevisionError.new(
               revision:, expected_revision:, stream:, verdict: :unmatched_stream_revision
             ).tap do |error|
-              self.class.current_span&.status = ::OpenTelemetry::Trace::Status.error('Wrong expected revision')
               self.class.current_span&.add_attributes(
                 {
                   current_revision: revision,
