@@ -15,6 +15,32 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
     let(:command_name) { :change_name }
     let(:payload) { { name: 'Jane', user_id: } }
 
+    context 'when tracing is enabled' do
+      include_context :opentelemetry
+
+      let(:otl_tracer) { OpenTelemetry.tracer_provider.tracer('SpecTracer') }
+      let(:span) { finished_spans.find { _1.name == 'Execute command' } }
+
+      before { Yes::Core.configuration.otl_tracer = otl_tracer }
+
+      it 'names the command it ran on the span' do
+        subject
+
+        # Same shape yousty-eventsourcing puts in its span name, so both render identically
+        # once a dashboard strips the ::Command suffix.
+        aggregate_failures do
+          expect(span).to be_present
+          expect(span.attributes['command']).to eq('Test::User::Commands::ChangeName::Command')
+        end
+      end
+
+      it 'keeps the span name fixed so its latency stays one series' do
+        subject
+
+        expect(span.name).to eq('Execute command')
+      end
+    end
+
     context 'when command succeeds' do
       it 'updates the read model' do
         result = subject

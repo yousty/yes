@@ -35,6 +35,7 @@ module Yes
         def call(group_name, payload, guards: true, metadata: nil)
           prepared = prepare_payload(payload, metadata)
           cmd = command_utilities.build_group_command(group_name, prepared)
+          otl_record_command(cmd)
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class_for_group(group_name)
 
           ReadModelRecoveryService.check_and_recover_with_retries(read_model, aggregate:) if aggregate.class.read_model_enabled?
@@ -48,6 +49,17 @@ module Yes
         private
 
         attr_reader :aggregate, :command_utilities, :read_model
+
+        # Records which command group the span ran; see CommandHandler#otl_record_command.
+        #
+        # @param cmd [Object] the built command group
+        # @return [void]
+        def otl_record_command(cmd)
+          name = cmd.class.name
+          return if name.nil?
+
+          self.class.current_span&.add_attributes({ CommandHandler::COMMAND_ATTRIBUTE => name })
+        end
 
         # Prepares the payload before constructing the group command.
         # Mirrors the metadata-injection logic in {CommandHandler#prepare_payload}.
