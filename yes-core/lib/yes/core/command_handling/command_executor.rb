@@ -121,6 +121,8 @@ module Yes
                  Yes::Core::Command::Invalid => e
             command_response_class(cmd).new(cmd: cmd, error: e, batch_id: cmd.batch_id)
           end
+        ensure
+          Yes::Core::OpenTelemetry::OtlSpan.record_retries(retries)
         end
 
         private
