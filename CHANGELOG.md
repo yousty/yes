@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.3] - 2026-09-15
+
+### yes-core
+
+#### Added
+- `CommandHandling::CommandHandler` and `CommandGroupHandler` record which command they ran on
+  the `Execute command` / `Execute command group` span, as a `command` attribute holding the
+  command class name (for example `Shop::Order::Commands::Place::Command`). Previously the span
+  named only the operation, so a trace showed that a command had run and how many retries it
+  needed, but not which command it was. The span name is unchanged on purpose: it is a metric
+  dimension, and naming it per command would multiply the latency histogram series per service.
+
 ## [2.4.2] - 2026-09-15
 
 ### yes-core

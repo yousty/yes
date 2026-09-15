@@ -11,6 +11,10 @@ module Yes
       #   response = handler.call(:approve_documents, { document_ids: '123', another: 'value' })
       #
       class CommandHandler
+        # Span attribute naming the command that ran. The span keeps a fixed name so its
+        # latency histogram stays one series per service; this is how the command is identified.
+        COMMAND_ATTRIBUTE = 'command'
+
         include Yes::Core::OpenTelemetry::Trackable
 
         # Initializes a new CommandHandler
@@ -32,6 +36,7 @@ module Yes
         def call(command_name, payload, guards: true, metadata: nil)
           prepared_payload = prepare_payload(command_name, payload, metadata)
           cmd = command_utilities.build_command(command_name, prepared_payload)
+          otl_record_command(cmd)
 
           guard_evaluator_class = command_utilities.fetch_guard_evaluator_class(command_name)
 
@@ -50,6 +55,18 @@ module Yes
         private
 
         attr_reader :aggregate, :command_utilities, :read_model
+
+        # Records which command the span ran. The span itself keeps a fixed name so its latency
+        # histogram stays a single series per service; the command goes on an attribute instead.
+        #
+        # @param cmd [Object] the built command
+        # @return [void]
+        def otl_record_command(cmd)
+          name = cmd.class.name
+          return if name.nil?
+
+          self.class.current_span&.add_attributes({ COMMAND_ATTRIBUTE => name })
+        end
 
         # Prepares the command payload
         #
