@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.4.2] - 2026-09-14
+## [2.4.2] - 2026-09-15
 
 ### yes-core
 
