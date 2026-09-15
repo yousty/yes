@@ -26,11 +26,9 @@ RSpec.describe Yes::Core::CommandHandling::CommandHandler do
       it 'names the command it ran on the span' do
         subject
 
-        # Same shape yousty-eventsourcing puts in its span name, so both render identically
-        # once a dashboard strips the ::Command suffix.
         aggregate_failures do
           expect(span).to be_present
-          expect(span.attributes['command']).to eq('Test::User::Commands::ChangeName::Command')
+          expect(span.attributes['command.name']).to eq('Test::User::Commands::ChangeName::Command')
         end
       end
 
