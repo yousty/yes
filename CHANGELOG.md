@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.4] - 2026-09-15
+
+### yes-core
+
+#### Changed
+- The span attribute added in 2.4.3 is now named `command.name` instead of `command`.
+  `CommandCerbosAuthorizer` already sets a `command` attribute holding the serialised command,
+  so the two collided: a metrics pipeline that exports span attributes by name got the payload
+  rather than the class name, and with it one time series per distinct payload. The attribute
+  name is available as `CommandHandling::CommandHandler::COMMAND_ATTRIBUTE`.
+
 ## [2.4.3] - 2026-09-15
 
 ### yes-core

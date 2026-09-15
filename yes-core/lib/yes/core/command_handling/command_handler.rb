@@ -13,7 +13,11 @@ module Yes
       class CommandHandler
         # Span attribute naming the command that ran. The span keeps a fixed name so its
         # latency histogram stays one series per service; this is how the command is identified.
-        COMMAND_ATTRIBUTE = 'command'
+        #
+        # Not the bare `command`: CommandCerbosAuthorizer already puts the serialised command
+        # on an attribute of that name, and a metrics pipeline that exports span attributes by
+        # name cannot tell the two apart. It would export the payload, one series per payload.
+        COMMAND_ATTRIBUTE = 'command.name'
 
         include Yes::Core::OpenTelemetry::Trackable
 
