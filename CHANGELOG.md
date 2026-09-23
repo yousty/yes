@@ -11,8 +11,10 @@ All notable changes to this project will be documented in this file.
   symbol, number, boolean) on the `Publish Event` span as its own `event.metadata.<key>`
   attribute, next to the existing `event.metadata` JSON attribute. A tracing backend that
   exports span attributes by name can then derive metrics dimensioned by a metadata key.
-  Symbols are recorded as strings; nil, hash and array values are skipped (they stay in the JSON
-  attribute). The prefix is available as `CommandHandling::EventPublisher::METADATA_ATTRIBUTE_PREFIX`.
+  Symbols are recorded as strings; nil, hash and array values, and numerics other than Integer
+  and Float, are skipped (they stay in the JSON attribute).
+- Stateless command handlers (`Commands::Stateless::Handler`) are not covered: their `Publish Event`
+  spans still carry only the JSON metadata attribute.
 
 ## [2.4.4] - 2026-09-15
 

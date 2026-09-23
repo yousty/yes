@@ -143,6 +143,7 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
           metadata: {
             status: :accepted,
             attempt: 2,
+            amount: BigDecimal('1.5'),
             nothing: nil,
             nested: { 'key' => 'value' },
             list: %w[a b]
@@ -164,12 +165,29 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
         )
       end
 
-      it 'skips metadata entries that are nil, hashes or arrays' do
+      it 'skips metadata entries the OpenTelemetry SDK does not accept as attribute values' do
         event_publisher.call
 
         expect(span.attributes.keys).not_to include(
-          'event.metadata.nothing', 'event.metadata.nested', 'event.metadata.list'
+          'event.metadata.amount', 'event.metadata.nothing', 'event.metadata.nested', 'event.metadata.list'
         )
+      end
+
+      context 'when the OpenTelemetry SDK reports rejected attributes' do
+        let(:otl_errors) { [] }
+        let!(:original_error_handler) { OpenTelemetry.error_handler }
+
+        before do
+          OpenTelemetry.error_handler = ->(message: nil, **) { otl_errors << message }
+        end
+
+        after { OpenTelemetry.error_handler = original_error_handler }
+
+        it 'hands the SDK no metadata attribute it rejects' do
+          event_publisher.call
+
+          expect(otl_errors.grep(/event\.metadata\./)).to be_empty
+        end
       end
 
       it 'keeps the whole metadata as a JSON attribute' do

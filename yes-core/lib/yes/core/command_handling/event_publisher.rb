@@ -9,8 +9,10 @@ module Yes
 
         # Prefix of the span attributes that carry single event metadata entries
         METADATA_ATTRIBUTE_PREFIX = 'event.metadata.'
-        # Metadata value types that are recorded as their own span attribute
-        SCALAR_METADATA_TYPES = [String, Symbol, Numeric, TrueClass, FalseClass].freeze
+        # Metadata value types that are recorded as their own span attribute. The OpenTelemetry SDK
+        # rejects other numerics (e.g. BigDecimal), so only Integer and Float are listed.
+        SCALAR_METADATA_TYPES = [String, Symbol, Integer, Float, TrueClass, FalseClass].freeze
+        private_constant :METADATA_ATTRIBUTE_PREFIX, :SCALAR_METADATA_TYPES
 
         # Value object containing aggregate data needed for event publication
         AggregateEventPublicationData = Struct.new(:id, :context, :name, :revision, keyword_init: true) do
