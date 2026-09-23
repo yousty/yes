@@ -129,6 +129,56 @@ RSpec.describe Yes::Core::CommandHandling::EventPublisher do
       end
     end
 
+    context 'when tracing is enabled' do
+      include_context :opentelemetry
+
+      let(:otl_tracer) { OpenTelemetry.tracer_provider.tracer('SpecTracer') }
+      let(:span) { finished_spans.find { _1.name == 'Publish Event' } }
+      let(:payload) do
+        {
+          user_id:,
+          location_id:,
+          origin: 'test',
+          batch_id: '123',
+          metadata: {
+            status: :accepted,
+            attempt: 2,
+            nothing: nil,
+            nested: { 'key' => 'value' },
+            list: %w[a b]
+          }
+        }
+      end
+
+      before { Yes::Core.configuration.otl_tracer = otl_tracer }
+
+      it 'records each scalar metadata entry as its own span attribute' do
+        event_publisher.call
+
+        expect(span.attributes).to include(
+          'event.metadata.origin' => 'test',
+          'event.metadata.batch_id' => '123',
+          'event.metadata.yes-dsl' => true,
+          'event.metadata.status' => 'accepted',
+          'event.metadata.attempt' => 2
+        )
+      end
+
+      it 'skips metadata entries that are nil, hashes or arrays' do
+        event_publisher.call
+
+        expect(span.attributes.keys).not_to include(
+          'event.metadata.nothing', 'event.metadata.nested', 'event.metadata.list'
+        )
+      end
+
+      it 'keeps the whole metadata as a JSON attribute' do
+        event_publisher.call
+
+        expect(JSON.parse(span.attributes['event.metadata'])).to include('status' => 'accepted', 'list' => %w[a b])
+      end
+    end
+
     context 'when external revisions do not match' do
       let(:accessed_external_aggregates) do
         [{
