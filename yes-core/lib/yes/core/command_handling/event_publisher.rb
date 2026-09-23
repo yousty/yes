@@ -7,6 +7,13 @@ module Yes
       class EventPublisher
         include Yes::Core::OpenTelemetry::Trackable
 
+        # Prefix of the span attributes that carry single event metadata entries
+        METADATA_ATTRIBUTE_PREFIX = 'event.metadata.'
+        # Metadata value types that are recorded as their own span attribute. The OpenTelemetry SDK
+        # rejects other numerics (e.g. BigDecimal), so only Integer and Float are listed.
+        SCALAR_METADATA_TYPES = [String, Symbol, Integer, Float, TrueClass, FalseClass].freeze
+        private_constant :METADATA_ATTRIBUTE_PREFIX, :SCALAR_METADATA_TYPES
+
         # Value object containing aggregate data needed for event publication
         AggregateEventPublicationData = Struct.new(:id, :context, :name, :revision, keyword_init: true) do
           def self.from_aggregate(aggregate)
@@ -153,14 +160,32 @@ module Yes
           meta
         end
 
+        # Records the event on the current span: type, data and metadata as JSON, plus every
+        # scalar top-level metadata entry as its own `event.metadata.<key>` attribute, so tracing
+        # backends can derive metrics dimensioned by a metadata key. Nil, hash and array values
+        # are left out; they remain readable in the JSON attribute.
+        #
+        # @param event [PgEventstore::Event] The event about to be published
+        # @return [void]
         def otl_record_event_data(event)
           self.class.current_span&.add_attributes(
             {
               'event.type' => event.type,
               'event.data' => event.data.to_json,
-              'event.metadata' => event.metadata.to_json
+              'event.metadata' => event.metadata.to_json,
+              **scalar_metadata_attributes(event.metadata)
             }
           )
+        end
+
+        # @param metadata [Hash] The event metadata
+        # @return [Hash{String => String, Numeric, Boolean}] Scalar metadata entries keyed by span attribute name
+        def scalar_metadata_attributes(metadata)
+          metadata.each_with_object({}) do |(key, value), attributes|
+            next unless SCALAR_METADATA_TYPES.any? { value.is_a?(_1) }
+
+            attributes["#{METADATA_ATTRIBUTE_PREFIX}#{key}"] = value.is_a?(Symbol) ? value.to_s : value
+          end
         end
 
         def otl_record_response(result)
