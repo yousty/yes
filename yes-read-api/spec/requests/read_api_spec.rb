@@ -653,4 +653,136 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
       end
     end
   end
+
+  describe 'what the request authorizer is handed' do
+    let(:identity_id) { SecureRandom.uuid }
+    let(:access_token) { jwt_sign_in(host: 'www.xyz.ch', identity_id:) }
+    let(:company_id) { SecureRandom.uuid }
+    let(:scope_definition) do
+      { type: 'filter_set', logical_operator: 'and', scope: { company_ids: company_id }, filters: [] }
+    end
+    let(:authorizer_params) { [] }
+
+    before do
+      # Snapshot the params at call time: the controller keeps adding defaults to the same hash afterwards.
+      allow(ReadModels::Apprenticeship::RequestAuthorizer).to receive(:call) do |params, _auth_data|
+        authorizer_params << params.deep_dup
+        true
+      end
+    end
+
+    context 'when a basic GET carries only a filter_definition' do
+      subject(:request) do
+        get('/queries/apprenticeships', params: { filter_definition: scope_definition }, headers: request_headers)
+      end
+
+      it 'does not hand the filter_definition to the authorizer, since the basic query ignores it' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.size).to eq(1)
+          expect(authorizer_params.first).not_to have_key(:filter_definition)
+        end
+      end
+    end
+
+    context 'when a basic GET carries filters and a filter_definition' do
+      subject(:request) do
+        get('/queries/apprenticeships',
+            params: { filters: { company_ids: company_id }, filter_definition: scope_definition },
+            headers: request_headers)
+      end
+
+      it 'hands only the filters to the authorizer' do
+        request
+
+        expect(authorizer_params.first).to include(filters: { company_ids: company_id })
+        expect(authorizer_params.first).not_to have_key(:filter_definition)
+      end
+    end
+
+    context 'when an advanced POST carries only filters' do
+      subject(:request) do
+        post('/queries/apprenticeships', params: { filters: { company_ids: company_id } }.to_json, headers: request_headers)
+      end
+
+      it 'does not hand the filters to the authorizer, since the advanced query ignores them' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.size).to eq(1)
+          expect(authorizer_params.first[:filters]).to be_blank
+        end
+      end
+    end
+
+    context 'when an advanced POST carries filters and a filter_definition' do
+      subject(:request) do
+        post('/queries/apprenticeships',
+             params: { filters: { company_ids: company_id }, filter_definition: scope_definition }.to_json,
+             headers: request_headers)
+      end
+
+      it 'hands only the filter_definition to the authorizer' do
+        request
+
+        expect(authorizer_params.first[:filters]).to be_blank
+        expect(authorizer_params.first[:filter_definition]).to include(scope: { company_ids: company_id })
+      end
+    end
+
+    context 'when a persisted filter body carries only filters' do
+      subject(:request) do
+        get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)
+      end
+
+      let(:persisted_filter) do
+        FactoryBot.create(:persisted_filter, body: { filters: { company_ids: company_id } })
+      end
+
+      it 'does not hand the filters to the authorizer, since the persisted filter is applied as advanced' do
+        request
+
+        expect(authorizer_params.first[:filters]).to be_blank
+      end
+    end
+
+    context 'when a persisted filter body carries a filter_definition' do
+      subject(:request) do
+        get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)
+      end
+
+      let(:persisted_filter) { FactoryBot.create(:persisted_filter, body: { filter_definition: scope_definition }) }
+
+      it 'hands the stored filter_definition to the authorizer' do
+        request
+
+        expect(authorizer_params.first[:filter_definition]).to include(scope: { company_ids: company_id })
+      end
+    end
+
+    context 'when an authorizer bounds the request by changing the params' do
+      subject(:request) do
+        get('/queries/apprenticeships', params: { filters: { company_ids: 'any' } }, headers: request_headers)
+      end
+
+      let(:apprenticeship) { FactoryBot.create(:apprenticeship) }
+
+      before do
+        FactoryBot.create(:apprenticeship)
+        allow(ReadModels::Apprenticeship::RequestAuthorizer).to receive(:call) do |params, _auth_data|
+          params[:filters] = { ids: apprenticeship.id }
+          true
+        end
+      end
+
+      it 'filters by the bounded params' do
+        request
+
+        expect(json_data.pluck('id')).to eq([apprenticeship.id])
+      end
+    end
+  end
 end
