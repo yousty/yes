@@ -111,6 +111,30 @@ RSpec.describe 'Yes::Command::Api::V1::CommandsController', type: :request do
       it_behaves_like 'open telemetry trackable'
     end
 
+    context 'when access token is garbage' do
+      let(:commands) { [valid_command] }
+      let(:access_token) { 'not-a-jwt' }
+      let(:tracer) { nil }
+
+      around do |example|
+        original_tracer = Yes::Core.configuration.otl_tracer
+        Yes::Core.configuration.otl_tracer = tracer
+        example.run
+      ensure
+        Yes::Core.configuration.otl_tracer = original_tracer
+      end
+
+      context 'without a tracer' do
+        it_behaves_like 'authentication failure'
+      end
+
+      context 'with a tracer' do
+        let(:tracer) { OpenTelemetry.tracer_provider.tracer('SpecTracer') }
+
+        it_behaves_like 'authentication failure'
+      end
+    end
+
     context 'when params are not an array' do
       let(:commands) { 'not an array' }
       let(:expected_details) { { 'message' => 'Commands must be an array' } }

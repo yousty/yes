@@ -18,6 +18,12 @@ All notable changes to this project will be documented in this file.
 - A malformed bearer token no longer fails the request with an unhandled error when tracing is
   enabled; the controller answers 401.
 
+### yes-command-api
+
+#### Fixed
+- A malformed bearer token no longer fails the request with an unhandled error when tracing is
+  enabled; the controller answers 401.
+
 ## [2.4.5] - 2026-09-23
 
 ### yes-core
