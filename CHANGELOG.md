@@ -4,9 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-core
+
+#### Added
+- `Configuration#auth_error_classes` returns `Yes::Core::AuthenticationError` plus the error classes
+  of the configured auth adapter. The command API now uses it to decide which errors it rescues.
+
 ### yes-read-api
 
 #### Fixed
+- The read API now rescues the error classes of the configured auth adapter like the command API
+  does, so e.g. an expired token yields 401 instead of an unhandled error.
+- A malformed bearer token no longer fails the request with an unhandled error when tracing is
+  enabled; the controller answers 401.
 - `QueriesController` now hands the request authorizer only the filter parameter the query applies.
   It used to pass the raw params, with both `filters` and `filter_definition`, although a basic
   query applies only `filters` and an advanced query (the `advanced` action, or a persisted filter
@@ -16,6 +26,12 @@ All notable changes to this project will be documented in this file.
   while the query returned unscoped rows. The query is built from the same reduced params, so
   authorizers that bound a request by changing them keep working. Subclasses that call the request
   authorizer from their own actions should drop the ignored parameter the same way.
+
+### yes-command-api
+
+#### Fixed
+- A malformed bearer token no longer fails the request with an unhandled error when tracing is
+  enabled; the controller answers 401.
 
 ## [2.4.5] - 2026-09-23
 

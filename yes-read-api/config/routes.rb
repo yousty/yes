@@ -50,7 +50,7 @@ module Yes
           request.body.rewind # restore the cursor to the beginning able read again body
 
           auth_token = env['HTTP_AUTHORIZATION'] || ''
-          auth_data =  auth_token.present? ? JWT.decode(auth_token.gsub('Bearer ', ''), nil, false) : {}
+          auth_data = unverified_auth_data(auth_token)
           {
             auth_token:,
             auth_data: auth_data.to_json,
@@ -58,9 +58,23 @@ module Yes
           }.stringify_keys
         end
 
+        # Decodes the bearer token without verifying it, only to enrich the span. A missing or
+        # undecodable token yields an empty result: span enrichment must never decide the outcome
+        # of the request, the controller answers with 401 for such tokens.
+        #
+        # @param auth_token [String] the raw Authorization header value (may be empty)
+        # @return [Array<Hash>, Hash] the decoded JWT payload and header, or an empty hash
+        def unverified_auth_data(auth_token)
+          return {} if auth_token.blank?
+
+          JWT.decode(auth_token.gsub('Bearer ', ''), nil, false)
+        rescue JWT::DecodeError
+          {}
+        end
+
         def get_otl_auth_data(request, env)
           auth_token = env['HTTP_AUTHORIZATION'] || ''
-          auth_data =  auth_token.present? ? JWT.decode(auth_token.gsub('Bearer ', ''), nil, false) : {}
+          auth_data = unverified_auth_data(auth_token)
           {
             auth_token:,
             auth_data: auth_data.to_json,
