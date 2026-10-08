@@ -68,19 +68,12 @@ module Yes
             raise Yes::Core::AuthenticationError, 'No auth adapter configured. Set Yes::Core.configuration.auth_adapter.' unless adapter
 
             @auth_data = adapter.authenticate(request)
-          rescue *auth_error_classes => e
+          rescue *Yes::Core.configuration.auth_error_classes => e
             auth_error_response(e)
           end
 
           # @return [Hash] the authentication data
           attr_reader :auth_data
-
-          # Returns the error classes defined by the auth adapter.
-          #
-          # @return [Array<Class>] auth error classes
-          def auth_error_classes
-            Yes::Core.configuration.auth_adapter&.error_classes || []
-          end
 
           def perform_inline?
             return false if params[:async] == 'true'

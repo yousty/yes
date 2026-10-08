@@ -164,6 +164,30 @@ RSpec.describe Yes::Core::Configuration do
     end
   end
 
+  describe '#auth_error_classes' do
+    subject { configuration.auth_error_classes }
+
+    context 'without an auth adapter' do
+      it { is_expected.to eq([Yes::Core::AuthenticationError]) }
+    end
+
+    context 'with an auth adapter' do
+      let(:adapter_error_class) { Class.new(StandardError) }
+      let(:adapter_error_classes) { [adapter_error_class] }
+      let(:adapter) { Struct.new(:error_classes).new(adapter_error_classes) }
+
+      before { configuration.auth_adapter = adapter }
+
+      it { is_expected.to eq([Yes::Core::AuthenticationError, adapter_error_class]) }
+
+      context 'when the adapter lists AuthenticationError itself' do
+        let(:adapter_error_classes) { [Yes::Core::AuthenticationError, adapter_error_class] }
+
+        it { is_expected.to eq([Yes::Core::AuthenticationError, adapter_error_class]) }
+      end
+    end
+  end
+
   describe '#cerbos_tls' do
     subject { configuration.cerbos_tls }
 

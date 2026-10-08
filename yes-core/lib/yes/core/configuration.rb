@@ -104,6 +104,15 @@ module Yes
       #   #verify_token(token) and #error_classes (returns array of error classes).
       attr_accessor :auth_adapter
 
+      # Error classes an API controller should rescue as authentication failures: the gem's own
+      # AuthenticationError plus the classes of the configured auth adapter (if any). Computed on
+      # each call because the adapter is assigned in an initializer after controllers may load.
+      #
+      # @return [Array<Class>] deduplicated error classes
+      def auth_error_classes
+        [Yes::Core::AuthenticationError, *auth_adapter&.error_classes].uniq
+      end
+
       # Initializes a new configuration instance with nested hashes for class storage.
       def initialize
         @registered_classes = Hash.new do |h, k|
