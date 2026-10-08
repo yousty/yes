@@ -17,6 +17,15 @@ All notable changes to this project will be documented in this file.
   does, so e.g. an expired token yields 401 instead of an unhandled error.
 - A malformed bearer token no longer fails the request with an unhandled error when tracing is
   enabled; the controller answers 401.
+- `QueriesController` now hands the request authorizer only the filter parameter the query applies.
+  It used to pass the raw params, with both `filters` and `filter_definition`, although a basic
+  query applies only `filters` and an advanced query (the `advanced` action, or a persisted filter
+  given by `filter_id`) applies only `filter_definition`. A request authorizer that chooses what to
+  authorize by which of the two is present could therefore authorize parameters the query ignores,
+  for example `GET /:model?filter_definition[scope][company_ids]=<own company>` passing the check
+  while the query returned unscoped rows. The query is built from the same reduced params, so
+  authorizers that bound a request by changing them keep working. Subclasses that call the request
+  authorizer from their own actions should drop the ignored parameter the same way.
 
 ### yes-command-api
 
