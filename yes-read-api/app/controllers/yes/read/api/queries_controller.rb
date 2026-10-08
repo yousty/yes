@@ -10,6 +10,8 @@ module Yes
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
+        IGNORED_FILTER_PARAM = { basic: :filter_definition, advanced: :filters }.freeze
+
         rescue_from(Yes::Core::AuthenticationError, with: :auth_error_response)
 
         rescue_from(
@@ -43,7 +45,7 @@ module Yes
         end
 
         def response_json(filter_type: :basic, persisted_filter: nil)
-          filter_options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
+          filter_options = applied_filter_options(persisted_filter:, filter_type:)
 
           request_authorizer.call(filter_options, auth_data)
 
@@ -54,6 +56,19 @@ module Yes
           Yes::Core::Authorization::ReadModelsAuthorizer.call(read_model_name, paginated_records, auth_data)
 
           serialize(paginated_records, filter_options)
+        end
+
+        # The options the query is built from. They are what the request authorizer is handed too, so
+        # it never authorizes a parameter the query does not apply: a basic query applies `filters` and
+        # an advanced one `filter_definition`.
+        #
+        # @param persisted_filter [#body, nil] stored filter whose body replaces the request params
+        # @param filter_type [Symbol] `:basic` or `:advanced`
+        # @return [Hash] the params without the key the filter type ignores
+        def applied_filter_options(persisted_filter:, filter_type:)
+          options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
+
+          options.except(IGNORED_FILTER_PARAM.fetch(filter_type))
         end
 
         def request_authorizer
