@@ -109,6 +109,21 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
           end
         end
 
+        context 'when the request authorizer raises an AuthenticationError' do
+          before do
+            allow(ReadModels::Apprenticeship::RequestAuthorizer).to receive(:call).and_raise(Yes::Core::AuthenticationError, 'Session no longer valid')
+          end
+
+          it 'returns 401 with the error message' do
+            subject
+
+            aggregate_failures do
+              expect(response).to have_http_status(:unauthorized)
+              expect(response.parsed_body).to include('title' => 'Auth Token Invalid', 'detail' => 'Session no longer valid')
+            end
+          end
+        end
+
         context 'when record access authorized' do
           it 'returns empty data response' do
             subject

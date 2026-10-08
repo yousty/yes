@@ -10,6 +10,10 @@ module Yes
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
+        # Covers AuthenticationError raised outside #authenticate_with_token, e.g. by consumer
+        # request authorizers, filters or serializers.
+        rescue_from(Yes::Core::AuthenticationError, with: :auth_error_response)
+
         rescue_from(
           Yes::Core::Authorization::ReadModelsAuthorizer::NotAuthorized,
           Yes::Core::Authorization::ReadRequestAuthorizer::NotAuthorized,
