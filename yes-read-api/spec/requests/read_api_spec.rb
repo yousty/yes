@@ -18,6 +18,55 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
 
         it_behaves_like 'authentication token missing'
       end
+
+      context 'when access token is expired' do
+        let(:access_token) { jwt_sign_in(expires_at: 1.hour.ago, identity_id: auth_user_uuid) }
+
+        it 'returns 401 with the adapter error message' do
+          subject
+
+          aggregate_failures do
+            expect(response).to have_http_status(:unauthorized)
+            expect(response.parsed_body).to include('title' => 'Auth Token Invalid', 'detail' => 'Token expired')
+          end
+        end
+      end
+
+      context 'when access token is garbage' do
+        let(:access_token) { 'not-a-jwt' }
+        let(:tracer) { nil }
+
+        around do |example|
+          original_tracer = Yes::Core.configuration.otl_tracer
+          Yes::Core.configuration.otl_tracer = tracer
+          example.run
+        ensure
+          Yes::Core.configuration.otl_tracer = original_tracer
+        end
+
+        shared_examples 'a 401 auth error' do
+          it 'returns 401 with the auth error title' do
+            subject
+
+            aggregate_failures do
+              expect(response).to have_http_status(:unauthorized)
+              expect(response.parsed_body).to include('title' => 'Auth Token Invalid')
+            end
+          end
+        end
+
+        context 'without a tracer' do
+          it_behaves_like 'a 401 auth error'
+        end
+
+        context 'with a tracer' do
+          include_context :opentelemetry_memory_exporter
+
+          let(:tracer) { OpenTelemetry.tracer_provider.tracer('SpecTracer') }
+
+          it_behaves_like 'a 401 auth error'
+        end
+      end
     end
 
     context 'when no request authorizer exists' do

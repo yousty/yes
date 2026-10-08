@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### yes-core
+
+#### Added
+- `Configuration#auth_error_classes` returns `Yes::Core::AuthenticationError` plus the error classes
+  of the configured auth adapter. The command API now uses it to decide which errors it rescues.
+
+### yes-read-api
+
+#### Fixed
+- The read API now rescues the error classes of the configured auth adapter like the command API
+  does, so e.g. an expired token yields 401 instead of an unhandled error.
+- A malformed bearer token no longer fails the request with an unhandled error when tracing is
+  enabled; the controller answers 401.
+
 ## [2.4.5] - 2026-09-23
 
 ### yes-core

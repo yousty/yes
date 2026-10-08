@@ -10,8 +10,6 @@ module Yes
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
-        rescue_from(Yes::Core::AuthenticationError, with: :auth_error_response)
-
         rescue_from(
           Yes::Core::Authorization::ReadModelsAuthorizer::NotAuthorized,
           Yes::Core::Authorization::ReadRequestAuthorizer::NotAuthorized,
@@ -93,15 +91,26 @@ module Yes
           @params ||= request.parameters.deep_symbolize_keys
         end
 
+        # Authenticates the request using the configured auth adapter and stores the returned auth data.
+        # Rescues at call time (not via rescue_from) because the adapter, and with it its error
+        # classes, is configured in an initializer that may run after this controller loads.
+        #
+        # @return [void]
         def authenticate_with_token
           adapter = Yes::Core.configuration.auth_adapter
           raise Yes::Core::AuthenticationError, 'No auth adapter configured' if adapter.nil?
 
           @auth_data = adapter.authenticate(request)
+        rescue *Yes::Core.configuration.auth_error_classes => e
+          auth_error_response(e)
         end
 
         attr_reader :auth_data
 
+        # Renders a 401 for an authentication failure.
+        #
+        # @param error [StandardError] the error raised by the auth adapter
+        # @return [void]
         def auth_error_response(error)
           render(
             json: { title: 'Auth Token Invalid', detail: error.message }.to_json,

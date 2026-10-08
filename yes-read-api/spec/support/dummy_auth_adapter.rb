@@ -5,9 +5,12 @@ require 'ostruct'
 # JWT-based auth adapter for testing read API request specs.
 class DummyAuthAdapter
   AuthError = Class.new(Yes::Core::AuthenticationError)
+  # Deliberately not an AuthenticationError, like the error classes of real token verifiers.
+  TokenExpiredError = Class.new(StandardError)
 
   # @param request [ActionDispatch::Request]
   # @raise [AuthError] if no valid token is present
+  # @raise [TokenExpiredError] if the token has expired
   # @return [Hash] auth data with identity_id and host
   def authenticate(request)
     token = extract_token(request)
@@ -25,7 +28,7 @@ class DummyAuthAdapter
   end
 
   def error_classes
-    [AuthError]
+    [AuthError, TokenExpiredError]
   end
 
   private
@@ -43,6 +46,8 @@ class DummyAuthAdapter
     )
     decoded = JWT.decode(token, public_key, true, algorithm: 'ED25519')
     decoded.first.deep_symbolize_keys
+  rescue JWT::ExpiredSignature
+    raise TokenExpiredError, 'Token expired'
   rescue JWT::DecodeError, RbNaCl::CryptoError
     nil
   end
