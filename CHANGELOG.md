@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.5.0] - 2026-10-08
 
 ### yes-core
 
@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
   does, so e.g. an expired token yields 401 instead of an unhandled error.
 - A malformed bearer token no longer fails the request with an unhandled error when tracing is
   enabled; the controller answers 401.
+
+#### Security
 - `QueriesController` now hands the request authorizer only the filter parameter the query applies.
   It used to pass the raw params, with both `filters` and `filter_definition`, although a basic
   query applies only `filters` and an advanced query (the `advanced` action, or a persisted filter
