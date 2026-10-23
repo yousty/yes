@@ -460,6 +460,9 @@ RSpec.describe Yes::Core::ReadModel::Builder do
         )]
       end
 
+      # aggregates register once loaded; builders only read what is loaded
+      before { Test::Location::Aggregate }
+
       it 'leaves the revision to the aggregate' do
         expect { subject }.not_to(change { read_model.reload.revision })
       end

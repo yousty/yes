@@ -215,15 +215,13 @@ module Yes
           end
         end
 
-        # The aggregates are only registered once their classes are loaded, and a process that runs a
-        # subscription (e.g. a rake task) does not eager load the application. So the application is eager
-        # loaded here, on first use, and the result is kept for the lifetime of the builder.
+        # Aggregates register themselves when their classes are loaded. In a process started with
+        # Yes::Core::Subscriptions#start the application is eager loaded before the subscriptions run, so the
+        # registry is complete. In any other process (specs, console) only the aggregates loaded so far are known.
+        # The result is kept for the lifetime of the builder.
         # @return [Array<Hash>] read model class and aggregate class of every registered aggregate
         def aggregate_read_models
-          @aggregate_read_models ||= begin
-            Rails.application.eager_load!
-            Yes::Core.configuration.all_read_models_with_aggregate_classes
-          end
+          @aggregate_read_models ||= Yes::Core.configuration.all_read_models_with_aggregate_classes
         end
 
         # @param locale [Symbol] locale to check
