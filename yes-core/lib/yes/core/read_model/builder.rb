@@ -193,11 +193,37 @@ module Yes
           revision = event.stream_revision
           return unless revision && read_model&.persisted? && read_model.has_attribute?(REVISION_COLUMN)
           return unless event.stream&.stream_id == read_model.id
+          return if revision_owned_by_aggregate?(read_model)
 
           # a nullable column may still be NULL before the first event
           return unless revision > (read_model[REVISION_COLUMN] || -1)
 
           read_model.update_column(REVISION_COLUMN, revision)
+        end
+
+        # Whether an aggregate of the application keeps its stream revision in the `revision` column of this
+        # read model. The aggregate's command handling writes it and rejects a revision it finds already applied,
+        # so a subscription feeding the same read model must not write it as well.
+        # @param read_model [ActiveRecord::Base] the read model
+        # @return [Boolean]
+        def revision_owned_by_aggregate?(read_model)
+          aggregate_read_models.any? do |mapping|
+            aggregate_class = mapping[:aggregate_class]
+
+            mapping[:read_model_class] == read_model.class && aggregate_class.read_model_enabled? &&
+              aggregate_class.revision_column_for(mapping[:read_model_class]) == REVISION_COLUMN
+          end
+        end
+
+        # The aggregates are only registered once their classes are loaded, and a process that runs a
+        # subscription (e.g. a rake task) does not eager load the application. So the application is eager
+        # loaded here, on first use, and the result is kept for the lifetime of the builder.
+        # @return [Array<Hash>] read model class and aggregate class of every registered aggregate
+        def aggregate_read_models
+          @aggregate_read_models ||= begin
+            Rails.application.eager_load!
+            Yes::Core.configuration.all_read_models_with_aggregate_classes
+          end
         end
 
         # @param locale [Symbol] locale to check

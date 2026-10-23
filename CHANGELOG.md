@@ -7,11 +7,14 @@ All notable changes to this project will be documented in this file.
 ### yes-core
 
 #### Added
+- `Yes::Core::Aggregate.revision_column_for(read_model_class)` returns the revision column an aggregate uses.
 - `Yes::Core::ReadModel::Builder#call` now writes the stream revision of the handled event into the read
   model's `revision` column, if it has one. The column only moves forward, so replaying older events does
   not lower it, and a rebuild ends at the last revision of the stream. Events that were not handled (no
   handler, locale not available) leave it unchanged. Per-aggregate revision columns such as
-  `shop_order_revision` are not touched. This lets a consumer of a read model fed by a subscription
+  `shop_order_revision` are not touched, and so are read models whose `revision` column is written by an
+  aggregate of the application, to not interfere with the aggregate's own revision check. Only events of the
+  read model's own stream are considered. This lets a consumer of a read model fed by a subscription
   compare its `revision` with the stream's last revision to know whether the projection has caught up.
 
 ## [2.5.0] - 2026-10-08

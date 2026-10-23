@@ -335,15 +335,15 @@ RSpec.describe Yes::Core::ReadModel::Builder do
     subject { builder.call(event, read_model:) }
 
     let(:builder) { builder_class.new }
-    let(:builder_class) { Dummy::ReadModels::TestUser::Builder }
-    let(:read_model) { TestUser.create! }
+    let(:builder_class) { Dummy::ReadModels::SubscriptionTestUser::Builder }
+    let(:read_model) { SubscriptionTestUser.create! }
     let(:stream) do
-      PgEventstore::Stream.new(context: 'Dummy', stream_name: 'TestUser', stream_id: read_model.id)
+      PgEventstore::Stream.new(context: 'Dummy', stream_name: 'SubscriptionTestUser', stream_id: read_model.id)
     end
     let(:events) do
       Array.new(3) do
         PgEventstore.client.append_to_stream(
-          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_user_id' => read_model.id })
+          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id })
         )
       end
     end
@@ -358,7 +358,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
         let(:event) do
           PgEventstore.client.append_to_stream(
             PgEventstore::Stream.new(context: 'Dummy', stream_name: 'OtherAggregate', stream_id: SecureRandom.uuid),
-            Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_user_id' => read_model.id })
+            Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id })
           )
         end
 
@@ -370,7 +370,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       context 'when the read model is not persisted' do
         subject { builder.call(event, read_model: unsaved_read_model) }
 
-        let(:unsaved_read_model) { TestUser.new(id: read_model.id) }
+        let(:unsaved_read_model) { SubscriptionTestUser.new(id: read_model.id) }
 
         it 'does not fail and does not save it' do
           expect { subject }.not_to(change { unsaved_read_model.persisted? }.from(false))
@@ -380,7 +380,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       context 'when the builder finds no read model for the event' do
         subject { builder.call(event) }
 
-        let(:builder_class) { Dummy::ReadModels::TestUser::NoRowBuilder }
+        let(:builder_class) { Dummy::ReadModels::SubscriptionTestUser::NoRowBuilder }
 
         it 'does not fail' do
           expect { subject }.not_to raise_error
@@ -392,7 +392,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
 
         # reload would reset the nil kept in memory, so the stored value is read through a fresh instance
         it 'writes the stream revision of the event' do
-          expect { subject }.to change { TestUser.find(read_model.id).revision }.from(-1).to(2)
+          expect { subject }.to change { SubscriptionTestUser.find(read_model.id).revision }.from(-1).to(2)
         end
       end
 
@@ -405,7 +405,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       end
 
       context 'when the event has no stream revision' do
-        let(:event) { Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_user_id' => read_model.id }) }
+        let(:event) { Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id }) }
 
         it 'leaves the revision untouched' do
           expect { subject }.not_to(change { read_model.reload.revision })
@@ -415,7 +415,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       context 'when there is no handler for the event' do
         let(:event) do
           PgEventstore.client.append_to_stream(
-            stream, Yes::Core::Event.new(type: 'UnhandledEvent', data: { 'test_user_id' => read_model.id })
+            stream, Yes::Core::Event.new(type: 'UnhandledEvent', data: { 'subscription_test_user_id' => read_model.id })
           )
         end
 
@@ -429,7 +429,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       context 'when the event has an invalid locale' do
         let(:event) do
           PgEventstore.client.append_to_stream(
-            stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_user_id' => read_model.id, 'locale' => 'invalid' })
+            stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id, 'locale' => 'invalid' })
           )
         end
 
@@ -439,12 +439,29 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       end
 
       context 'when the handler raises' do
-        before { allow_any_instance_of(Dummy::ReadModels::TestUser::OnSomeEvent).to receive(:call).and_raise('boom') }
+        before { allow_any_instance_of(Dummy::ReadModels::SubscriptionTestUser::OnSomeEvent).to receive(:call).and_raise('boom') }
 
         it 'leaves the revision untouched' do
           expect { subject }.to raise_error('boom')
           expect(read_model.reload.revision).to eq(-1)
         end
+      end
+    end
+
+    context 'when an aggregate owns the revision column of the read model' do
+      let(:builder_class) { Dummy::ReadModels::TestLocation::Builder }
+      let(:read_model) { TestLocation.create! }
+      let(:stream) do
+        PgEventstore::Stream.new(context: 'Dummy', stream_name: 'TestLocation', stream_id: read_model.id)
+      end
+      let(:events) do
+        [PgEventstore.client.append_to_stream(
+          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_location_id' => read_model.id })
+        )]
+      end
+
+      it 'leaves the revision to the aggregate' do
+        expect { subject }.not_to(change { read_model.reload.revision })
       end
     end
 

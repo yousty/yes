@@ -14,8 +14,14 @@ module Dummy
       end
     end
 
-    # Read model table has a `revision` column
-    module TestUser
+    # Read model is owned by Test::Location::Aggregate, which writes its `revision` column
+    module TestLocation
+      class Builder < Yes::Core::ReadModel::Builder
+      end
+    end
+
+    # Read model table has a `revision` column and no aggregate owns it
+    module SubscriptionTestUser
       class Builder < Yes::Core::ReadModel::Builder
       end
 
