@@ -190,7 +190,8 @@ module Yes
         def write_stream_revision(read_model, event)
           revision = event.stream_revision
           return unless revision && read_model.has_attribute?(REVISION_COLUMN)
-          return unless revision > read_model[REVISION_COLUMN]
+          # a nullable column may still be NULL before the first event
+          return unless revision > (read_model[REVISION_COLUMN] || -1)
 
           read_model.update_column(REVISION_COLUMN, revision)
         end

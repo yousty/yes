@@ -354,6 +354,14 @@ RSpec.describe Yes::Core::ReadModel::Builder do
         expect { subject }.to change { read_model.reload.revision }.from(-1).to(2)
       end
 
+      context 'when the revision of the read model is nil' do
+        before { read_model.revision = nil }
+
+        it 'writes the stream revision of the event' do
+          expect { subject }.to change { read_model.reload.revision }.from(-1).to(2)
+        end
+      end
+
       context 'when the event is older than the stored revision' do
         before { read_model.update_column(:revision, 5) }
 
