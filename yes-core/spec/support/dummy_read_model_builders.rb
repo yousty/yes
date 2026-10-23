@@ -18,6 +18,27 @@ module Dummy
     module TestUser
       class Builder < Yes::Core::ReadModel::Builder
       end
+
+      # Builder for events that map to no read model row; its handler accepts a nil read model
+      class NoRowBuilder < Yes::Core::ReadModel::Builder
+        NoRowHandler = Struct.new(:read_model) do
+          def call(event)
+            event
+          end
+        end
+
+        protected
+
+        def handler_class(_event)
+          NoRowHandler
+        end
+
+        private
+
+        def read_model(_event)
+          nil
+        end
+      end
     end
 
     # Read model table has only per-aggregate revision columns and no `revision` column

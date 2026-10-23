@@ -184,12 +184,16 @@ module Yes
         # how far a read model fed by a subscription has caught up with its stream. It only moves forward and
         # skips read models without the column. Per-aggregate columns (e.g. `shop_order_revision`) belong to
         # the aggregates that write them and are never touched here.
-        # @param read_model [ActiveRecord::Base] the read model
+        # It only writes for events of the read model's own stream: a builder may also react to events of
+        # other streams (e.g. a product event for an order item), whose revision says nothing about this row.
+        # @param read_model [ActiveRecord::Base, nil] the read model, nil if the event maps to no row
         # @param event [Yes::Core::Event] the event that was handled
         # @return [void]
         def write_stream_revision(read_model, event)
           revision = event.stream_revision
-          return unless revision && read_model.has_attribute?(REVISION_COLUMN)
+          return unless revision && read_model&.persisted? && read_model.has_attribute?(REVISION_COLUMN)
+          return unless event.stream&.stream_id == read_model.id
+
           # a nullable column may still be NULL before the first event
           return unless revision > (read_model[REVISION_COLUMN] || -1)
 

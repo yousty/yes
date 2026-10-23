@@ -354,6 +354,39 @@ RSpec.describe Yes::Core::ReadModel::Builder do
         expect { subject }.to change { read_model.reload.revision }.from(-1).to(2)
       end
 
+      context 'when the event belongs to another stream' do
+        let(:event) do
+          PgEventstore.client.append_to_stream(
+            PgEventstore::Stream.new(context: 'Dummy', stream_name: 'OtherAggregate', stream_id: SecureRandom.uuid),
+            Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_user_id' => read_model.id })
+          )
+        end
+
+        it 'leaves the revision untouched' do
+          expect { subject }.not_to(change { read_model.reload.revision })
+        end
+      end
+
+      context 'when the read model is not persisted' do
+        subject { builder.call(event, read_model: unsaved_read_model) }
+
+        let(:unsaved_read_model) { TestUser.new(id: read_model.id) }
+
+        it 'does not fail and does not save it' do
+          expect { subject }.not_to(change { unsaved_read_model.persisted? }.from(false))
+        end
+      end
+
+      context 'when the builder finds no read model for the event' do
+        subject { builder.call(event) }
+
+        let(:builder_class) { Dummy::ReadModels::TestUser::NoRowBuilder }
+
+        it 'does not fail' do
+          expect { subject }.not_to raise_error
+        end
+      end
+
       context 'when the revision of the read model is nil' do
         before { read_model.revision = nil }
 
