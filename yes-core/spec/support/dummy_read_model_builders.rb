@@ -13,6 +13,45 @@ module Dummy
         end
       end
     end
+
+    # Read model is owned by Test::Location::Aggregate, which writes its `revision` column
+    module TestLocation
+      class Builder < Yes::Core::ReadModel::Builder
+      end
+    end
+
+    # Read model table has a `revision` column and no aggregate owns it
+    module SubscriptionTestUser
+      class Builder < Yes::Core::ReadModel::Builder
+      end
+
+      # Builder for events that map to no read model row; its handler accepts a nil read model
+      class NoRowBuilder < Yes::Core::ReadModel::Builder
+        NoRowHandler = Struct.new(:read_model) do
+          def call(event)
+            event
+          end
+        end
+
+        protected
+
+        def handler_class(_event)
+          NoRowHandler
+        end
+
+        private
+
+        def read_model(_event)
+          nil
+        end
+      end
+    end
+
+    # Read model table has only per-aggregate revision columns and no `revision` column
+    module SharedProfileReadModel
+      class Builder < Yes::Core::ReadModel::Builder
+      end
+    end
   end
 
   module InvalidModuleStructure

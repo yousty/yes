@@ -74,6 +74,19 @@ module Yes
             _read_model_enabled != false
           end
 
+          # Column of the given read model class in which this aggregate stores the revision of its stream: the
+          # per-aggregate column (e.g. `shop_order_revision`) if the table has it, otherwise `revision`.
+          # @param read_model_class [Class] read model class of this aggregate
+          # @return [Symbol]
+          def revision_column_for(read_model_class)
+            return :revision unless read_model_enabled?
+
+            aggregate_revision_column = "#{context.underscore}_#{aggregate.underscore}_revision"
+            return aggregate_revision_column.to_sym if read_model_class.column_names.include?(aggregate_revision_column)
+
+            :revision
+          end
+
           private
 
           def setup_read_model
@@ -143,10 +156,7 @@ module Yes
         def revision_column
           return :revision unless self.class.read_model_enabled?
 
-          aggregate_revision_column = "#{self.class.context.underscore}_#{self.class.aggregate.underscore}_revision"
-          return aggregate_revision_column.to_sym if read_model.class.column_names.include?(aggregate_revision_column)
-
-          :revision
+          self.class.revision_column_for(read_model.class)
         end
 
         # Returns the current revision number from the read model
