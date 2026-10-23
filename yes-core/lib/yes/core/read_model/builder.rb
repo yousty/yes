@@ -23,7 +23,13 @@ module Yes
         READ_MODEL_CLASS_REGEXP =
           /(?<context>\w+)::ReadModels::(?<version>V\d+)?(::)?(?<aggregate>\w+)/
 
-        # Based on event type class it distributes event to a proper event handler
+        # Column of the read model that holds the revision of the last processed event of its stream
+        REVISION_COLUMN = :revision
+
+        # Based on event type class it distributes event to a proper event handler. After the handler ran, the
+        # stream revision of the event is stored in the read model's `revision` column (see #write_stream_revision).
+        # Events that were not handled (no handler, locale not available) do not change the revision, because
+        # the read model does not reflect them.
         # @param event [Yes::Core::Event]
         # @param read_model [ActiveRecord::Base] AR object
         # @return [void]
@@ -47,6 +53,8 @@ module Yes
           ensure
             otl_record_processed(read_model, event, handler)
           end
+
+          write_stream_revision(read_model, event)
         end
         otl_trackable :call, OpenTelemetry::OtlSpan::OtlData.new(
           span_kind: :consumer,
@@ -170,6 +178,21 @@ module Yes
         def read_model_class_name_match
           @read_model_class_name_match ||=
             READ_MODEL_CLASS_REGEXP.match(self.class.to_s)
+        end
+
+        # Stores the stream revision of the event in the read model's `revision` column, so a consumer can tell
+        # how far a read model fed by a subscription has caught up with its stream. It only moves forward and
+        # skips read models without the column. Per-aggregate columns (e.g. `shop_order_revision`) belong to
+        # the aggregates that write them and are never touched here.
+        # @param read_model [ActiveRecord::Base] the read model
+        # @param event [Yes::Core::Event] the event that was handled
+        # @return [void]
+        def write_stream_revision(read_model, event)
+          revision = event.stream_revision
+          return unless revision && read_model.has_attribute?(REVISION_COLUMN)
+          return unless revision > read_model[REVISION_COLUMN]
+
+          read_model.update_column(REVISION_COLUMN, revision)
         end
 
         # @param locale [Symbol] locale to check

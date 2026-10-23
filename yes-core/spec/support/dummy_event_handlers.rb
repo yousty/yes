@@ -15,6 +15,16 @@ module Dummy
       end
     end
 
+    module TestUser
+      class OnSomeEvent < Yes::Core::ReadModel::EventHandler
+      end
+    end
+
+    module SharedProfileReadModel
+      class OnSomeEvent < Yes::Core::ReadModel::EventHandler
+      end
+    end
+
     module V23
       module NewJobApp
         class OnSomeEvent < Yes::Core::ReadModel::EventHandler

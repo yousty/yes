@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### yes-core
+
+#### Added
+- `Yes::Core::ReadModel::Builder#call` now writes the stream revision of the handled event into the read
+  model's `revision` column, if it has one. The column only moves forward, so replaying older events does
+  not lower it, and a rebuild ends at the last revision of the stream. Events that were not handled (no
+  handler, locale not available) leave it unchanged. Per-aggregate revision columns such as
+  `shop_order_revision` are not touched. This lets a consumer of a read model fed by a subscription
+  compare its `revision` with the stream's last revision to know whether the projection has caught up.
+
 ## [2.5.0] - 2026-10-08
 
 ### yes-core

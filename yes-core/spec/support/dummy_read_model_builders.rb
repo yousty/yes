@@ -13,6 +13,18 @@ module Dummy
         end
       end
     end
+
+    # Read model table has a `revision` column
+    module TestUser
+      class Builder < Yes::Core::ReadModel::Builder
+      end
+    end
+
+    # Read model table has only per-aggregate revision columns and no `revision` column
+    module SharedProfileReadModel
+      class Builder < Yes::Core::ReadModel::Builder
+      end
+    end
   end
 
   module InvalidModuleStructure
