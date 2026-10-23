@@ -357,8 +357,9 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       context 'when the revision of the read model is nil' do
         before { read_model.revision = nil }
 
+        # reload would reset the nil kept in memory, so the stored value is read through a fresh instance
         it 'writes the stream revision of the event' do
-          expect { subject }.to change { read_model.reload.revision }.from(-1).to(2)
+          expect { subject }.to change { TestUser.find(read_model.id).revision }.from(-1).to(2)
         end
       end
 
