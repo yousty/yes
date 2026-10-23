@@ -14,7 +14,8 @@ All notable changes to this project will be documented in this file.
   handler, locale not available) leave it unchanged. Per-aggregate revision columns such as
   `shop_order_revision` are not touched, and so are read models whose `revision` column is written by an
   aggregate of the application, to not interfere with the aggregate's own revision check. Only events of the
-  read model's own stream are considered. This lets a consumer of a read model fed by a subscription
+  read model's own stream are considered, compared by stream id only: a read model fed by two streams with
+  the same id (different context or stream name) would get a mixed revision and must not rely on it. This lets a consumer of a read model fed by a subscription
   compare its `revision` with the stream's last revision to know whether the projection has caught up.
 
 ## [2.5.0] - 2026-10-08

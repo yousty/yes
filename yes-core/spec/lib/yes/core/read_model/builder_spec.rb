@@ -367,6 +367,19 @@ RSpec.describe Yes::Core::ReadModel::Builder do
         end
       end
 
+      context 'when the event is from a stream with another name but the same id (documented limitation)' do
+        let(:event) do
+          PgEventstore.client.append_to_stream(
+            PgEventstore::Stream.new(context: 'Dummy', stream_name: 'OtherAggregate', stream_id: read_model.id),
+            Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id })
+          )
+        end
+
+        it 'writes its stream revision, because only the stream id is compared' do
+          expect { subject }.to change { read_model.reload.revision }.from(-1).to(0)
+        end
+      end
+
       context 'when the read model is not persisted' do
         subject { builder.call(event, read_model: unsaved_read_model) }
 

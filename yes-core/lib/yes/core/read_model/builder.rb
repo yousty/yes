@@ -186,6 +186,8 @@ module Yes
         # the aggregates that write them and are never touched here.
         # It only writes for events of the read model's own stream: a builder may also react to events of
         # other streams (e.g. a product event for an order item), whose revision says nothing about this row.
+        # Only the stream id is compared, not the context or the stream name. A read model fed by two streams
+        # that share the same id would get a mixed revision, so such read models must not rely on it.
         # @param read_model [ActiveRecord::Base, nil] the read model, nil if the event maps to no row
         # @param event [Yes::Core::Event] the event that was handled
         # @return [void]
