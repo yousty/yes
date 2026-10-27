@@ -23,7 +23,13 @@ module Yes
         READ_MODEL_CLASS_REGEXP =
           /(?<context>\w+)::ReadModels::(?<version>V\d+)?(::)?(?<aggregate>\w+)/
 
-        # Based on event type class it distributes event to a proper event handler
+        # Column of the read model that holds the revision of the last processed event of its stream
+        REVISION_COLUMN = :revision
+
+        # Based on event type class it distributes event to a proper event handler. After the handler ran, the
+        # stream revision of the event is stored in the read model's `revision` column (see #write_stream_revision).
+        # Events that were not handled (no handler, locale not available) do not change the revision, because
+        # the read model does not reflect them.
         # @param event [Yes::Core::Event]
         # @param read_model [ActiveRecord::Base] AR object
         # @return [void]
@@ -47,6 +53,8 @@ module Yes
           ensure
             otl_record_processed(read_model, event, handler)
           end
+
+          write_stream_revision(read_model, event)
         end
         otl_trackable :call, OpenTelemetry::OtlSpan::OtlData.new(
           span_kind: :consumer,
@@ -170,6 +178,52 @@ module Yes
         def read_model_class_name_match
           @read_model_class_name_match ||=
             READ_MODEL_CLASS_REGEXP.match(self.class.to_s)
+        end
+
+        # Stores the stream revision of the event in the read model's `revision` column, so a consumer can tell
+        # how far a read model fed by a subscription has caught up with its stream. It only moves forward and
+        # skips read models without the column. Per-aggregate columns (e.g. `shop_order_revision`) belong to
+        # the aggregates that write them and are never touched here.
+        # It only writes for events of the read model's own stream: a builder may also react to events of
+        # other streams (e.g. a product event for an order item), whose revision says nothing about this row.
+        # Only the stream id is compared, not the context or the stream name. A read model fed by two streams
+        # that share the same id would get a mixed revision, so such read models must not rely on it.
+        # @param read_model [ActiveRecord::Base, nil] the read model, nil if the event maps to no row
+        # @param event [Yes::Core::Event] the event that was handled
+        # @return [void]
+        def write_stream_revision(read_model, event)
+          revision = event.stream_revision
+          return unless revision && read_model&.persisted? && read_model.has_attribute?(REVISION_COLUMN)
+          return unless event.stream&.stream_id == read_model.id
+          return if revision_owned_by_aggregate?(read_model)
+
+          # a nullable column may still be NULL before the first event
+          return unless revision > (read_model[REVISION_COLUMN] || -1)
+
+          read_model.update_column(REVISION_COLUMN, revision)
+        end
+
+        # Whether an aggregate of the application keeps its stream revision in the `revision` column of this
+        # read model. The aggregate's command handling writes it and rejects a revision it finds already applied,
+        # so a subscription feeding the same read model must not write it as well.
+        # @param read_model [ActiveRecord::Base] the read model
+        # @return [Boolean]
+        def revision_owned_by_aggregate?(read_model)
+          aggregate_read_models.any? do |mapping|
+            aggregate_class = mapping[:aggregate_class]
+
+            mapping[:read_model_class] == read_model.class && aggregate_class.read_model_enabled? &&
+              aggregate_class.revision_column_for(mapping[:read_model_class]) == REVISION_COLUMN
+          end
+        end
+
+        # Aggregates register themselves when their classes are loaded. In a process started with
+        # Yes::Core::Subscriptions#start the application is eager loaded before the subscriptions run, so the
+        # registry is complete. In any other process (specs, console) only the aggregates loaded so far are known.
+        # The result is kept for the lifetime of the builder.
+        # @return [Array<Hash>] read model class and aggregate class of every registered aggregate
+        def aggregate_read_models
+          @aggregate_read_models ||= Yes::Core.configuration.all_read_models_with_aggregate_classes
         end
 
         # @param locale [Symbol] locale to check

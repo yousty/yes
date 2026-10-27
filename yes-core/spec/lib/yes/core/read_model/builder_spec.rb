@@ -60,7 +60,7 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       let(:aggregate_id) { SecureRandom.uuid }
       let(:event_data) { { 'job_app_id' => aggregate_id } }
       let(:event_type) { 'SomeEvent' }
-      let(:event) { double('SomeEvent', data: event_data, type: event_type, ps_fields_with_values: [], metadata: {}, created_at: nil) }
+      let(:event) { double('SomeEvent', data: event_data, type: event_type, ps_fields_with_values: [], metadata: {}, created_at: nil, stream_revision: nil) }
       let(:read_model_instance) { JobApp.new }
       let(:read_model) { read_model_instance }
       let(:handler_class) { Dummy::ReadModels::JobApp::OnSomeEvent }
@@ -327,6 +327,205 @@ RSpec.describe Yes::Core::ReadModel::Builder do
 
       it 'uses proper read model' do
         expect { subject }.to(change { dummy_record.reload.created_at })
+      end
+    end
+  end
+
+  describe 'stream revision' do
+    subject { builder.call(event, read_model:) }
+
+    let(:builder) { builder_class.new }
+    let(:builder_class) { Dummy::ReadModels::SubscriptionTestUser::Builder }
+    let(:read_model) { SubscriptionTestUser.create! }
+    let(:stream) do
+      PgEventstore::Stream.new(context: 'Dummy', stream_name: 'SubscriptionTestUser', stream_id: read_model.id)
+    end
+    let(:events) do
+      Array.new(3) do
+        PgEventstore.client.append_to_stream(
+          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id })
+        )
+      end
+    end
+    let(:event) { events.last }
+
+    context 'when the read model has a revision column' do
+      it 'sets it to the stream revision of the event' do
+        expect { subject }.to change { read_model.reload.revision }.from(-1).to(2)
+      end
+
+      context 'when the event belongs to another stream' do
+        let(:event) do
+          PgEventstore.client.append_to_stream(
+            PgEventstore::Stream.new(context: 'Dummy', stream_name: 'OtherAggregate', stream_id: SecureRandom.uuid),
+            Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id })
+          )
+        end
+
+        it 'leaves the revision untouched' do
+          expect { subject }.not_to(change { read_model.reload.revision })
+        end
+      end
+
+      context 'when the event is from a stream with another name but the same id (documented limitation)' do
+        let(:event) do
+          PgEventstore.client.append_to_stream(
+            PgEventstore::Stream.new(context: 'Dummy', stream_name: 'OtherAggregate', stream_id: read_model.id),
+            Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id })
+          )
+        end
+
+        it 'writes its stream revision, because only the stream id is compared' do
+          expect { subject }.to change { read_model.reload.revision }.from(-1).to(0)
+        end
+      end
+
+      context 'when the read model is not persisted' do
+        subject { builder.call(event, read_model: unsaved_read_model) }
+
+        let(:unsaved_read_model) { SubscriptionTestUser.new(id: read_model.id) }
+
+        it 'does not fail and does not save it' do
+          expect { subject }.not_to(change { unsaved_read_model.persisted? }.from(false))
+        end
+      end
+
+      context 'when the builder finds no read model for the event' do
+        subject { builder.call(event) }
+
+        let(:builder_class) { Dummy::ReadModels::SubscriptionTestUser::NoRowBuilder }
+
+        it 'does not fail' do
+          expect { subject }.not_to raise_error
+        end
+      end
+
+      context 'when the revision of the read model is nil' do
+        before { read_model.revision = nil }
+
+        # reload would reset the nil kept in memory, so the stored value is read through a fresh instance
+        it 'writes the stream revision of the event' do
+          expect { subject }.to change { SubscriptionTestUser.find(read_model.id).revision }.from(-1).to(2)
+        end
+      end
+
+      context 'when the event is older than the stored revision' do
+        before { read_model.update_column(:revision, 5) }
+
+        it 'does not lower the revision' do
+          expect { subject }.not_to(change { read_model.reload.revision })
+        end
+      end
+
+      context 'when the event has no stream revision' do
+        let(:event) { Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id }) }
+
+        it 'leaves the revision untouched' do
+          expect { subject }.not_to(change { read_model.reload.revision })
+        end
+      end
+
+      context 'when there is no handler for the event' do
+        let(:event) do
+          PgEventstore.client.append_to_stream(
+            stream, Yes::Core::Event.new(type: 'UnhandledEvent', data: { 'subscription_test_user_id' => read_model.id })
+          )
+        end
+
+        before { allow(Yes::Core::Utils::ErrorNotifier).to receive(:new).and_return(instance_spy(Yes::Core::Utils::ErrorNotifier)) }
+
+        it 'leaves the revision untouched because the read model did not change' do
+          expect { subject }.not_to(change { read_model.reload.revision })
+        end
+      end
+
+      context 'when the event has an invalid locale' do
+        let(:event) do
+          PgEventstore.client.append_to_stream(
+            stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'subscription_test_user_id' => read_model.id, 'locale' => 'invalid' })
+          )
+        end
+
+        it 'leaves the revision untouched because the handler did not run' do
+          expect { subject }.not_to(change { read_model.reload.revision })
+        end
+      end
+
+      context 'when the handler raises' do
+        before { allow_any_instance_of(Dummy::ReadModels::SubscriptionTestUser::OnSomeEvent).to receive(:call).and_raise('boom') }
+
+        it 'leaves the revision untouched' do
+          expect { subject }.to raise_error('boom')
+          expect(read_model.reload.revision).to eq(-1)
+        end
+      end
+    end
+
+    context 'when an aggregate owns the revision column of the read model' do
+      let(:builder_class) { Dummy::ReadModels::TestLocation::Builder }
+      let(:read_model) { TestLocation.create! }
+      let(:stream) do
+        PgEventstore::Stream.new(context: 'Dummy', stream_name: 'TestLocation', stream_id: read_model.id)
+      end
+      let(:events) do
+        [PgEventstore.client.append_to_stream(
+          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_location_id' => read_model.id })
+        )]
+      end
+
+      # aggregates register once loaded; builders only read what is loaded
+      before { Test::Location::Aggregate }
+
+      it 'leaves the revision to the aggregate' do
+        expect { subject }.not_to(change { read_model.reload.revision })
+      end
+    end
+
+    context 'when the read model has no revision column' do
+      let(:builder_class) { Dummy::ReadModels::JobApp::Builder }
+      let(:read_model) { JobApp.create! }
+      let(:stream) do
+        PgEventstore::Stream.new(context: 'Dummy', stream_name: 'JobApp', stream_id: read_model.id)
+      end
+      let(:events) do
+        [PgEventstore.client.append_to_stream(
+          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'job_app_id' => read_model.id })
+        )]
+      end
+
+      it 'does not fail' do
+        expect { subject }.not_to raise_error
+      end
+    end
+
+    context 'when the read model only has per-aggregate revision columns' do
+      let(:builder_class) { Dummy::ReadModels::SharedProfileReadModel::Builder }
+      let(:read_model) { SharedProfileReadModel.create!(test_personal_info_revision: 1, test_contact_info_revision: 2) }
+      let(:stream) do
+        PgEventstore::Stream.new(context: 'Dummy', stream_name: 'SharedProfileReadModel', stream_id: read_model.id)
+      end
+      let(:events) do
+        Array.new(3) do
+          PgEventstore.client.append_to_stream(
+            stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'shared_profile_read_model_id' => read_model.id })
+          )
+        end
+      end
+
+      it 'does not touch them' do
+        expect { subject }.not_to(
+          change { read_model.reload.slice(:test_personal_info_revision, :test_contact_info_revision) }
+        )
+      end
+    end
+
+    context 'when rebuilding' do
+      subject { builder.rebuild(id: read_model.id) }
+
+      before { events }
+
+      it 'ends at the last stream revision' do
+        expect(subject.revision).to eq(2)
       end
     end
   end
