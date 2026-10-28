@@ -188,7 +188,7 @@ module Yes
         # other streams (e.g. a product event for an order item), whose revision says nothing about this row.
         # Only the stream id is compared, not the context or the stream name. A read model fed by two streams
         # that share the same id would get a mixed revision, so such read models must not rely on it.
-        # A read model whose `revision` column an aggregate writes must therefore not also be fed by a builder:
+        # A read model whose `revision` column an aggregate writes must not also be fed by a builder:
         # use per-aggregate revision columns or project the events through the aggregate instead.
         # @param read_model [ActiveRecord::Base, nil] the read model, nil if the event maps to no row
         # @param event [Yes::Core::Event] the event that was handled
