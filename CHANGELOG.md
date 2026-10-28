@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-core
+
+#### Changed
+- `CerbosGrpcRetryPolicy.channel_args` now also caps the gRPC reconnect backoff (100ms initial/min, 1s max).
+  After a refused connection (e.g. a Cerbos pod that is shutting down) the channel otherwise stays in its
+  default reconnect backoff, longer than the retry window, and fails every call of the process for many seconds.
+
+### yes-command-api
+
+#### Changed
+- `CommandsController` responds with `503 Service Unavailable` and `Retry-After: 1` instead of a 500 when
+  Cerbos is unavailable (`Cerbos::Error::Unavailable`, `Cerbos::Error::DeadlineExceeded`). No command was
+  executed, so the request can be retried. The error is still recorded on the span and reported via `Rails.error`.
+
+### yes-read-api
+
+#### Changed
+- `QueriesController` responds with `503 Service Unavailable` and `Retry-After: 1` instead of a 500 when
+  Cerbos is unavailable (`Cerbos::Error::Unavailable`, `Cerbos::Error::DeadlineExceeded`). The error is still
+  reported via `Rails.error`.
+
 ## [2.6.0] - 2026-10-28
 
 ### yes-core

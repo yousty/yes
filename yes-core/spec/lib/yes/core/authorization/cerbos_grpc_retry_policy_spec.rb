@@ -11,6 +11,14 @@ RSpec.describe Yes::Core::Authorization::CerbosGrpcRetryPolicy do
       expect(channel_args['grpc.enable_retries']).to eq(1)
     end
 
+    it 'caps the reconnect backoff below the retry window' do
+      expect(channel_args).to include(
+        'grpc.min_reconnect_backoff_ms' => 100,
+        'grpc.initial_reconnect_backoff_ms' => 100,
+        'grpc.max_reconnect_backoff_ms' => 1_000
+      )
+    end
+
     it 'scopes the retry policy to the Cerbos service' do
       expect(method_config['name']).to eq([{ 'service' => 'cerbos.svc.v1.CerbosService' }])
     end

@@ -10,6 +10,7 @@ module Yes
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
+        RETRY_AFTER_SECONDS = 1
         IGNORED_FILTER_PARAM = { basic: :filter_definition, advanced: :filters }.freeze
 
         # Covers AuthenticationError raised outside #authenticate_with_token, e.g. by consumer
@@ -20,6 +21,12 @@ module Yes
           Yes::Core::Authorization::ReadModelsAuthorizer::NotAuthorized,
           Yes::Core::Authorization::ReadRequestAuthorizer::NotAuthorized,
           with: :read_models_unauthorized_response
+        )
+
+        rescue_from(
+          Cerbos::Error::Unavailable,
+          Cerbos::Error::DeadlineExceeded,
+          with: :authorization_service_unavailable_response
         )
 
         def call
@@ -141,6 +148,17 @@ module Yes
           render(
             json: { title: 'Unauthorized', detail: error.message }.to_json,
             status: :unauthorized
+          )
+        end
+
+        # Renders a 503 when the authorization service cannot be reached; the client can retry.
+        def authorization_service_unavailable_response(error)
+          Rails.error.report(error, handled: true, severity: :error)
+
+          response.set_header('Retry-After', RETRY_AFTER_SECONDS.to_s)
+          render(
+            json: { title: 'Service Unavailable', detail: 'Authorization service unavailable' }.to_json,
+            status: :service_unavailable
           )
         end
 
