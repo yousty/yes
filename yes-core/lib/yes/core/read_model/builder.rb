@@ -184,6 +184,9 @@ module Yes
         # how far a read model fed by a subscription has caught up with its stream. It only moves forward and
         # skips read models without the column. Per-aggregate columns (e.g. `shop_order_revision`) belong to
         # the aggregates that write them and are never touched here.
+        # The builder writes `revision` for every event of the read model's own stream. A read model whose
+        # `revision` column an aggregate writes must therefore not also be fed by a builder: use per-aggregate
+        # revision columns or project the events through the aggregate instead.
         # It only writes for events of the read model's own stream: a builder may also react to events of
         # other streams (e.g. a product event for an order item), whose revision says nothing about this row.
         # Only the stream id is compared, not the context or the stream name. A read model fed by two streams
@@ -195,35 +198,11 @@ module Yes
           revision = event.stream_revision
           return unless revision && read_model&.persisted? && read_model.has_attribute?(REVISION_COLUMN)
           return unless event.stream&.stream_id == read_model.id
-          return if revision_owned_by_aggregate?(read_model)
 
           # a nullable column may still be NULL before the first event
           return unless revision > (read_model[REVISION_COLUMN] || -1)
 
           read_model.update_column(REVISION_COLUMN, revision)
-        end
-
-        # Whether an aggregate of the application keeps its stream revision in the `revision` column of this
-        # read model. The aggregate's command handling writes it and rejects a revision it finds already applied,
-        # so a subscription feeding the same read model must not write it as well.
-        # @param read_model [ActiveRecord::Base] the read model
-        # @return [Boolean]
-        def revision_owned_by_aggregate?(read_model)
-          aggregate_read_models.any? do |mapping|
-            aggregate_class = mapping[:aggregate_class]
-
-            mapping[:read_model_class] == read_model.class && aggregate_class.read_model_enabled? &&
-              aggregate_class.revision_column_for(mapping[:read_model_class]) == REVISION_COLUMN
-          end
-        end
-
-        # Aggregates register themselves when their classes are loaded. In a process started with
-        # Yes::Core::Subscriptions#start the application is eager loaded before the subscriptions run, so the
-        # registry is complete. In any other process (specs, console) only the aggregates loaded so far are known.
-        # The result is kept for the lifetime of the builder.
-        # @return [Array<Hash>] read model class and aggregate class of every registered aggregate
-        def aggregate_read_models
-          @aggregate_read_models ||= Yes::Core.configuration.all_read_models_with_aggregate_classes
         end
 
         # @param locale [Symbol] locale to check

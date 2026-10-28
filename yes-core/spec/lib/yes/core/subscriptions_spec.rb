@@ -44,13 +44,5 @@ RSpec.describe Yes::Core::Subscriptions do
     it 'starts the subscriptions manager' do
       expect { subject }.not_to raise_error
     end
-
-    it 'eager loads the application before the subscriptions run' do
-      allow(Rails.application).to receive(:eager_load!)
-
-      subject
-
-      expect(Rails.application).to have_received(:eager_load!)
-    end
   end
 end

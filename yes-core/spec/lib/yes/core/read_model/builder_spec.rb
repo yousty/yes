@@ -461,26 +461,6 @@ RSpec.describe Yes::Core::ReadModel::Builder do
       end
     end
 
-    context 'when an aggregate owns the revision column of the read model' do
-      let(:builder_class) { Dummy::ReadModels::TestLocation::Builder }
-      let(:read_model) { TestLocation.create! }
-      let(:stream) do
-        PgEventstore::Stream.new(context: 'Dummy', stream_name: 'TestLocation', stream_id: read_model.id)
-      end
-      let(:events) do
-        [PgEventstore.client.append_to_stream(
-          stream, Yes::Core::Event.new(type: 'SomeEvent', data: { 'test_location_id' => read_model.id })
-        )]
-      end
-
-      # aggregates register once loaded; builders only read what is loaded
-      before { Test::Location::Aggregate }
-
-      it 'leaves the revision to the aggregate' do
-        expect { subject }.not_to(change { read_model.reload.revision })
-      end
-    end
-
     context 'when the read model has no revision column' do
       let(:builder_class) { Dummy::ReadModels::JobApp::Builder }
       let(:read_model) { JobApp.create! }

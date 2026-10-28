@@ -15,11 +15,6 @@ module Dummy
       end
     end
 
-    module TestLocation
-      class OnSomeEvent < Yes::Core::ReadModel::EventHandler
-      end
-    end
-
     module SubscriptionTestUser
       class OnSomeEvent < Yes::Core::ReadModel::EventHandler
       end
