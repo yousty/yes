@@ -48,15 +48,10 @@ module Yes
         )
       end
 
-      # Starts the subscriptions manager and optional heartbeat. The application is eager loaded first, in the
-      # calling thread: read model builders look up the registered aggregates, and aggregates only register
-      # once their classes are loaded. A process that runs subscriptions (e.g. a rake task) does not necessarily
-      # eager load the application, and loading from the subscription threads would race with their work.
-      # Eager loading an already loaded application does nothing.
+      # Starts the subscriptions manager and optional heartbeat.
       #
       # @return [void]
       def start
-        Rails.application.eager_load!
         start_heartbeat if Yes::Core.configuration.subscriptions_heartbeat_url.present?
         subscriptions_manager.start
       end
