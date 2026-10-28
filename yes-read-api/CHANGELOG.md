@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.6.0] - 2026-10-28
+- See root CHANGELOG.md for details.
+
 ## [2.5.0] - 2026-10-08
 - See root CHANGELOG.md for details.
 
