@@ -403,7 +403,10 @@ RSpec.describe Yes::Core::Commands::Processor do
       let(:extra_notifier_classes) { ['Dummy::RecordingNotifier'] }
       let(:recorded_types) { Dummy::RecordingNotifier.notifications.map(&:first) }
 
-      before { Dummy::RecordingNotifier.reset! }
+      before do
+        Dummy::RecordingNotifier.reset!
+        allow(Dummy::RecordingNotifier).to receive(:new).and_call_original
+      end
 
       after { Dummy::RecordingNotifier.reset! }
 
@@ -418,8 +421,6 @@ RSpec.describe Yes::Core::Commands::Processor do
       end
 
       it 'passes the notifier options to the extra notifier' do
-        allow(Dummy::RecordingNotifier).to receive(:new).and_call_original
-
         subject
 
         expect(Dummy::RecordingNotifier).to have_received(:new).with(notifier_options)
