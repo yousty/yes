@@ -11,7 +11,14 @@ module Yes
       # caller never sees a `Cerbos::Error::Unavailable` for a blip that a second attempt on a
       # healthy pod would have answered.
       #
+      # A refused connection (a pod that stopped listening but is still routed to) also puts the
+      # channel into reconnect backoff, during which every call fails immediately. gRPC's default
+      # backoff (1s, growing to 120s) outlasts the retry window above, so a single process would
+      # keep failing every request for many seconds. The reconnect backoff is therefore capped to
+      # the same order of magnitude as the retry backoff.
+      #
       # @see https://grpc.io/docs/guides/retry/
+      # @see https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md
       module CerbosGrpcRetryPolicy
         SERVICE_NAME = 'cerbos.svc.v1.CerbosService'
         MAX_ATTEMPTS = 4
@@ -23,12 +30,21 @@ module Yes
         ENABLE_RETRIES_ARG = 'grpc.enable_retries'
         SERVICE_CONFIG_ARG = 'grpc.service_config'
 
+        RECONNECT_BACKOFF_MS = 100
+        MAX_RECONNECT_BACKOFF_MS = 1_000
+        MIN_RECONNECT_BACKOFF_ARG = 'grpc.min_reconnect_backoff_ms'
+        INITIAL_RECONNECT_BACKOFF_ARG = 'grpc.initial_reconnect_backoff_ms'
+        MAX_RECONNECT_BACKOFF_ARG = 'grpc.max_reconnect_backoff_ms'
+
         class << self
           # @return [Hash{String => Integer, String}] channel arguments for `Cerbos::Client.new`
           def channel_args
             {
               ENABLE_RETRIES_ARG => 1,
-              SERVICE_CONFIG_ARG => service_config.to_json
+              SERVICE_CONFIG_ARG => service_config.to_json,
+              MIN_RECONNECT_BACKOFF_ARG => RECONNECT_BACKOFF_MS,
+              INITIAL_RECONNECT_BACKOFF_ARG => RECONNECT_BACKOFF_MS,
+              MAX_RECONNECT_BACKOFF_ARG => MAX_RECONNECT_BACKOFF_MS
             }
           end
 
