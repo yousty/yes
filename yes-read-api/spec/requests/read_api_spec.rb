@@ -124,6 +124,40 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
           end
         end
 
+        context 'when Cerbos is unavailable' do
+          before do
+            allow(ReadModels::Apprenticeship::RequestAuthorizer).to receive(:call).and_raise(Cerbos::Error::Unavailable.new(code: 14, details: 'failed to connect to all addresses'))
+          end
+
+          it 'returns 503 with Retry-After and an error body' do
+            subject
+
+            aggregate_failures do
+              expect(response).to have_http_status(:service_unavailable)
+              expect(response.headers['Retry-After']).to eq('1')
+              expect(response.parsed_body).to include('title' => 'Service Unavailable')
+            end
+          end
+
+          it 'reports the error' do
+            expect(Rails.error).to receive(:report).with(an_instance_of(Cerbos::Error::Unavailable), hash_including(handled: true))
+
+            subject
+          end
+
+          context 'when the Cerbos deadline is exceeded' do
+            before do
+              allow(ReadModels::Apprenticeship::RequestAuthorizer).to receive(:call).and_raise(Cerbos::Error::DeadlineExceeded.new(code: 4, details: 'Deadline Exceeded'))
+            end
+
+            it 'returns 503' do
+              subject
+
+              expect(response).to have_http_status(:service_unavailable)
+            end
+          end
+        end
+
         context 'when record access authorized' do
           it 'returns empty data response' do
             subject
