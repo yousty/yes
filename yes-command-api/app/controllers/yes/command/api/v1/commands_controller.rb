@@ -10,6 +10,7 @@ module Yes
         # If no auth adapter is configured, authentication will raise an error.
         class CommandsController < ActionController::API
           MAX_INLINE_COMMANDS_PER_REQ = 10
+          RETRY_AFTER_SECONDS = 1
 
           include Yes::Core::OpenTelemetry::Trackable
 
@@ -17,6 +18,12 @@ module Yes
           before_action :set_channel
 
           rescue_from(StandardError, with: :handle_unexpected_error)
+          # Declared after StandardError: Rails checks the last declared handler first.
+          rescue_from(
+            Cerbos::Error::Unavailable,
+            Cerbos::Error::DeadlineExceeded,
+            with: :authorization_service_unavailable_response
+          )
           rescue_from(Yes::Core::AuthenticationError, with: :auth_error_response)
 
           rescue_from(
@@ -188,6 +195,20 @@ module Yes
                           span_name: 'Set Channel',
                           span_kind: :client
                         )
+
+          # Authorization of the whole batch precedes any execution, so nothing ran and the client
+          # can safely retry the request.
+          def authorization_service_unavailable_response(error)
+            self.class.current_span&.status = OpenTelemetry::Trace::Status.error(error.message)
+            self.class.current_span&.record_exception(error)
+            Rails.error.report(error, handled: true, severity: :error)
+
+            response.set_header('Retry-After', RETRY_AFTER_SECONDS.to_s)
+            render(
+              json: { title: 'Service Unavailable', detail: 'Authorization service unavailable' }.to_json,
+              status: :service_unavailable
+            )
+          end
 
           def handle_unexpected_error(error)
             self.class.current_span&.status = OpenTelemetry::Trace::Status.error(error.message)
