@@ -10,7 +10,8 @@ All notable changes to this project will be documented in this file.
 - `Yes::Core::Commands::Bus#call` accepts `extra_notifier_classes:`, a list of command notifier classes that
   run for that call only. They are appended to the configured `command_notifier_classes`, get the same
   `notifier_options`, and also run when commands are processed inline. `Yes::Core::Commands::Processor#perform`
-  takes their names as an optional last argument, so jobs enqueued before the upgrade keep working.
+  takes their names as an optional last argument. No new argument is passed to the processor unless per-call
+  notifiers are given, so jobs enqueued before the upgrade and custom processors keep working.
 
 ## [2.6.0] - 2026-10-28
 

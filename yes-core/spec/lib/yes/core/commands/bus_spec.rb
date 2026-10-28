@@ -42,8 +42,7 @@ RSpec.describe Yes::Core::Commands::Bus do
         do_something,
         notifier_options,
         batch_id,
-        false,
-        []
+        false
       )
     end
 
@@ -94,8 +93,7 @@ RSpec.describe Yes::Core::Commands::Bus do
           do_something,
           notifier_options,
           batch_id,
-          false,
-          []
+          false
         )
       end
     end
@@ -139,8 +137,7 @@ RSpec.describe Yes::Core::Commands::Bus do
           do_something,
           notifier_options,
           batch_id,
-          false,
-          []
+          false
         )
       end
     end

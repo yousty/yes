@@ -38,11 +38,13 @@ module Yes
           perform_method = perform_inline ? :perform_now : :perform_later
           self.class.current_span&.add_attributes({ perform_method: perform_method.to_s, origin: }.stringify_keys)
 
-          # The processor may be an ActiveJob, so only serializable class names are passed to it
-          command_processor.public_send(
-            perform_method, origin, command_or_commands, notifier_options, batch_id, perform_inline,
-            extra_notifier_classes.map(&:name)
-          )
+          # The extra argument is only passed when needed: during a rolling deploy an older worker runs jobs
+          # enqueued by this code, and a custom processor may still have the 5-argument signature.
+          # Only class names are passed, as the processor is an ActiveJob and its arguments must serialize.
+          processor_args = [origin, command_or_commands, notifier_options, batch_id, perform_inline]
+          processor_args << extra_notifier_classes.map(&:name) if extra_notifier_classes.any?
+
+          command_processor.public_send(perform_method, *processor_args)
         end
         otl_trackable :call, Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Command Bus Schedule')
       end
