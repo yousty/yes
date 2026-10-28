@@ -23,20 +23,25 @@ module Yes
         # @param origin [String] Origin of the command
         # @param notifier_options [Hash] Options for command notifier
         # @param batch_id [String] Batch ID
+        # @param extra_notifier_classes [Array<Class>] Notifier classes to run for this call only, in addition
+        #   to the configured +command_notifier_classes+. They also run when commands are processed inline.
         # @return [void]
         def call(
           command_or_commands,
           origin: nil,
           notifier_options: {},
-          batch_id: nil
+          batch_id: nil,
+          extra_notifier_classes: []
         )
           origin ||= Utils::CallerUtils.origin_from_caller(caller_locations(1..1).first)
 
           perform_method = perform_inline ? :perform_now : :perform_later
           self.class.current_span&.add_attributes({ perform_method: perform_method.to_s, origin: }.stringify_keys)
 
+          # The processor may be an ActiveJob, so only serializable class names are passed to it
           command_processor.public_send(
-            perform_method, origin, command_or_commands, notifier_options, batch_id, perform_inline
+            perform_method, origin, command_or_commands, notifier_options, batch_id, perform_inline,
+            extra_notifier_classes.map(&:name)
           )
         end
         otl_trackable :call, Yes::Core::OpenTelemetry::OtlSpan::OtlData.new(span_name: 'Command Bus Schedule')

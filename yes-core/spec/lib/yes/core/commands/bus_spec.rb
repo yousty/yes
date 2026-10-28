@@ -42,8 +42,45 @@ RSpec.describe Yes::Core::Commands::Bus do
         do_something,
         notifier_options,
         batch_id,
-        false
+        false,
+        []
       )
+    end
+
+    context 'when extra notifier classes are passed' do
+      subject { instance.call(do_something, origin:, notifier_options:, batch_id:, extra_notifier_classes:) }
+
+      let(:extra_notifier_classes) { [Dummy::RecordingNotifier] }
+
+      it 'passes the notifier class names to the processor' do
+        subject
+
+        expect(mock_processor).to have_received(:perform_later).with(
+          a_kind_of(String),
+          do_something,
+          notifier_options,
+          batch_id,
+          false,
+          ['Dummy::RecordingNotifier']
+        )
+      end
+
+      context 'when processing inline' do
+        let(:instance) { described_class.new(command_processor: mock_processor, perform_inline: true) }
+
+        it 'passes the notifier class names to the processor' do
+          subject
+
+          expect(mock_processor).to have_received(:perform_now).with(
+            a_kind_of(String),
+            do_something,
+            notifier_options,
+            batch_id,
+            true,
+            ['Dummy::RecordingNotifier']
+          )
+        end
+      end
     end
 
     context 'when origin is passed' do
@@ -57,7 +94,8 @@ RSpec.describe Yes::Core::Commands::Bus do
           do_something,
           notifier_options,
           batch_id,
-          false
+          false,
+          []
         )
       end
     end
@@ -101,7 +139,8 @@ RSpec.describe Yes::Core::Commands::Bus do
           do_something,
           notifier_options,
           batch_id,
-          false
+          false,
+          []
         )
       end
     end

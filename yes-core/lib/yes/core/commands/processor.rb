@@ -22,10 +22,16 @@ module Yes
         # @param command_or_commands [Command, Array<Command>] the command or commands to process
         # @param notifier_options [Hash] options to pass to the command notifier
         # @param custom_batch_id [String] Custom batch ID
+        # @param inline [Boolean] whether the commands are processed inline, which skips the configured notifiers
+        # @param extra_notifier_classes [Array<String>] names of notifier classes to run for this call only, in
+        #   addition to the configured ones; they run also when inline
         # @return [Array<Response>] the responses from the performed commands
         # @raise [UnregisteredCommand] if any command lacks a handler
-        def perform(origin, command_or_commands, notifier_options, custom_batch_id = nil, inline = false)
-          setup(notifier_options, custom_batch_id, inline)
+        def perform(
+          origin, command_or_commands, notifier_options, custom_batch_id = nil, inline = false,
+          extra_notifier_classes = []
+        )
+          setup(notifier_options, custom_batch_id, inline, extra_notifier_classes)
           singleton_class.current_span&.add_event('Command Processor Setup Done')
 
           commands = [*command_or_commands]
@@ -53,17 +59,19 @@ module Yes
 
         private
 
-        # Instantiates the command notifier from the config, using the given options.
-        # @param notifier_options [Hash] the options to pass to the command notifier
+        # Instantiates the command notifiers from the config and the per-call extra ones, using the given options.
+        # @param notifier_options [Hash] the options to pass to the command notifiers
         # @param custom_batch_id [String] Custom batch ID
         # @param inline [Boolean] whether to process the commands inline
+        # @param extra_notifier_classes [Array<String>] names of the per-call notifier classes
         # @return [void]
-        def setup(notifier_options, custom_batch_id, inline = false)
+        def setup(notifier_options, custom_batch_id, inline = false, extra_notifier_classes = [])
           @command_notifiers = [] if inline
 
           @command_notifiers ||= Yes::Core.configuration.command_notifier_classes&.map do |notifier_class|
             notifier_class.new(notifier_options)
           end || []
+          @command_notifiers += extra_notifier_classes.map { _1.constantize.new(notifier_options) }
           @custom_batch_id = custom_batch_id
         end
 
