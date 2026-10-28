@@ -184,13 +184,12 @@ module Yes
         # how far a read model fed by a subscription has caught up with its stream. It only moves forward and
         # skips read models without the column. Per-aggregate columns (e.g. `shop_order_revision`) belong to
         # the aggregates that write them and are never touched here.
-        # The builder writes `revision` for every event of the read model's own stream. A read model whose
-        # `revision` column an aggregate writes must therefore not also be fed by a builder: use per-aggregate
-        # revision columns or project the events through the aggregate instead.
         # It only writes for events of the read model's own stream: a builder may also react to events of
         # other streams (e.g. a product event for an order item), whose revision says nothing about this row.
         # Only the stream id is compared, not the context or the stream name. A read model fed by two streams
         # that share the same id would get a mixed revision, so such read models must not rely on it.
+        # A read model whose `revision` column an aggregate writes must therefore not also be fed by a builder:
+        # use per-aggregate revision columns or project the events through the aggregate instead.
         # @param read_model [ActiveRecord::Base, nil] the read model, nil if the event maps to no row
         # @param event [Yes::Core::Event] the event that was handled
         # @return [void]
