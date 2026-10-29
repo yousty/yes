@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-read-api
+
+#### Security
+- `QueriesController` drops the filter parameter a query does not apply in a `before_action`, so it holds for every
+  action, consumer subclass actions included, not only `call` and `advanced`. A GET applies `filters` and loses
+  `filter_definition`; a POST applies `filter_definition` and loses `filters`. A POST without a `filter_definition`
+  (e.g. `{}` or only `filters`) gets an empty one, so a request authorizer sees what the advanced query applies instead
+  of neither parameter. A stored filter (`filter_id`) whose body has no `filter_definition`, or is nil or not a Hash,
+  gets the empty definition too, instead of running unbounded or answering 500. Payload validation still runs on what
+  the client sent. Clients that send the right parameter see no change.
+
 ## [2.7.0] - 2026-10-29
 
 ### yes-core

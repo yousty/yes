@@ -759,6 +759,7 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
     let(:scope_definition) do
       { type: 'filter_set', logical_operator: 'and', scope: { company_ids: company_id }, filters: [] }
     end
+    let(:empty_filter_definition) { { type: 'filter_set', logical_operator: 'and', scope: {}, filters: [] } }
     let(:authorizer_params) { [] }
 
     before do
@@ -858,6 +859,101 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
         request
 
         expect(authorizer_params.first[:filter_definition]).to include(scope: { company_ids: company_id })
+      end
+    end
+
+    context 'when a consumer subclass action receives a GET with filters and a filter_definition' do
+      subject(:request) do
+        get('/shop_search/apprenticeships',
+            params: { filters: { company_ids: company_id }, filter_definition: scope_definition },
+            headers: request_headers)
+      end
+
+      it 'hands only the filters to the authorizer' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.first).to include(filters: { company_ids: company_id })
+          expect(authorizer_params.first).not_to have_key(:filter_definition)
+        end
+      end
+    end
+
+    context 'when an advanced POST carries only filters (empty filter_definition handed instead)' do
+      subject(:request) do
+        post('/queries/apprenticeships', params: { filters: { company_ids: company_id } }.to_json, headers: request_headers)
+      end
+
+      it 'hands the empty filter_definition and no filters to the authorizer' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.first[:filters]).to be_blank
+          expect(authorizer_params.first[:filter_definition]).to eq(empty_filter_definition)
+        end
+      end
+    end
+
+    context 'when an advanced POST carries an empty body' do
+      subject(:request) { post('/queries/apprenticeships', params: {}.to_json, headers: request_headers) }
+
+      it 'is not rejected by payload validation and hands the empty filter_definition to the authorizer' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.first[:filters]).to be_blank
+          expect(authorizer_params.first[:filter_definition]).to eq(empty_filter_definition)
+        end
+      end
+    end
+
+    context 'when an advanced POST carries a filter_definition' do
+      subject(:request) { post('/queries/apprenticeships', params: { filter_definition: scope_definition }.to_json, headers: request_headers) }
+
+      it 'hands it to the authorizer unchanged' do
+        request
+
+        expect(authorizer_params.first[:filter_definition]).to eq(scope_definition)
+      end
+    end
+
+    context 'when a persisted filter body carries only filters (empty filter_definition handed instead)' do
+      subject(:request) do
+        get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)
+      end
+
+      let(:persisted_filter) { FactoryBot.create(:persisted_filter, body: { filters: { company_ids: company_id } }) }
+
+      it 'hands the empty filter_definition and no filters to the authorizer' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.first[:filters]).to be_blank
+          expect(authorizer_params.first[:filter_definition]).to eq(empty_filter_definition)
+        end
+      end
+    end
+
+    [nil, [], 'text'].each do |body|
+      context "when a persisted filter body is #{body.inspect}" do
+        subject(:request) do
+          get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)
+        end
+
+        let(:persisted_filter) { FactoryBot.create(:persisted_filter, body:) }
+
+        it 'hands the empty filter_definition to the authorizer instead of failing' do
+          request
+
+          aggregate_failures do
+            expect(response.status).to eq(200)
+            expect(authorizer_params.first[:filter_definition]).to eq(empty_filter_definition)
+          end
+        end
       end
     end
 

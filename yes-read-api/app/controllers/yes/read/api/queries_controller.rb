@@ -8,10 +8,14 @@ module Yes
       class QueriesController < ApplicationController
         before_action :authenticate_with_token
         before_action :validate_advanced_payload, only: :advanced
+        # Must stay after #validate_advanced_payload, which validates what the client sent.
+        before_action :drop_ignored_filter_param
         before_action :process_own_filter, only: :call
 
         RETRY_AFTER_SECONDS = 1
-        IGNORED_FILTER_PARAM = { basic: :filter_definition, advanced: :filters }.freeze
+        # What an advanced query without a filter definition is bounded by: nothing, so the request
+        # authorizer sees (and has to authorize) an unrestricted query.
+        EMPTY_FILTER_DEFINITION = { type: 'filter_set', logical_operator: 'and', scope: {}, filters: [] }.freeze
 
         # Covers AuthenticationError raised outside #authenticate_with_token, e.g. by consumer
         # request authorizers, filters or serializers.
@@ -41,6 +45,21 @@ module Yes
 
         private
 
+        # A GET applies `filters` and a POST applies `filter_definition`; the other parameter is ignored
+        # by the query. It is dropped here, before any action (consumer subclass actions included), so
+        # request authorizers never see a parameter the query does not apply. A POST without a
+        # `filter_definition` gets an empty one, so the authorizer sees what the advanced query applies.
+        #
+        # @return [void]
+        def drop_ignored_filter_param
+          if request.post?
+            params.delete(:filters)
+            params[:filter_definition] = EMPTY_FILTER_DEFINITION.deep_dup if params[:filter_definition].blank?
+          else
+            params.delete(:filter_definition)
+          end
+        end
+
         def process_own_filter
           return if params.dig(:filters, :own).blank?
           return unless defined?(::IdentityUser)
@@ -54,7 +73,7 @@ module Yes
         end
 
         def response_json(filter_type: :basic, persisted_filter: nil)
-          filter_options = applied_filter_options(persisted_filter:, filter_type:)
+          filter_options = applied_filter_options(persisted_filter:)
 
           request_authorizer.call(filter_options, auth_data)
 
@@ -68,16 +87,19 @@ module Yes
         end
 
         # The options the query is built from. They are what the request authorizer is handed too, so
-        # it never authorizes a parameter the query does not apply: a basic query applies `filters` and
-        # an advanced one `filter_definition`.
+        # it never authorizes a parameter the query does not apply. A stored filter is applied as an
+        # advanced query: its `filters` are ignored, and a body without `filter_definition` (or one that
+        # is nil or not a Hash) gets the empty definition rather than running unbounded or raising.
         #
         # @param persisted_filter [#body, nil] stored filter whose body replaces the request params
-        # @param filter_type [Symbol] `:basic` or `:advanced`
-        # @return [Hash] the params without the key the filter type ignores
-        def applied_filter_options(persisted_filter:, filter_type:)
-          options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
+        # @return [Hash] the params, or the stored filter body with the ignored `filters` removed
+        def applied_filter_options(persisted_filter:)
+          return params unless persisted_filter
 
-          options.except(IGNORED_FILTER_PARAM.fetch(filter_type))
+          body = persisted_filter.body.is_a?(Hash) ? persisted_filter.body.deep_symbolize_keys : {}
+          options = body.except(:filters).merge(model: params[:model])
+          options[:filter_definition] = EMPTY_FILTER_DEFINITION.deep_dup if options[:filter_definition].blank?
+          options
         end
 
         def request_authorizer
