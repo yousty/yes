@@ -937,6 +937,26 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
       end
     end
 
+    [nil, [], 'text'].each do |body|
+      context "when a persisted filter body is #{body.inspect}" do
+        subject(:request) do
+          get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)
+        end
+
+        let(:persisted_filter) { FactoryBot.create(:persisted_filter, body:) }
+
+        it 'responds with 400 without calling the authorizer' do
+          request
+
+          aggregate_failures do
+            expect(response).to have_http_status(:bad_request)
+            expect(response.parsed_body).to include('detail' => 'the stored filter has no filter_definition')
+            expect(authorizer_params).to be_empty
+          end
+        end
+      end
+    end
+
     context 'when a persisted filter body carries filters and a filter_definition' do
       subject(:request) do
         get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)

@@ -88,12 +88,16 @@ module Yes
         # An advanced query returns the unbounded base scope without a `filter_definition`.
         #
         # @param persisted_filter [#body, nil] stored filter
-        # @return [Boolean] whether a stored filter was found whose body has no `filter_definition`
+        # @return [Boolean] whether a stored filter was found whose body has no `filter_definition`;
+        #   a body that is not a Hash (the jsonb column also holds nil, arrays, strings) has none
         def without_definition?(persisted_filter)
-          persisted_filter.present? && stored_filter_options(persisted_filter)[:filter_definition].blank?
+          return false if persisted_filter.blank?
+          return true unless persisted_filter.body.is_a?(Hash)
+
+          stored_filter_options(persisted_filter)[:filter_definition].blank?
         end
 
-        # @param persisted_filter [#body] stored filter
+        # @param persisted_filter [#body] stored filter with a Hash body
         # @return [Hash] its body with symbol keys and the requested model
         def stored_filter_options(persisted_filter)
           persisted_filter.body.deep_symbolize_keys.merge(model: params[:model])
