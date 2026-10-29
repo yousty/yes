@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-10-29
+
 ### yes-read-api
 
 #### Security
