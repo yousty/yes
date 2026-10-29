@@ -144,7 +144,7 @@ RSpec.shared_examples 'correctly paginated response' do
   end
 
   context 'when requested total count' do
-    let(:params) { super().merge(page: { include_total: 'true' }) }
+    let(:params) { super().deep_merge(page: { include_total: 'true' }) }
 
     it 'has correct total pagination header' do
       subject

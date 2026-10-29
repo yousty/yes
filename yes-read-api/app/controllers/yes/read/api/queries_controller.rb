@@ -7,11 +7,15 @@ module Yes
     module Api
       class QueriesController < ApplicationController
         before_action :authenticate_with_token
+        before_action :reject_ignored_filter_param
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
         RETRY_AFTER_SECONDS = 1
-        IGNORED_FILTER_PARAM = { basic: :filter_definition, advanced: :filters }.freeze
+        FILTER_DEFINITION_REQUIRED = 'filter_definition is required for an advanced query'
+        FILTERS_IGNORED_BY_ADVANCED = 'filters is not applied by an advanced query, use filter_definition'
+        STORED_FILTER_WITHOUT_DEFINITION = 'the stored filter has no filter_definition'
+        FILTER_DEFINITION_IGNORED_BY_BASIC = 'filter_definition is not applied by a basic query, use filters'
 
         # Covers AuthenticationError raised outside #authenticate_with_token, e.g. by consumer
         # request authorizers, filters or serializers.
@@ -31,6 +35,8 @@ module Yes
 
         def call
           persisted_filter = filter(read_model_name).persisted_filter_scope.find_by(id: params[:filter_id]) if params[:filter_id].present?
+
+          return bad_request_response(STORED_FILTER_WITHOUT_DEFINITION) if without_definition?(persisted_filter)
 
           render json: response_json(persisted_filter:, filter_type: persisted_filter ? :advanced : :basic).to_json
         end
@@ -54,7 +60,7 @@ module Yes
         end
 
         def response_json(filter_type: :basic, persisted_filter: nil)
-          filter_options = applied_filter_options(persisted_filter:, filter_type:)
+          filter_options = applied_filter_options(persisted_filter:)
 
           request_authorizer.call(filter_options, auth_data)
 
@@ -67,17 +73,34 @@ module Yes
           serialize(paginated_records, filter_options)
         end
 
-        # The options the query is built from. They are what the request authorizer is handed too, so
-        # it never authorizes a parameter the query does not apply: a basic query applies `filters` and
-        # an advanced one `filter_definition`.
+        # The options the query is built from. They are what the request authorizer is handed too.
+        # A stored filter body replaces the request params and runs as an advanced query, which
+        # applies `filter_definition` only, so a `filters` key in the body is dropped.
         #
         # @param persisted_filter [#body, nil] stored filter whose body replaces the request params
-        # @param filter_type [Symbol] `:basic` or `:advanced`
-        # @return [Hash] the params without the key the filter type ignores
-        def applied_filter_options(persisted_filter:, filter_type:)
-          options = persisted_filter&.body&.deep_symbolize_keys&.merge(model: params[:model]) || params
+        # @return [Hash] the stored body (without `filters`) or the request params
+        def applied_filter_options(persisted_filter:)
+          return params unless persisted_filter
 
-          options.except(IGNORED_FILTER_PARAM.fetch(filter_type))
+          stored_filter_options(persisted_filter).except(:filters)
+        end
+
+        # An advanced query returns the unbounded base scope without a `filter_definition`.
+        #
+        # @param persisted_filter [#body, nil] stored filter
+        # @return [Boolean] whether a stored filter was found whose body has no `filter_definition`;
+        #   a body that is not a Hash (the jsonb column also holds nil, arrays, strings) has none
+        def without_definition?(persisted_filter)
+          return false if persisted_filter.blank?
+          return true unless persisted_filter.body.is_a?(Hash)
+
+          stored_filter_options(persisted_filter)[:filter_definition].blank?
+        end
+
+        # @param persisted_filter [#body] stored filter with a Hash body
+        # @return [Hash] its body with symbol keys and the requested model
+        def stored_filter_options(persisted_filter)
+          persisted_filter.body.deep_symbolize_keys.merge(model: params[:model])
         end
 
         def request_authorizer
@@ -162,9 +185,31 @@ module Yes
           )
         end
 
-        def validate_advanced_payload
-          return if params[:filter_definition].blank?
+        # Rejects a request that carries the filter parameter its query does not apply, or lacks the one
+        # it needs. Request authorizers pick what to check by which parameter is present, so a parameter
+        # the query silently ignores could be authorized without bounding the result. It runs as a
+        # before_action, so consumer actions of subclasses are covered too.
+        #
+        # @return [void]
+        def reject_ignored_filter_param
+          if request.post?
+            return bad_request_response(FILTER_DEFINITION_REQUIRED) if params[:filter_definition].blank?
 
+            bad_request_response(FILTERS_IGNORED_BY_ADVANCED) if params.key?(:filters)
+          elsif params.key?(:filter_definition)
+            bad_request_response(FILTER_DEFINITION_IGNORED_BY_BASIC)
+          end
+        end
+
+        # Renders a 400 with the reason the request is malformed.
+        #
+        # @param detail [String] why the request is rejected and what to send instead
+        # @return [void]
+        def bad_request_response(detail)
+          render(json: { title: 'Bad Request', detail: }.to_json, status: :bad_request)
+        end
+
+        def validate_advanced_payload
           validation_result = Yes::Read::Api::AdvancedFilterValidator.call(params)
           return if validation_result.success?
 

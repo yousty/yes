@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-read-api
+
+#### Security
+- `QueriesController` answers `400 Bad Request` (`{ "title": "Bad Request", "detail": ... }`)
+  instead of silently ignoring a filter parameter its query does not apply. A basic query (`GET`/`HEAD`)
+  applies `filters` only, an advanced query (`POST`) applies `filter_definition` only. Rejected are a `GET`
+  or `HEAD` carrying `filter_definition`, a `POST` carrying `filters`, a `POST` without `filter_definition`, and
+  a `GET` with a `filter_id` whose stored body has no `filter_definition` (`the stored filter has no
+  filter_definition`), since a stored filter runs as an advanced query too.
+  Request authorizers commonly decide what to check by which parameter is present, so an ignored parameter could
+  be authorized while the query returned rows it never bounded. The check runs for subclass actions too.
+  Clients must send `filters` on `GET` and `filter_definition` on `POST`; other parameters (`page`, `order`,
+  `include`, `filter_id`, ...) are unaffected. Requests that relied on the ignored parameter now receive `400`.
+
 ## [2.7.0] - 2026-10-29
 
 ### yes-core
