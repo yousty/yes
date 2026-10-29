@@ -17,15 +17,6 @@ module Dummy
       end
     end
 
-    # @return [Hash] the options the notifier was instantiated with
-    attr_reader :options
-
-    # @param options [Hash] notifier options
-    def initialize(options = {})
-      super
-      @options = options
-    end
-
     def notify_batch_started(batch_id, _transaction = nil, commands = nil)
       self.class.notifications << [:batch_started, batch_id, commands]
     end
