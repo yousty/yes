@@ -926,10 +926,34 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
         FactoryBot.create(:persisted_filter, body: { filters: { company_ids: company_id } })
       end
 
-      it 'does not hand the filters to the authorizer, since the persisted filter is applied as advanced' do
+      it 'responds with 400 without calling the authorizer, since the persisted filter is applied as advanced' do
         request
 
-        expect(authorizer_params.first[:filters]).to be_blank
+        aggregate_failures do
+          expect(response).to have_http_status(:bad_request)
+          expect(response.parsed_body).to eq('title' => 'Bad Request', 'detail' => 'the stored filter has no filter_definition')
+          expect(authorizer_params).to be_empty
+        end
+      end
+    end
+
+    context 'when a persisted filter body carries filters and a filter_definition' do
+      subject(:request) do
+        get('/queries/apprenticeships', params: { filter_id: persisted_filter.id }, headers: request_headers)
+      end
+
+      let(:persisted_filter) do
+        FactoryBot.create(:persisted_filter,
+                          body: { filters: { company_ids: company_id }, filter_definition: scope_definition })
+      end
+
+      it 'hands only the filter_definition to the authorizer, since the advanced query ignores the filters' do
+        request
+
+        aggregate_failures do
+          expect(authorizer_params.first[:filter_definition]).to include(scope: { company_ids: company_id })
+          expect(authorizer_params.first).not_to have_key(:filters)
+        end
       end
     end
 
