@@ -13,7 +13,10 @@ All notable changes to this project will be documented in this file.
   (e.g. `{}` or only `filters`) gets an empty one, so a request authorizer sees what the advanced query applies instead
   of neither parameter. A stored filter (`filter_id`) whose body has no `filter_definition`, or is nil or not a Hash,
   gets the empty definition too, instead of running unbounded or answering 500. Payload validation still runs on what
-  the client sent. Clients that send the right parameter see no change.
+  the client sent. Requests to `call` and `advanced` are unchanged for clients that send the right parameter.
+  Consumer subclass actions are now covered by the same rule, by HTTP method (GET keeps `filters`, POST keeps
+  `filter_definition`). An action with a different contract, e.g. a POST action that applies `filters`, opts out with
+  `skip_before_action :drop_ignored_filter_param, only: :<action>` and then has to authorize what it applies itself.
 
 ## [2.7.0] - 2026-10-29
 

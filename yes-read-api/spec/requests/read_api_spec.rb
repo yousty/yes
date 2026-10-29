@@ -880,6 +880,55 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
       end
     end
 
+    context 'when a consumer subclass action receives a POST with filters and a filter_definition' do
+      subject(:request) do
+        post('/shop_search/apprenticeships',
+             params: { filters: { company_ids: company_id }, filter_definition: scope_definition }.to_json,
+             headers: request_headers)
+      end
+
+      it 'hands only the filter_definition to the authorizer' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.first[:filters]).to be_blank
+          expect(authorizer_params.first[:filter_definition]).to eq(scope_definition)
+        end
+      end
+    end
+
+    context 'when a consumer subclass action receives an empty POST' do
+      subject(:request) { post('/shop_search/apprenticeships', params: {}.to_json, headers: request_headers) }
+
+      it 'hands the empty filter_definition to the authorizer' do
+        request
+
+        aggregate_failures do
+          expect(response.status).to eq(200)
+          expect(authorizer_params.first[:filters]).to be_blank
+          expect(authorizer_params.first[:filter_definition]).to eq(empty_filter_definition)
+        end
+      end
+    end
+
+    context 'when a consumer action opts out with skip_before_action' do
+      subject(:request) do
+        get('/shop_export/apprenticeships',
+            params: { filters: { company_ids: company_id }, filter_definition: scope_definition },
+            headers: request_headers)
+      end
+
+      it 'receives its params untouched' do
+        request
+
+        aggregate_failures do
+          expect(authorizer_params.first[:filters]).to eq(company_ids: company_id)
+          expect(authorizer_params.first[:filter_definition]).to include(scope: { company_ids: company_id })
+        end
+      end
+    end
+
     context 'when an advanced POST carries only filters (empty filter_definition handed instead)' do
       subject(:request) do
         post('/queries/apprenticeships', params: { filters: { company_ids: company_id } }.to_json, headers: request_headers)
