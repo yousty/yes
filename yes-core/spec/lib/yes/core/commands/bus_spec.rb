@@ -46,6 +46,54 @@ RSpec.describe Yes::Core::Commands::Bus do
       )
     end
 
+    context 'when extra notifier classes are passed' do
+      subject { instance.call(do_something, origin:, notifier_options:, batch_id:, extra_notifier_classes:) }
+
+      let(:extra_notifier_classes) { [Dummy::RecordingNotifier] }
+
+      it 'passes the notifier class names to the processor' do
+        subject
+
+        expect(mock_processor).to have_received(:perform_later).with(
+          a_kind_of(String),
+          do_something,
+          notifier_options,
+          batch_id,
+          false,
+          ['Dummy::RecordingNotifier']
+        )
+      end
+
+      context 'when a notifier class is anonymous' do
+        let(:extra_notifier_classes) { [Class.new(Yes::Core::Commands::Notifier)] }
+
+        it 'raises an ArgumentError and does not call the processor' do
+          aggregate_failures do
+            expect { subject }.to raise_error(ArgumentError, /extra_notifier_classes/)
+            expect(mock_processor).not_to have_received(:perform_later)
+            expect(mock_processor).not_to have_received(:perform_now)
+          end
+        end
+      end
+
+      context 'when processing inline' do
+        let(:instance) { described_class.new(command_processor: mock_processor, perform_inline: true) }
+
+        it 'passes the notifier class names to the processor' do
+          subject
+
+          expect(mock_processor).to have_received(:perform_now).with(
+            a_kind_of(String),
+            do_something,
+            notifier_options,
+            batch_id,
+            true,
+            ['Dummy::RecordingNotifier']
+          )
+        end
+      end
+    end
+
     context 'when origin is passed' do
       let(:origin) { 'some origin' }
 

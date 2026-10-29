@@ -394,6 +394,67 @@ RSpec.describe Yes::Core::Commands::Processor do
       end
     end
 
+    context 'with extra notifier classes' do
+      subject do
+        processor.perform(origin, do_something, notifier_options, batch_id, inline, extra_notifier_classes)
+      end
+
+      let(:inline) { false }
+      let(:extra_notifier_classes) { ['Dummy::RecordingNotifier'] }
+      let(:recorded_types) { Dummy::RecordingNotifier.notifications.map(&:first) }
+
+      before do
+        Dummy::RecordingNotifier.reset!
+        allow(Dummy::RecordingNotifier).to receive(:new).and_call_original
+      end
+
+      after { Dummy::RecordingNotifier.reset! }
+
+      it 'notifies the extra notifier alongside the configured ones' do
+        subject
+
+        aggregate_failures do
+          expect(recorded_types).to eq(%i[batch_started command_response batch_finished])
+          expect(notifier1).to have_received(:notify_batch_started)
+          expect(notifier2).to have_received(:notify_batch_finished)
+        end
+      end
+
+      it 'passes the notifier options to the extra notifier' do
+        subject
+
+        expect(Dummy::RecordingNotifier).to have_received(:new).with(notifier_options)
+      end
+
+      context 'when processing inline' do
+        let(:inline) { true }
+
+        it 'skips the configured notifiers but runs the extra one' do
+          subject
+
+          aggregate_failures do
+            expect(recorded_types).to eq(%i[batch_started command_response batch_finished])
+            expect(notifier1).not_to have_received(:notify_batch_started)
+            expect(notifier2).not_to have_received(:notify_batch_started)
+          end
+        end
+      end
+
+      context 'when no extra notifier classes are passed' do
+        subject { processor.perform(origin, do_something, notifier_options, batch_id) }
+
+        it 'notifies only the configured notifiers' do
+          subject
+
+          aggregate_failures do
+            expect(recorded_types).to be_empty
+            expect(notifier1).to have_received(:notify_batch_started)
+            expect(notifier2).to have_received(:notify_batch_started)
+          end
+        end
+      end
+    end
+
     context 'with message bus notifier' do
       let(:channel_id) { SecureRandom.uuid }
       let(:notifier_options) { { channel: "/cmd_notifications/commands/#{channel_id}" } }

@@ -1740,6 +1740,16 @@ class SlackNotifier < Yes::Core::Commands::Notifier
 end
 ```
 
+#### Per-call Notifiers
+
+To attach a notifier to one specific command bus call only, for example to report failures of a batch import without registering the notifier for every batch, pass it as `extra_notifier_classes`:
+
+```ruby
+Yes::Core::CommandBus.new.call(commands, extra_notifier_classes: [ImportFailureNotifier])
+```
+
+The per-call notifiers are appended to the configured `command_notifier_classes` and receive the same `notifier_options`. Unlike the configured ones, they also run when commands are processed inline, because the caller asked for them explicitly. The notifier classes must be named (anonymous classes are not supported), as only their names are passed on to the command processor job.
+
 ## Read API
 
 The Read API (`yes-read-api`) provides an HTTP endpoint for querying read models with filtering, pagination, and authorization. Like the Command API, it is a standalone Rails engine that does **not** depend on the aggregate DSL — it works with any ActiveRecord model that has a matching serializer.
