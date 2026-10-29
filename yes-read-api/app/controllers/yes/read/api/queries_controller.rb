@@ -7,10 +7,14 @@ module Yes
     module Api
       class QueriesController < ApplicationController
         before_action :authenticate_with_token
+        before_action :reject_ignored_filter_param
         before_action :validate_advanced_payload, only: :advanced
         before_action :process_own_filter, only: :call
 
         RETRY_AFTER_SECONDS = 1
+        FILTER_DEFINITION_REQUIRED = 'filter_definition is required for an advanced query'
+        FILTERS_IGNORED_BY_ADVANCED = 'filters is not applied by an advanced query, use filter_definition'
+        FILTER_DEFINITION_IGNORED_BY_BASIC = 'filter_definition is not applied by a basic query, use filters'
         IGNORED_FILTER_PARAM = { basic: :filter_definition, advanced: :filters }.freeze
 
         # Covers AuthenticationError raised outside #authenticate_with_token, e.g. by consumer
@@ -162,9 +166,31 @@ module Yes
           )
         end
 
-        def validate_advanced_payload
-          return if params[:filter_definition].blank?
+        # Rejects a request that carries the filter parameter its query does not apply, or lacks the one
+        # it needs. Request authorizers pick what to check by which parameter is present, so a parameter
+        # the query silently ignores could be authorized without bounding the result. It runs as a
+        # before_action, so consumer actions of subclasses are covered too.
+        #
+        # @return [void]
+        def reject_ignored_filter_param
+          if request.post?
+            return bad_request_response(FILTER_DEFINITION_REQUIRED) if params[:filter_definition].blank?
 
+            bad_request_response(FILTERS_IGNORED_BY_ADVANCED) if params.key?(:filters)
+          elsif params.key?(:filter_definition)
+            bad_request_response(FILTER_DEFINITION_IGNORED_BY_BASIC)
+          end
+        end
+
+        # Renders a 400 with the reason the request is malformed.
+        #
+        # @param detail [String] why the request is rejected and what to send instead
+        # @return [void]
+        def bad_request_response(detail)
+          render(json: { title: 'Bad Request', detail: }.to_json, status: :bad_request)
+        end
+
+        def validate_advanced_payload
           validation_result = Yes::Read::Api::AdvancedFilterValidator.call(params)
           return if validation_result.success?
 
