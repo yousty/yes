@@ -156,17 +156,22 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
         allow(retrier).to receive(:call).and_yield
       end
 
-      it 'runs it inside the row lock' do
-        locked = false
-        allow(read_model).to receive(:with_lock) do |&block|
-          locked = true
-          block.call.tap { locked = false }
+      context 'with a lock that records whether it is held' do
+        let(:lock_state) { { held: false, held_while_running: nil } }
+
+        before do
+          state = lock_state
+          allow(read_model).to receive(:with_lock) do |&block|
+            state[:held] = true
+            block.call.tap { state[:held] = false }
+          end
         end
 
-        ran_locked = nil
-        guard.call { ran_locked = locked }
+        it 'runs it inside the row lock' do
+          guard.call { lock_state[:held_while_running] = lock_state[:held] }
 
-        expect(ran_locked).to be true
+          expect(lock_state[:held_while_running]).to be true
+        end
       end
 
       context 'when another writer applied the revision before the lock was taken' do

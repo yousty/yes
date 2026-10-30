@@ -19,6 +19,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater, 'concurrent writers
   end
 
   THREAD_TIMEOUT = 10
+  COMPETING_WRITER_WAIT = 1
 
   let(:user_id) { SecureRandom.uuid }
   let(:contested_revision) { 1 }
@@ -78,6 +79,73 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelUpdater, 'concurrent writers
       expect(TestUser.find(user_id).revision).to eq(contested_revision + 1)
       expect(TestUser.find(user_id).document_ids).to eq('from fast writer')
       expect(TestUser.find(user_id).another).to eq('from fast writer')
+    end
+  end
+
+  context 'when a writer holds the row lock while writing' do
+    let(:lock_holder_in_write) { Queue.new }
+    let(:lock_holder_release) { Queue.new }
+    let(:lock_holder) do
+      in_write = lock_holder_in_write
+      release = lock_holder_release
+      Thread.new { apply_as_lock_holder(in_write, release) }
+    end
+    let(:competing_writer) { Thread.new { apply_as_competing_writer } }
+
+    # Pauses inside the guard's locked block, right before the row is written.
+    def pause_before_write(read_model, in_write, release)
+      read_model.define_singleton_method(:update!) do |*args|
+        in_write << :in_write
+        Timeout.timeout(THREAD_TIMEOUT) { release.pop }
+        super(*args)
+      end
+    end
+
+    def apply_as_lock_holder(in_write, release)
+      ActiveRecord::Base.connection_pool.with_connection do
+        aggregate = Test::User::Aggregate.new(user_id)
+        pause_before_write(aggregate.read_model, in_write, release)
+        apply(aggregate, contested_revision, { document_ids: 'from lock holder' })
+      end
+    end
+
+    def apply_as_competing_writer
+      ActiveRecord::Base.connection_pool.with_connection do
+        apply(Test::User::Aggregate.new(user_id), contested_revision, { document_ids: 'from competing writer' })
+      end
+    end
+
+    before do
+      lock_holder
+      wait_for(lock_holder_in_write)
+      competing_writer
+    end
+
+    after do
+      lock_holder_release << :go
+      [lock_holder, competing_writer].each { |thread| thread.join(THREAD_TIMEOUT) }
+    end
+
+    it 'blocks the competing writer until the lock holder committed' do
+      aggregate_failures do
+        expect(competing_writer.join(COMPETING_WRITER_WAIT)).to be_nil
+
+        lock_holder_release << :go
+        expect(lock_holder.join(THREAD_TIMEOUT)).not_to be_nil
+        expect(competing_writer.join(THREAD_TIMEOUT)).not_to be_nil
+      end
+    end
+
+    it 'keeps the lock holder write and skips the competing one as already applied' do
+      lock_holder_release << :go
+      [lock_holder, competing_writer].each { |thread| thread.join(THREAD_TIMEOUT) }
+      apply(Test::User::Aggregate.new(user_id), contested_revision + 1, { another: 'next event' })
+
+      aggregate_failures do
+        expect(TestUser.find(user_id).revision).to eq(contested_revision + 1)
+        expect(TestUser.find(user_id).document_ids).to eq('from lock holder')
+        expect(TestUser.find(user_id).another).to eq('next event')
+      end
     end
   end
 end
