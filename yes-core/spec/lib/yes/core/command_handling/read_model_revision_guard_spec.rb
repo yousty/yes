@@ -10,6 +10,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
 
   before do
     allow(read_model).to receive(:reload).and_return(read_model)
+    allow(read_model).to receive(:with_lock) { |&block| block.call }
     allow(Yes::Core::Utils::ExponentialRetrier).to receive(:new).and_return(retrier)
   end
 
@@ -150,6 +151,65 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
       end
     end
 
+    context 'when the block runs' do
+      before do
+        allow(retrier).to receive(:call).and_yield
+      end
+
+      it 'runs it inside the row lock' do
+        locked = false
+        allow(read_model).to receive(:with_lock) do |&block|
+          locked = true
+          block.call.tap { locked = false }
+        end
+
+        ran_locked = nil
+        guard.call { ran_locked = locked }
+
+        expect(ran_locked).to be true
+      end
+
+      context 'when another writer applied the revision before the lock was taken' do
+        before do
+          allow(read_model).to receive(:with_lock) do |&block|
+            allow(read_model).to receive(:revision).and_return(expected_revision)
+            block.call
+          end
+        end
+
+        it 'skips the block with RevisionAlreadyAppliedError' do
+          block_called = false
+
+          aggregate_failures do
+            expect do
+              guard.call { block_called = true }
+            end.to raise_error(described_class::RevisionAlreadyAppliedError)
+            expect(block_called).to be false
+          end
+        end
+      end
+
+      context 'when the locked row is behind the expected revision' do
+        before do
+          allow(read_model).to receive(:with_lock) do |&block|
+            allow(read_model).to receive(:revision).and_return(expected_revision - 2)
+            block.call
+          end
+        end
+
+        it 'raises RevisionMismatchError without running the block' do
+          block_called = false
+
+          aggregate_failures do
+            expect do
+              guard.call { block_called = true }
+            end.to raise_error(described_class::RevisionMismatchError, /Revision mismatch/)
+            expect(block_called).to be false
+          end
+        end
+      end
+    end
+
     context 'when block raises an error' do
       before do
         allow(retrier).to receive(:call).and_yield
@@ -275,6 +335,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
     let(:read_model) { instance_double('ReadModel', users_revision: current_revision, revision: nil) }
 
     before do
+      allow(read_model).to receive(:with_lock) { |&block| block.call }
       allow(retrier).to receive(:call).and_yield
     end
 
