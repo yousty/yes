@@ -8,6 +8,9 @@ module Yes
       # Ensures that read model revisions match expected event revisions
       # Uses ExponentialRetrier for retry logic with exponential backoff
       # This handles eventual consistency between the event store and read model databases
+      #
+      # Waiting for the expected revision happens without a lock. Only the final check and the block run
+      # while the read model row is locked, see {#call}.
       class ReadModelRevisionGuard
         # Error raised when revision guard fails after maximum retries
         class RevisionMismatchError < Yes::Core::Error; end
@@ -96,7 +99,11 @@ module Yes
 
         # Executes the guard logic with retry mechanism
         #
-        # @yield Block to execute when revisions match
+        # Once the revision matches, the row is locked, reloaded and checked again before the block runs. Without
+        # that, two writers applying the same event (for example a slow command and a concurrent recovery) can both
+        # pass the check; the later one then writes its stale copy over the newer state and resets the revision.
+        #
+        # @yield Block to execute when revisions match, runs while the read model row is locked
         # @return [Object] Result of the block execution
         # @raise [RevisionMismatchError] When revisions don't match after maximum retries
         # @raise [TimeoutError] When timeout is exceeded
@@ -108,9 +115,8 @@ module Yes
             retrier.call(
               condition_check: -> { check_revision_and_return_match_status },
               failure_message: revision_mismatch_message,
-              timeout_message: timeout_message,
-              &
-            )
+              timeout_message: timeout_message
+            ) { with_row_lock(&) }
           rescue Yes::Core::Utils::ExponentialRetrier::RetryFailedError => e
             raise RevisionMismatchError, e.message
           rescue Yes::Core::Utils::ExponentialRetrier::TimeoutError => e
@@ -121,6 +127,22 @@ module Yes
         private
 
         attr_reader :read_model, :revision_column
+
+        # Locks and reloads the read model row, re-checks the revision and yields.
+        # The lock is held until the surrounding transaction (if any) ends.
+        #
+        # @yield Block to execute while the row is locked
+        # @return [Object] Result of the block execution
+        # @raise [RevisionAlreadyAppliedError] When another writer applied the revision in the meantime
+        # @raise [RevisionMismatchError] When the locked row is behind the expected revision
+        def with_row_lock
+          read_model.with_lock do
+            check_revision_status!
+            raise RevisionMismatchError, revision_mismatch_message unless revision_matches?
+
+            yield
+          end
+        end
 
         # Creates the retrier with custom logging context
         #

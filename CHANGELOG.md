@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-core
+
+#### Fixed
+- Two writers applying the same event to one read model row (for example a slow command and a concurrent
+  recovery of the same aggregate) could overwrite the newer state and reset the revision, so every later command
+  on that aggregate failed with a revision error. `ReadModelRevisionGuard` now locks the row, reloads it and
+  re-checks the revision right before the write; the already applied event is skipped.
+
 ## [2.8.0] - 2026-10-29
 
 ### yes-read-api

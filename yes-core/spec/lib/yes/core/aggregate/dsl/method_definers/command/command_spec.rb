@@ -496,6 +496,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
           allow(mock.class).to receive(:column_names).and_return(%w[id revision document_ids another pending_update_since])
           # Add reload method that returns self
           allow(mock).to receive(:reload).and_return(mock)
+          allow(mock).to receive(:with_lock) { |&block| block.call }
           # Add update_column method for pending state management
           allow(mock).to receive(:update_column).with(:pending_update_since, anything)
           mock
@@ -588,6 +589,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::MethodDefiners::Command::Command do
                                  pending_update_since?: false)
           allow(mock.class).to receive(:column_names).and_return(%w[id revision another pending_update_since])
           allow(mock).to receive(:reload).and_return(mock)
+          allow(mock).to receive(:with_lock) { |&block| block.call }
           allow(mock).to receive(:update_column).with(:pending_update_since, anything)
           mock
         end
