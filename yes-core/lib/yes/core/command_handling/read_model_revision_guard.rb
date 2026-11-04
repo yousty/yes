@@ -131,12 +131,17 @@ module Yes
         # Locks and reloads the read model row, re-checks the revision and yields.
         # The lock is held until the surrounding transaction (if any) ends.
         #
+        # Uses +reload(lock: true)+ inside a transaction instead of +with_lock+. +with_lock+ raises when the record
+        # has unsaved changes, which is the case when a transaction retry extension (serialization failure,
+        # deadlock) re-runs this block after the previous attempt assigned attributes. +reload+ discards them.
+        #
         # @yield Block to execute while the row is locked
         # @return [Object] Result of the block execution
         # @raise [RevisionAlreadyAppliedError] When another writer applied the revision in the meantime
         # @raise [RevisionMismatchError] When the locked row is behind the expected revision
         def with_row_lock
-          read_model.with_lock do
+          read_model.transaction do
+            read_model.reload(lock: true)
             check_revision_status!
             raise RevisionMismatchError, revision_mismatch_message unless revision_matches?
 
