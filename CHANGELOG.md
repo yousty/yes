@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-core
+
+#### Fixed
+- `ReadModelRevisionGuard` raised `Locking a record with unpersisted changes is not supported` when a transaction
+  retry extension (serialization failure, deadlock) re-ran the guarded block after an earlier attempt had assigned
+  attributes to the read model. The guard now locks the row with `reload(lock: true)`, which discards the stale
+  assignments, instead of `with_lock`.
+
 ## [2.8.1] - 2026-10-30
 
 ### yes-core

@@ -10,7 +10,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
 
   before do
     allow(read_model).to receive(:reload).and_return(read_model)
-    allow(read_model).to receive(:with_lock) { |&block| block.call }
+    allow(read_model).to receive(:transaction) { |&block| block.call }
     allow(Yes::Core::Utils::ExponentialRetrier).to receive(:new).and_return(retrier)
   end
 
@@ -161,7 +161,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
 
         before do
           state = lock_state
-          allow(read_model).to receive(:with_lock) do |&block|
+          allow(read_model).to receive(:transaction) do |&block|
             state[:held] = true
             block.call.tap { state[:held] = false }
           end
@@ -176,7 +176,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
 
       context 'when another writer applied the revision before the lock was taken' do
         before do
-          allow(read_model).to receive(:with_lock) do |&block|
+          allow(read_model).to receive(:transaction) do |&block|
             allow(read_model).to receive(:revision).and_return(expected_revision)
             block.call
           end
@@ -196,7 +196,7 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
 
       context 'when the locked row is behind the expected revision' do
         before do
-          allow(read_model).to receive(:with_lock) do |&block|
+          allow(read_model).to receive(:transaction) do |&block|
             allow(read_model).to receive(:revision).and_return(expected_revision - 2)
             block.call
           end
@@ -340,7 +340,8 @@ RSpec.describe Yes::Core::CommandHandling::ReadModelRevisionGuard do
     let(:read_model) { instance_double('ReadModel', users_revision: current_revision, revision: nil) }
 
     before do
-      allow(read_model).to receive(:with_lock) { |&block| block.call }
+      allow(read_model).to receive(:reload).and_return(read_model)
+      allow(read_model).to receive(:transaction) { |&block| block.call }
       allow(retrier).to receive(:call).and_yield
     end
 
