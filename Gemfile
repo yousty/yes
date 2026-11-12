@@ -14,3 +14,7 @@ gem 'yes-auth', path: 'yes-auth'
 gem 'yes-command-api', path: 'yes-command-api'
 gem 'yes-core', path: 'yes-core'
 gem 'yes-read-api', path: 'yes-read-api'
+
+group :test do
+  gem 'message_bus', '~> 4.0'
+end

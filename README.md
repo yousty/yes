@@ -1712,7 +1712,7 @@ The frontend subscribes to the channel and receives JSON messages:
 
 #### MessageBus Notifier
 
-Uses the [MessageBus](https://github.com/discourse/message_bus) gem for long-polling or WebSocket delivery. Messages are scoped to the authenticated user via `user_ids`:
+Uses the [MessageBus](https://github.com/discourse/message_bus) gem for long-polling or WebSocket delivery. Messages are scoped to the authenticated user via `user_ids`. The `message_bus` gem is not a dependency of `yes-command-api`; applications that use this notifier add `gem 'message_bus'` to their own Gemfile:
 
 ```ruby
 config.command_notifier_classes = [Yes::Command::Api::Commands::Notifiers::MessageBus]
