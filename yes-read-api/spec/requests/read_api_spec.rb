@@ -876,6 +876,49 @@ RSpec.describe 'Yes::Read::Api::QueriesController', type: :request do
     end
   end
 
+  describe 'an include the serializer does not define' do
+    let(:access_token) { jwt_sign_in(host: 'www.xyz.ch', identity_id: SecureRandom.uuid) }
+    let(:match_all_definition) { { type: 'filter_set', logical_operator: 'and', filters: [] } }
+    let(:expected_detail) do
+      'bogus is not specified as a relationship on ReadModels::Apprenticeship::Serializers::Apprenticeship'
+    end
+
+    before do
+      allow(ReadModels::Apprenticeship::RequestAuthorizer).to receive(:call).and_return(true)
+      allow(Rails.error).to receive(:report)
+    end
+
+    shared_examples 'a 400 for the unsupported include' do
+      it 'responds with 400 and the serializer message, without reporting an error' do
+        request
+
+        aggregate_failures do
+          expect(response).to have_http_status(:bad_request)
+          expect(response.parsed_body).to eq('title' => 'Bad Request', 'detail' => expected_detail)
+          expect(Rails.error).not_to have_received(:report)
+        end
+      end
+    end
+
+    context 'with a basic GET' do
+      subject(:request) { get('/queries/apprenticeships', params: { include: 'bogus' }, headers: request_headers) }
+
+      it_behaves_like 'a 400 for the unsupported include'
+    end
+
+    context 'with an advanced POST' do
+      subject(:request) do
+        post(
+          '/queries/apprenticeships',
+          params: { filter_definition: match_all_definition, include: 'bogus' }.to_json,
+          headers: request_headers
+        )
+      end
+
+      it_behaves_like 'a 400 for the unsupported include'
+    end
+  end
+
   describe 'what the request authorizer is handed' do
     let(:identity_id) { SecureRandom.uuid }
     let(:access_token) { jwt_sign_in(host: 'www.xyz.ch', identity_id:) }

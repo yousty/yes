@@ -27,6 +27,9 @@ module Yes
           with: :read_models_unauthorized_response
         )
 
+        # A client asking for an include the serializer does not define is a malformed request (JSON:API: 400).
+        rescue_from(JSONAPI::Serializer::UnsupportedIncludeError, with: :unsupported_include_response)
+
         rescue_from(
           Cerbos::Error::Unavailable,
           Cerbos::Error::DeadlineExceeded,
@@ -207,6 +210,14 @@ module Yes
         # @return [void]
         def bad_request_response(detail)
           render(json: { title: 'Bad Request', detail: }.to_json, status: :bad_request)
+        end
+
+        # Renders a 400 naming the include the serializer does not define.
+        #
+        # @param error [JSONAPI::Serializer::UnsupportedIncludeError] raised while the serializer is built
+        # @return [void]
+        def unsupported_include_response(error)
+          bad_request_response(error.message)
         end
 
         def validate_advanced_payload
