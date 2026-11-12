@@ -7,7 +7,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: Test ${{ matrix.gem }}
     strategy:
       fail-fast: false
@@ -42,7 +42,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.5'
+          ruby-version: '3.4.12'
           bundler-cache: true
           working-directory: ${{ matrix.gem }}
 
@@ -83,7 +83,7 @@ jobs:
           PG_EVENTSTORE_URI: postgresql://postgres:postgres@localhost:5532/eventstore_test
 
   rubocop:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: RuboCop
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4.5'
+          ruby-version: '3.4.12'
           bundler-cache: true
 
       - name: Run RuboCop
