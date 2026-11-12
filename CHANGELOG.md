@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-11-12
+
+### yes-command-api
+
+#### Changed
+- The `message_bus` gem is no longer a runtime dependency. Applications that use the MessageBus notifier add
+  `gem 'message_bus'` to their own Gemfile; the gem's initializer only configures MessageBus when it is loaded.
+
+### yes-core
+
+#### Changed
+- The spec suite declares `message_bus` itself instead of getting it through `yes-command-api`.
+
 ## [2.8.2] - 2026-11-04
 
 ### yes-core

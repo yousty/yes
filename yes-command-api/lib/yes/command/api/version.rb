@@ -3,7 +3,7 @@
 module Yes
   module Command
     module Api
-      VERSION = '2.8.2'
+      VERSION = '2.9.0'
     end
   end
 end
