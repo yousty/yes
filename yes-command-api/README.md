@@ -105,6 +105,8 @@ See the next section for how to receive updates about your commands using the st
 
 ### MessageBus Notifier
 
+`message_bus` is no longer a runtime dependency of this gem. Applications that use the MessageBus notifier add `gem 'message_bus'` to their own Gemfile; without it, publishing raises `NameError` and the filters initializer is skipped.
+
 #### Authorization
 
 In order to receive user-targeted messages - you should authorize your request first. It can be done by providing JWT token along with `Authorization` header. Example:
