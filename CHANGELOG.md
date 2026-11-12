@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### yes-read-api
+
+#### Fixed
+- `QueriesController` answers `400 Bad Request` (`{ "title": "Bad Request", "detail": ... }`) when the `include`
+  parameter names a relationship the read model's serializer does not define, for both basic and advanced queries.
+  It answered `500` before, because the `JSONAPI::Serializer::UnsupportedIncludeError` raised while the serializer
+  is built was not rescued.
+
 ## [2.8.2] - 2026-11-04
 
 ### yes-core
