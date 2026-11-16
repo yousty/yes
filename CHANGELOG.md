@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### All gems
+
+#### Changed
+- The development and test bundles now run on Rails 8.1.4.1 (previously 7.2 for yes-core, yes-command-api and
+  yes-read-api), because Rails 7.2 has no patched release for recent Active Storage advisories. The gemspecs still
+  allow `rails >= 7.1`, but Rails 7.x is no longer tested in CI.
+
 ## [2.9.0] - 2026-11-12
 
 ### yes-command-api
