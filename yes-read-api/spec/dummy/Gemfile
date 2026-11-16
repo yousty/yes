@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails', branch: 'main'
-gem 'rails', '~> 7.2'
+gem 'rails', '~> 8.1', '>= 8.1.4.1'
 
 gem 'pg', '~> 1.5'
 
