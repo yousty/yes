@@ -17,7 +17,7 @@ group :development, :test do
   gem 'message_bus', '~> 4.0'
   gem 'opentelemetry-sdk'
   gem 'puma'
-  gem 'rails', '~> 7.2'
+  gem 'rails', '~> 8.1', '>= 8.1.4.1'
   gem 'rspec', '~> 3.0'
   gem 'rspec-rails', '~> 7.1'
   gem 'rubocop', '~> 1.21'
