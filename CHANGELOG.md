@@ -17,7 +17,13 @@ All notable changes to this project will be documented in this file.
 - Guard errors now carry the name of the failed guard in `extra[:code]` (for example `'no_change'` or
   `'not_removed'`), and therefore in `error_details[:extra][:code]` of command responses. The code does not depend on
   the locale or the wording of the error message. A Hash `error_extra` keeps its entries and gets the code added (the
-  guard name wins over an entry called `code`); any other non-blank `error_extra` is kept under `extra[:value]`.
+  guard name wins over an entry called `code`).
+
+#### Changed
+- A guard's non-Hash `error_extra` is no longer returned as given in `error.extra` / `error_details[:extra]`; it is
+  wrapped as `{ value: <the extra>, code: <guard name> }`.
+- Guard errors without an `error_extra` now always have `error_details[:extra]` (`{ code: <guard name> }`); it used to
+  be absent.
 
 ## [2.9.0] - 2026-11-12
 
