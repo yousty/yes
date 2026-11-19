@@ -146,6 +146,7 @@ RSpec.describe Yes::Core::Aggregate::Dsl::ClassResolvers::Command::GuardEvaluato
             instance.send(:evaluate_guard, :test_guard, block: guard_block, error_extra: extra_block)
           end.to raise_error(Yes::Core::CommandHandling::GuardEvaluator::InvalidTransition) do |error|
             expect(error.extra).to eq(
+              code: 'test_guard',
               current_value: nil,
               new_value: 'foo',
               expected_min_length: 4,
