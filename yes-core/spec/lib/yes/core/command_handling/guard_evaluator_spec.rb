@@ -61,6 +61,87 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
     end
   end
 
+  describe 'error extra code' do
+    subject(:raised_error) do
+      guard_evaluator.call
+      nil
+    rescue described_class::TransitionError => e
+      e
+    end
+
+    context 'when a declared guard without error_extra fails' do
+      before { described_class.guard(:test) { false } }
+
+      it 'puts the guard name into the extra' do
+        expect(raised_error.extra).to eq({ code: 'test' })
+      end
+    end
+
+    context 'when the no_change guard fails' do
+      before { described_class.guard(:no_change) { false } }
+
+      it 'puts the guard name into the extra and keeps the error class' do
+        aggregate_failures do
+          expect(raised_error).to be_a(described_class::NoChangeTransition)
+          expect(raised_error.extra).to eq({ code: 'no_change' })
+        end
+      end
+    end
+
+    context 'when error_extra is a Hash' do
+      before { described_class.guard(:test, error_extra: { field: 'name' }) { false } }
+
+      it 'keeps the hash and adds the guard name' do
+        expect(raised_error.extra).to eq({ field: 'name', code: 'test' })
+      end
+    end
+
+    context 'when error_extra is a Proc' do
+      before { described_class.guard(:test, error_extra: proc { { field: 'name' } }) { false } }
+
+      it 'merges the proc result with the guard name' do
+        expect(raised_error.extra).to eq({ field: 'name', code: 'test' })
+      end
+    end
+
+    context 'when error_extra already has a code key' do
+      before { described_class.guard(:test, error_extra: { code: 'custom', field: 'name' }) { false } }
+
+      it 'lets the guard name win' do
+        expect(raised_error.extra).to eq({ code: 'test', field: 'name' })
+      end
+    end
+
+    context 'when error_extra is not a Hash' do
+      before { described_class.guard(:test, error_extra: 'some detail') { false } }
+
+      it 'moves it under the value key' do
+        expect(raised_error.extra).to eq({ value: 'some detail', code: 'test' })
+      end
+    end
+
+    context 'when the error ends up in a command response' do
+      let(:response) do
+        Yes::Core::Commands::Response.new(cmd: Yes::Core::Command.new(transaction: Yes::Core::TransactionDetails.new),
+                                          error: raised_error)
+      end
+
+      before { described_class.guard(:no_change) { false } }
+
+      it 'exposes the guard name in the error details' do
+        expect(response.error_details[:extra][:code]).to eq('no_change')
+      end
+    end
+
+    context 'when error_extra is nil' do
+      before { described_class.guard(:test, error_extra: nil) { false } }
+
+      it 'only carries the code' do
+        expect(raised_error.extra).to eq({ code: 'test' })
+      end
+    end
+  end
+
   describe 'guard evaluation context' do
     context 'when accessing payload methods' do
       context 'when accessing via payload hash' do

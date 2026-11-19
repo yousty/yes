@@ -81,6 +81,13 @@ RSpec.describe Yes::Core::CommandHandling::GuardEvaluator do
           to raise_error(described_class::InvalidTransition)
       end
 
+      it 'puts the not_removed guard name into the extra' do
+        expect { guard_evaluator.send(:check_not_removed!) }.
+          to raise_error(described_class::InvalidTransition) { |error|
+            expect(error.extra).to eq({ code: 'not_removed' })
+          }
+      end
+
       it 'looks up the message under the not_removed guard key' do
         aggregate_failures do
           expect(Yes::Core::ErrorMessages).to receive(:guard_error).

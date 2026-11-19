@@ -9,6 +9,12 @@ module Yes
         class InvalidTransition < TransitionError; end
         class NoChangeTransition < TransitionError; end
 
+        # Key under which the failed guard's name is put into the error's extra, so that clients
+        # can tell guards apart independent of the (translated) error message.
+        ERROR_CODE_KEY = :code
+        # Key under which a non-Hash error extra is kept once the code is added next to it.
+        ERROR_VALUE_KEY = :value
+
         class << self
           # @return [Hash<Symbol, Proc>] Hash of registered guards with names as keys and blocks as values
           def guards
@@ -84,7 +90,7 @@ module Yes
 
           return if aggregate.public_send(config[:attr_name]).blank?
 
-          raise InvalidTransition, error_message(:not_removed)
+          raise InvalidTransition.new(error_message(:not_removed), extra: extra_with_code(nil, :not_removed))
         end
 
         # Evaluates a single guard and raises appropriate error if it fails
@@ -102,7 +108,22 @@ module Yes
           extra = error_extra.respond_to?(:call) ? evaluate_with_locale(&error_extra) : error_extra
 
           error_class = name == :no_change ? NoChangeTransition : InvalidTransition
-          raise error_class.new(error_message(name), extra:)
+          raise error_class.new(error_message(name), extra: extra_with_code(extra, name))
+        end
+
+        # Adds the name of the failed guard to the error extra under {ERROR_CODE_KEY}.
+        #
+        # A Hash extra keeps its entries (the guard name wins over an entry with the same key), any
+        # other non-blank extra is kept under {ERROR_VALUE_KEY}.
+        #
+        # @param extra [Hash, Object, nil] The extra given by the guard definition
+        # @param guard_name [Symbol] The name of the failed guard
+        # @return [Hash] The extra including the guard name as a String
+        def extra_with_code(extra, guard_name)
+          code = { ERROR_CODE_KEY => guard_name.to_s }
+          return code if extra.blank?
+
+          (extra.is_a?(Hash) ? extra : { ERROR_VALUE_KEY => extra }).merge(code)
         end
 
         def value_changed?(val1, val2)
